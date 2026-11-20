@@ -1,0 +1,326 @@
+{
+  "schemaVersion": "2.2.0-campus",
+  "status": "brand-revision-provisional-awaiting-visual-approval",
+  "artDirection": "Stylized 3D City Builder + Cozy Diorama",
+  "colorSpace": "sRGB",
+  "colors": {
+    "meadow": "#A8C878",
+    "lawn": "#B9D58A",
+    "canopyLight": "#79A85F",
+    "canopyMid": "#4C8050",
+    "canopyDark": "#386B43",
+    "groundcover": "#8DB667",
+    "plaster": "#F2E6CE",
+    "stone": "#D1C6AE",
+    "glass": "#79ACBB",
+    "frame": "#254D3A",
+    "terracotta": "#B97555",
+    "brass": "#C4A469",
+    "asphalt": "#59646A",
+    "walk": "#DCC58B",
+    "water": "#59B9D1",
+    "sand": "#CABB91",
+    "snow": "#E8EEE6",
+    "construction": "#E0B542",
+    "soil": "#8D795A",
+    "shrub": "#79A85F",
+    "sky": "#CFE5ED",
+    "sun": "#FFF0D4",
+    "ambient": "#DCEAF0",
+    "roadMarking": "#EFE7D1",
+    "flower": "#D8BE75",
+    "brandMoss": "#254D3A",
+    "brandOrange": "#ED8038",
+    "waterShallow": "#9BD9DC",
+    "waterDeep": "#3589A5",
+    "bankRock": "#B5AD95",
+    "flowerLight": "#F2DFC1",
+    "flowerPurple": "#B59CBC",
+    "statusActive": "#E0B542",
+    "statusFeedback": "#5380B4",
+    "statusRevise": "#D6973E",
+    "statusDelay": "#BB5D50",
+    "statusDone": "#568150",
+    "statusUnknown": "#8A938C",
+    "referenceGlass": "#2D8781"
+  },
+  "materialTargets": {
+    "plaster": {
+      "roughness": 0.78,
+      "metalness": 0
+    },
+    "stone": {
+      "roughness": 0.92,
+      "metalness": 0
+    },
+    "glass": {
+      "roughness": 0.24,
+      "metalness": 0.05,
+      "opacity": 1
+    },
+    "foliage": {
+      "roughness": 0.88,
+      "metalness": 0
+    },
+    "road": {
+      "roughness": 0.98,
+      "metalness": 0
+    },
+    "water": {
+      "roughness": 0.4,
+      "metalness": 0,
+      "opacity": 0.93
+    }
+  },
+  "lighting": {
+    "mode": "fixed-daylight",
+    "sunColor": "sun",
+    "skyColor": "ambient",
+    "groundColor": "sand",
+    "backgroundColor": "sky",
+    "sunPosition": [
+      -80,
+      110,
+      60
+    ],
+    "sunIntensity": 3.15,
+    "hemisphereIntensity": 0.9,
+    "toneMapping": "ACESFilmic",
+    "exposure": 0.95,
+    "shadowType": "PCF",
+    "shadowMapSize": 2048,
+    "fogNear": 210,
+    "fogFar": 480,
+    "noBloom": true,
+    "noDepthOfField": true,
+    "shadowRadius": 3.5,
+    "shadowBlurSamples": 8
+  },
+  "roadRules": {
+    "fullWidths": {
+      "1": 2.0,
+      "2": 4.0,
+      "3": 8.0
+    },
+    "priority": [
+      3,
+      2,
+      1
+    ],
+    "families": {
+      "1": "procedural-yellow",
+      "2": "Kenney 3D Road Tiles",
+      "3": "Kenney City Kit Roads"
+    }
+  },
+  "vegetation": {
+    "densityArea": "1000 square world units of plantable ground after water, road, pad, doorway and sightline exclusions; units not a surveyed meter claim",
+    "coverMeasurement": "union of horizontal canopy footprints / plantable ground, not sum of overlapping crown areas",
+    "placementSeed": 2187,
+    "layers": {
+      "groundcover": {
+        "height": [
+          0.05,
+          0.22
+        ],
+        "geometry": "owned procedural low patches/clumps"
+      },
+      "shrubs": {
+        "height": [
+          0.3,
+          1.0
+        ],
+        "geometry": "owned procedural clustered low crowns"
+      },
+      "canopy": {
+        "asset": "models/anphim_basic_scene/tree.glb",
+        "uniformScaleOnly": true,
+        "densityMode": "clumps with open meadow gaps"
+      }
+    },
+    "biomes": {
+      "campus": {
+        "canopyCover": [
+          0,
+          0.08
+        ],
+        "treesPer1000m2": [
+          0,
+          12
+        ],
+        "shrubsPer1000m2": [
+          35,
+          60
+        ],
+        "groundcoverCover": [
+          0.25,
+          0.4
+        ],
+        "treeHeight": [
+          3.5,
+          5.5
+        ],
+        "shrubHeight": [
+          0.35,
+          0.8
+        ]
+      },
+      "park": {
+        "canopyCover": [
+          0.01,
+          0.12
+        ],
+        "treesPer1000m2": [
+          5,
+          35
+        ],
+        "shrubsPer1000m2": [
+          45,
+          75
+        ],
+        "groundcoverCover": [
+          0.4,
+          0.65
+        ],
+        "treeHeight": [
+          4,
+          6
+        ],
+        "shrubHeight": [
+          0.4,
+          1.0
+        ]
+      },
+      "riparian": {
+        "canopyCover": [
+          0,
+          0.04
+        ],
+        "treesPer1000m2": [
+          0,
+          12
+        ],
+        "shrubsPer1000m2": [
+          50,
+          80
+        ],
+        "groundcoverCover": [
+          0.4,
+          0.65
+        ],
+        "treeHeight": [
+          3.5,
+          5
+        ],
+        "shrubHeight": [
+          0.3,
+          0.7
+        ]
+      },
+      "hillside": {
+        "canopyCover": [
+          0.01,
+          0.12
+        ],
+        "treesPer1000m2": [
+          5,
+          35
+        ],
+        "shrubsPer1000m2": [
+          30,
+          55
+        ],
+        "groundcoverCover": [
+          0.25,
+          0.45
+        ],
+        "treeHeight": [
+          3.5,
+          6
+        ],
+        "shrubHeight": [
+          0.35,
+          0.85
+        ]
+      },
+      "snowValley": {
+        "canopyCover": [
+          0.15,
+          0.25
+        ],
+        "treesPer1000m2": [
+          18,
+          30
+        ],
+        "shrubsPer1000m2": [
+          0,
+          0
+        ],
+        "groundcoverCover": [
+          0,
+          0
+        ],
+        "treeHeight": [
+          3.5,
+          5.5
+        ],
+        "shrubHeight": [
+          0,
+          0
+        ],
+        "onlyCanopyAsset": "snow-tree-pine-snow.glb",
+        "proofIncluded": false
+      }
+    },
+    "readability": {
+      "doorwayBuffer": 1.5,
+      "roadEdgeBuffer": 1.2,
+      "buildingBuffer": 1.2,
+      "minimumProjectedVisibleBuildingFraction": 0.75,
+      "minimumProjectedVisibleEntryFraction": 0.9,
+      "maxCanopyPixelsAcrossEntryViewCorridor": 0,
+      "overviewReferenceViewport": [
+        1440,
+        900
+      ],
+      "measurement": "depth-aware projected proxy rays; front/entry targets; no claim of exact per-pixel silhouette segmentation"
+    },
+    "densityCalibration": "Composition-led: do not raise pine counts to chase canopy coverage. New broadleaf family remains proposal-only.",
+    "compositionPlan": "world_v2_proof/landscape-composition.json",
+    "activeMode": "composition-led-provisional; round/broadleaf canopy not active until approval"
+  },
+  "brand": {
+    "status": "proposed HEX, not official brand values",
+    "primary": "brandMoss",
+    "secondary": "brandOrange",
+    "usage": "moss on HQ frames/signage; orange restrained entrance/wayfinding accents; not status replacement"
+  },
+  "tests": {
+    "A": {
+      "label": "Palette Only",
+      "geometry": "pre-revision baseline",
+      "lighting": "comparison-baseline.json/lighting",
+      "materials": "comparison-baseline.json/materialTargets"
+    },
+    "B": {
+      "label": "Palette + Lighting",
+      "geometry": "same pre-revision baseline",
+      "lighting": "V2.1 selected daylight",
+      "materials": "same as A"
+    },
+    "C": {
+      "label": "Material Refinement",
+      "geometry": "same pre-revision baseline",
+      "lighting": "same as B",
+      "materials": "V2.1 refinement"
+    },
+    "final": {
+      "label": "Final landscape and building composition",
+      "geometry": "revised limited proof; not a controlled lighting comparison",
+      "lighting": "same as C",
+      "materials": "same as C"
+    },
+    "rejectedShadowTrial": "VSM produced halos/edge artifacts on dense baseline; retain PCF with tighter daylight separation."
+  },
+  "notes": "V2.1 foundation; referenceGlass calibrated to supplied HQ views. Brand HEX remains provisional."
+}

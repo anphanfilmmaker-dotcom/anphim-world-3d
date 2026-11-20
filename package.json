@@ -1,0 +1,26 @@
+{
+  "name": "anphim-world-3d-campus",
+  "version": "2.4.0",
+  "description": "Interactive 3D Creative Campus Diorama built with Three.js & WebGL",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "threejs",
+    "webgl",
+    "diorama",
+    "city-builder",
+    "3d",
+    "canvas",
+    "interactive"
+  ],
+  "author": "AN PHIM Media Production",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
