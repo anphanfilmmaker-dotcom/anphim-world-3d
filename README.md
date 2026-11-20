@@ -2,7 +2,12 @@
 
 An interactive, modular 3D campus diorama engineered with Three.js and WebGL.
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://anphanfilmmaker-dotcom.github.io/anphim-world-3d/)
+
 ![Campus Overview](CAMPUS_OVERVIEW.png)
+
+## 🌐 Live Interactive Demo
+- **URL:** [https://anphanfilmmaker-dotcom.github.io/anphim-world-3d/](https://anphanfilmmaker-dotcom.github.io/anphim-world-3d/)
 
 ## Overview
 
