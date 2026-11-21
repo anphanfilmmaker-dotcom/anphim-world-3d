@@ -1718,6 +1718,7 @@ export function createCampusEditor({
     curb.receiveShadow = true;
     curb.renderOrder = 3;
     curb.name = `smooth_court_curb_${c.id}`;
+    curb.raycast = () => {}; // bó vỉa đi theo sân: không phải vật thể chọn/ủi riêng
     mesh.add(curb);
     mesh.name = `smooth_court_${c.id}`;
     mesh.userData.isSmoothCourtMesh = true;
