@@ -74,7 +74,11 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
   for (let i = 0; i < slots; i++) {
     const lx = (i - (slots - 1) / 2) * spacing, inward = lx > 0 ? -1 : 1;
     for (const side of [1, -1]) {
-      const ok = [0, 1, -1, 2].some(k => place(BENCH, lx + inward * k * 1.1, side * (hd - .5), side < 0 ? 0 : Math.PI, .8));
+      // Ghế dài 1.5: tâm ghế phải cách đầu sân ít nhất 1.1 để không chìa ra ngoài bó vỉa
+      const ok = [0, 1, -1, 2].some(k => {
+        const bx = lx + inward * k * 1.1;
+        return Math.abs(bx) <= hw - 1.1 && place(BENCH, bx, side * (hd - .5), side < 0 ? 0 : Math.PI, .8);
+      });
       if (ok && narrow) break; // sân hẹp chỉ đủ chỗ cho một hàng ghế
     }
   }
