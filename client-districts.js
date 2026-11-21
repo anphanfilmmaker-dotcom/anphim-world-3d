@@ -530,18 +530,32 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   signs.name = 'client-district-signs';
   root.add(signs);
 
+  const taken = new Map();       // slot id -> client id, for clients that took a free slot
+  // A free slot can be given out once a road reaches its gate: from the ring, or by a branch road.
+  const served = slot => !!slot.ringXZ || (plan.accessRoads || []).some(r => {
+    const end = r.points[r.points.length - 1];
+    return end[0] === slot.gateXZ[0] && end[1] === slot.gateXZ[1];
+  });
+
   function assignSlots(clients) {
-    const held = new Map(), free = [];
+    const held = new Map();
     for (const slot of plan.slots) {
       const c = slot.clientId && clients.find(x => x.id === slot.clientId);
       if (c) held.set(slot.id, c);
     }
-    for (const slot of plan.slots) if (!slot.clientId) free.push(slot);
+    // A client keeps the free slot it took for as long as it is in the data.
+    for (const [slotId, clientId] of taken) {
+      const c = clients.find(x => x.id === clientId);
+      if (c) held.set(slotId, c);
+      else taken.delete(slotId);
+    }
     for (const c of clients) {
-      if (c.kind !== 'client' || [...held.values()].includes(c)) continue;
-      const slot = free.shift();
-      if (slot) held.set(slot.id, c);
-      else console.warn('[client-districts] No free district slot for client', c.name);
+      if (c.kind !== 'client' || [...held.values()].some(x => x.id === c.id)) continue;
+      const slot = plan.slots.find(s => !s.clientId && !held.has(s.id) && served(s));
+      if (slot) {
+        held.set(slot.id, c);
+        taken.set(slot.id, c.id);
+      } else console.warn('[client-districts] No free district slot with road access for client', c.name);
     }
     return held;
   }
