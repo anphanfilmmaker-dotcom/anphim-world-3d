@@ -169,7 +169,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       part(new T.SphereGeometry(.13, 10, 8).translate(0, 1.62, 0), '#fff3cf', 1.5)
     ])
   };
-  const WOOD = '#b9793f', STONE = '#e6dccb';
+  const STONE = '#e6dccb';
   G.gate = mergeGeometries([
     part(new T.BoxGeometry(1.15, .3, 1.15).translate(0, .15, 0), '#cfc6b4'),
     part(new T.BoxGeometry(.85, 2.1, .85).translate(0, 1.35, 0), STONE),
@@ -215,13 +215,15 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
   const arrival = roads.paths.find(p => p.id === 'road:HQ-arrival' && p.curve && !p.hidden);
   let gateCount = 0;
   if (arrival) {
-    const len = arrival.curve.getLength(), setback = Math.min(.2, 5.5 / len), off = (arrival.width || 4) / 2 + 1.3;
+    const len = arrival.curve.getLength(), setback = Math.min(.2, 5.5 / len);
+    // Vỉa hè ngoài của đường vòng (hq-gardens.js) rộng tới 1.35 m tính từ mép đường: trụ đứng trên cỏ, sát mép ngoài vỉa hè
+    const GATE_SCALE = 1.25, off = (arrival.width || 4) / 2 + 1.35 + 1.15 * GATE_SCALE / 2 + .1;
     for (const [t, side] of [[setback, 1], [1 - setback, 1]]) {
       const q = arrival.curve.getPointAt(t), tan = arrival.curve.getTangentAt(t);
-      // Trụ nằm phía ngoài vòng U (xa tâm đảo), sát mép vỉa
+      // Trụ nằm phía ngoài vòng U (xa tâm đảo)
       const centre = arrival.curve.getPointAt(.5), nx = -tan.z, nz = tan.x, out = Math.sign((q.x - centre.x) * nx + (q.z - centre.z) * nz) || side;
       const x = q.x + nx * out * off, z = q.z + nz * out * off;
-      put('gate', x, surface(x, z), z, 1.25, 1.25, 1.25, Math.atan2(tan.x, tan.z));
+      put('gate', x, surface(x, z), z, GATE_SCALE, GATE_SCALE, GATE_SCALE, Math.atan2(tan.x, tan.z));
       gateCount++;
     }
     // Bảng tên campus đặt trên bãi cỏ cạnh cổng, quay ra đường chính
