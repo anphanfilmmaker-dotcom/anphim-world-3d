@@ -120,7 +120,6 @@ export function createArchitecture(P) {
 
   function shell(g, w, h, d, rows = 2, cols = 4) {
     box(g, w, h, d, 0, 0, 0);
-    g.userData.shellFootprint = [w, d];
     front(g, w, h, d, rows, cols);
     windows(g, 0.07, h - 0.7, d - 0.5, w / 2 + 0.025, 0.3, 0, rows, cols);
     box(g, w + 0.25, 0.2, d + 0.25, 0, h, 0);
@@ -1231,8 +1230,6 @@ export function createArchitecture(P) {
       entry(g, 1.7, 2.5, 2);
     }
     const b = new T.Box3().setFromObject(g);
-    // Chân đế đá cho các tòa nhỏ; thêm sau cùng để partId (đánh theo thứ tự mesh) của các chi tiết cũ không đổi
-    if (g.userData.shellFootprint) box(g, g.userData.shellFootprint[0] + 0.3, 0.32, g.userData.shellFootprint[1] + 0.3, 0, 0, 0, M.stone);
     const socket = new T.Object3D();
     socket.name = 'entry-socket';
     socket.position.set(0, 0, b.max.z + 0.12);
