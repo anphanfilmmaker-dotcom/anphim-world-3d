@@ -100,9 +100,9 @@ export async function createModularRoadSystem(scene, terrain, roads) {
       innerWalkVerts.push(iw1_x, iwY1, iw1_z, iw2_x, iwY2, iw2_z);
 
       if (i < N) {
-        // Thứ tự đỉnh ngược với mặt đường để pháp tuyến hướng lên: bó vỉa và vỉa hè hiện ra phía trên mặt cỏ
+        // Dải trong chạy từ mép đường vào tâm, dải ngoài chạy từ mép đường ra ngoài: hai thứ tự đỉnh ngược nhau để cả hai pháp tuyến hướng lên
         const k = i * 2;
-        outerCurbIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+        outerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
         if (!inMouth(i) && !inMouth(i + 1)) {
           innerCurbIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
           innerWalkIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
