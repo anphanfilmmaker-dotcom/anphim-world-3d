@@ -271,7 +271,7 @@ export class CockpitFrame {
       if (!e.target.closest?.('.cf-search') && this.query) { input.value = this.query = ''; this.renderResults(); }
     });
     new ResizeObserver(() => root.style.setProperty('--cf-bh', this.slot.jump.offsetHeight + 'px')).observe(this.slot.jump);
-    addEventListener('resize', () => this.layoutTools());
+    addEventListener('resize', () => { this.layoutTools(); this.fitPanes(); });
     addEventListener('pointermove', e => {
       const tip = this.slot.tip;
       tip.style.left = Math.min(e.clientX + 16, innerWidth - tip.offsetWidth - 8) + 'px';
@@ -316,6 +316,15 @@ export class CockpitFrame {
     const dockTop = 80 + (nav?.offsetHeight || 0) + 6;
     document.body.style.setProperty('--cf-dock-top', dockTop + 'px');
     document.body.style.setProperty('--cf-tools-top', dockTop + (dock ? dock.offsetHeight + 8 : 0) + 'px');
+  }
+
+  /** When the window is too short for both right panels, only the one opened last stays. */
+  fitPanes() {
+    const {building, agents} = this.slot;
+    if (building.classList.contains('cf-open') && agents.classList.contains('cf-open') && agents.offsetHeight < 150) {
+      (this.lastPane === 'building' ? agents : building).classList.remove('cf-open');
+    }
+    this.renderRail();
   }
 
   // ---- helpers ----------------------------------------------------------------
@@ -546,7 +555,8 @@ export class CockpitFrame {
     const pane = e.target.closest('[data-pane]')?.dataset.pane;
     if (pane) {
       this.slot[pane].classList.toggle('cf-open');
-      this.renderRail();
+      this.lastPane = pane;
+      this.fitPanes();
       return;
     }
     const act = e.target.closest('[data-act]')?.dataset.act;
@@ -561,6 +571,7 @@ export class CockpitFrame {
       document.body.classList.toggle('cf-tools');
       this.renderControls();
       this.layoutTools();
+      this.fitPanes();
     } else if (act === 'collapse') {
       this.slot.missions.classList.toggle('cf-collapsed');
       this.renderMissions();
