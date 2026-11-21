@@ -234,7 +234,7 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
         if (!rows.length) { ctx.fillStyle = C.mute; ctx.font = `600 34px ${FONT}`; ctx.fillText('Không còn việc nào chờ anh.', 40, y + 50); }
       }, {section: 'missions'});
       const ps = view.projects;
-      board('right', `${ps.length} dự án đang chạy`, C.teal, (ctx, W, H, y) => {
+      board('right', view.runningKpi == null ? `${ps.length} dự án đang chạy` : `${ps.length} dự án trong danh sách · chỉ số báo ${view.runningKpi}`, view.runningKpi == null ? C.teal : C.warn, (ctx, W, H, y) => {
         const per = Math.floor((H - y - 16) / 54), cw = (W - 100) / 2;
         const shown = ps.length > per * 2 ? ps.slice(0, per * 2 - 1) : ps;
         if (ps.length > shown.length) { ctx.fillStyle = C.mute; ctx.font = `600 28px ${FONT}`; ctx.fillText(`+${ps.length - shown.length} dự án khác: xem bảng bên phải`, 60 + cw, y + 40 + (per - 1) * 54); }

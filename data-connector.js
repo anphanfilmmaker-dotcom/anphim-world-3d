@@ -349,6 +349,10 @@ export class DataConnector {
       view.allMissions = missions;
       view.inputCount = missions.open.filter(m => m.tag === 'Cần Input').length;
       view.projects = this.getRunningProjects().map(p => ({...p, progress: this.getProjectProgress(p)}));
+      // The top bar shows the dashboard's own "Dự án đang chạy" KPI; the list below is counted from the
+      // project list. When the two disagree the room and the panel say so instead of showing two numbers.
+      const kpiCount = Number(this.cache?.kpi?.activeProjectsCount);
+      view.runningKpi = Number.isFinite(kpiCount) && kpiCount !== view.projects.length ? kpiCount : null;
       view.schedulePage = this.getWorkspacePage('schedule');
     } else if (type === 'bank') {
       view.subtitle = 'Thu chi và dòng tiền · theo tab Tài chính';

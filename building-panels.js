@@ -224,7 +224,8 @@ export class BuildingPanels {
       this.missions(open, 'Nhiệm vụ', 'Không còn việc nào chờ anh.') +
       done.map(m => `<div class="cf-done">${this.frame.text(m.title)}${m.project ? ' (' + esc(m.project.name) + ')' : ''}</div>`).join('') +
       this.agents(v.agents, 'Chưa có agent nào được gán cho tòa AN PHIM.');
-    const right = this.sec('Tổng quan dự án', v.projects.length + ' đang chạy', 'projects') + v.projects.map(p => {
+    const mismatch = v.runningKpi == null ? '' : `<div class="bp-box" data-tone="warn" style="margin-bottom:6px">Số liệu lệch nhau: chỉ số dashboard báo <b>${esc(v.runningKpi)}</b> dự án đang chạy, danh sách dự án có <b>${v.projects.length}</b> dự án chưa hoàn thành hoặc tạm dừng.</div>`;
+    const right = this.sec('Tổng quan dự án', v.projects.length + ' trong danh sách', 'projects') + mismatch + v.projects.map(p => {
       const b = this.frame.buildings.find(x => x.kind === 'project' && this.data.getProject(x.projectId) === p);
       return `<button class="bp-rowbtn" data-focus="project:${esc(p.id)}" ${b ? `data-enter="${esc(b.id)}" title="→ Đến tòa ${esc(p.name)}"` : 'disabled title="Dự án này chưa có tòa trên campus"'}>
         <span class="cf-row"><b class="cf-fill">${esc(p.name)}</b><span class="bp-amt">${esc(this.frame.money(p.budgetFormatted))}</span></span>
