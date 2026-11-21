@@ -7,12 +7,25 @@ node_modules/
 dist/
 build/
 
-# Environment and secrets
+# Environment and secrets (STRICT SECURITY)
 .env
-.env.local
-.env.*.local
+.env.*
 *.pem
 *.key
+*secret*
+*credential*
+*token*
+*.local
+export_live_data.py
+live_campus_data.real.json
+__pycache__/
+*.pyc
+
+# Heavy Pack Archives & Temporary
+models/packs/
+*.zip
+*.tar.gz
+sync_tool.py
 
 # Editor and IDE
 .vscode/

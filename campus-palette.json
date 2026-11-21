@@ -4,20 +4,20 @@
   "artDirection": "Stylized 3D City Builder + Cozy Diorama",
   "colorSpace": "sRGB",
   "colors": {
-    "meadow": "#A8C878",
-    "lawn": "#B9D58A",
+    "meadow": "#4f805a",
+    "lawn": "#5a8c66",
     "canopyLight": "#79A85F",
     "canopyMid": "#4C8050",
     "canopyDark": "#386B43",
-    "groundcover": "#8DB667",
+    "groundcover": "#477a53",
     "plaster": "#F2E6CE",
     "stone": "#D1C6AE",
     "glass": "#79ACBB",
     "frame": "#254D3A",
-    "terracotta": "#B97555",
+    "terracotta": "#b76e4b",
     "brass": "#C4A469",
     "asphalt": "#59646A",
-    "walk": "#DCC58B",
+    "walk": "#dca658",
     "water": "#59B9D1",
     "sand": "#CABB91",
     "snow": "#E8EEE6",
@@ -46,16 +46,16 @@
   },
   "materialTargets": {
     "plaster": {
-      "roughness": 0.78,
+      "roughness": 0.68,
       "metalness": 0
     },
     "stone": {
-      "roughness": 0.92,
+      "roughness": 0.82,
       "metalness": 0
     },
     "glass": {
-      "roughness": 0.24,
-      "metalness": 0.05,
+      "roughness": 0.05,
+      "metalness": 0.3,
       "opacity": 1
     },
     "foliage": {
@@ -63,12 +63,12 @@
       "metalness": 0
     },
     "road": {
-      "roughness": 0.98,
-      "metalness": 0
+      "roughness": 0.88,
+      "metalness": 0.02
     },
     "water": {
-      "roughness": 0.4,
-      "metalness": 0,
+      "roughness": 0.04,
+      "metalness": 0.25,
       "opacity": 0.93
     }
   },
@@ -86,11 +86,11 @@
     "sunIntensity": 3.15,
     "hemisphereIntensity": 0.9,
     "toneMapping": "ACESFilmic",
-    "exposure": 0.95,
+    "exposure": 1.05,
     "shadowType": "PCF",
     "shadowMapSize": 2048,
-    "fogNear": 210,
-    "fogFar": 480,
+    "fogNear": 420,
+    "fogFar": 950,
     "noBloom": true,
     "noDepthOfField": true,
     "shadowRadius": 3.5,

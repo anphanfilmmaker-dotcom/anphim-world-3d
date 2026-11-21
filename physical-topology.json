@@ -1,0 +1,1216 @@
+{
+  "schemaVersion": "2.5.0-art-review-b",
+  "scope": "anphim-world-v25-art-direction-a",
+  "approval": "pending-art-direction-review",
+  "coordinates": {
+    "north": "-Z",
+    "front": "+Z",
+    "up": "Y"
+  },
+  "sourceSnapshotSHA256": "011f47059f023b3ef55f9e2e79393dfd2012189386143d14df7ca71137121ac4",
+  "grades": {
+    "A": [
+      5,
+      4,
+      5
+    ],
+    "B": [
+      7,
+      7,
+      7
+    ],
+    "C": [
+      10,
+      11,
+      9
+    ],
+    "D": [
+      13,
+      17,
+      11
+    ],
+    "E": [
+      17,
+      24,
+      14
+    ]
+  },
+  "roadWidths": {
+    "1": 2,
+    "2": 4,
+    "3": 8
+  },
+  "priority": [
+    3,
+    2,
+    1
+  ],
+  "buildings": [
+    {
+      "id": "bld:facility:hq",
+      "legacyId": "hq",
+      "roomKey": "nhachinh",
+      "name": "AN PHIM",
+      "department": "campus",
+      "grade": "E",
+      "position": [
+        0,
+        6.8,
+        -5
+      ],
+      "style": "hq",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "hq"
+      ],
+      "doorXZ": [
+        0,
+        1.2
+      ],
+      "doorTargetXZ": [
+        0,
+        4
+      ]
+    },
+    {
+      "id": "bld:facility:documents",
+      "legacyId": "documents",
+      "roomKey": "giayto",
+      "name": "Giấy tờ",
+      "department": "administration",
+      "grade": "B",
+      "position": [
+        -29,
+        4,
+        -18
+      ],
+      "style": "civic",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "documents"
+      ],
+      "doorXZ": [
+        -29,
+        -14.5
+      ],
+      "doorTargetXZ": [
+        -29,
+        -15
+      ]
+    },
+    {
+      "id": "bld:facility:drive",
+      "legacyId": "drive",
+      "roomKey": "khodrive",
+      "name": "Kho Drive",
+      "department": "administration",
+      "grade": "A",
+      "position": [
+        -20,
+        4,
+        -26
+      ],
+      "style": "archive",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "drive"
+      ],
+      "doorXZ": [
+        -20,
+        -23.5
+      ],
+      "doorTargetXZ": [
+        -20,
+        -21
+      ]
+    },
+    {
+      "id": "bld:facility:bank",
+      "legacyId": "bank",
+      "roomKey": "taichinh",
+      "name": "Ngân hàng",
+      "department": "finance",
+      "grade": "D",
+      "position": [
+        -30,
+        4,
+        8.5
+      ],
+      "style": "bank",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "bank"
+      ],
+      "doorXZ": [
+        -30,
+        14
+      ],
+      "doorTargetXZ": [
+        -30,
+        16
+      ]
+    },
+    {
+      "id": "bld:facility:reserve",
+      "legacyId": "reserve",
+      "roomKey": "reserve",
+      "name": "Kho dự trữ / Tiết kiệm",
+      "department": "finance",
+      "grade": "B",
+      "position": [
+        -20,
+        4,
+        21.6
+      ],
+      "style": "vault",
+      "kind": "facility",
+      "front": "-Z",
+      "rotationY": 3.141592653589793,
+      "sourceKeys": [
+        "reserve"
+      ],
+      "doorXZ": [
+        -20,
+        17.5
+      ],
+      "doorTargetXZ": [
+        -20,
+        16
+      ]
+    },
+    {
+      "id": "bld:facility:ai",
+      "legacyId": "ai",
+      "roomKey": "aiteam",
+      "name": "AI Team",
+      "department": "internal",
+      "grade": "B",
+      "position": [
+        24,
+        5.2,
+        -26
+      ],
+      "style": "office",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "ai"
+      ],
+      "level": 4,
+      "doorXZ": [
+        24,
+        -21
+      ],
+      "doorTargetXZ": [
+        24,
+        -19.5
+      ]
+    },
+    {
+      "id": "bld:facility:hermes",
+      "legacyId": "hermes",
+      "roomKey": "hermes",
+      "name": "Hermes Robot Lab",
+      "department": "internal",
+      "grade": "B",
+      "position": [
+        36,
+        4.5,
+        -28
+      ],
+      "style": "research",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "hermes"
+      ],
+      "level": 3,
+      "doorXZ": [
+        36,
+        -24
+      ],
+      "doorTargetXZ": [
+        36,
+        -21.5
+      ]
+    },
+    {
+      "id": "bld:facility:supabase",
+      "legacyId": "supabase",
+      "roomKey": "supabase",
+      "name": "Database",
+      "department": "it",
+      "grade": "B",
+      "position": [
+        26,
+        3.8,
+        8.5
+      ],
+      "style": "database",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "supabase"
+      ],
+      "doorXZ": [
+        26,
+        12
+      ],
+      "doorTargetXZ": [
+        26,
+        15
+      ]
+    },
+    {
+      "id": "bld:facility:oracle",
+      "legacyId": "oracle",
+      "roomKey": "oracle",
+      "name": "Oracle Cloud",
+      "department": "it",
+      "grade": "D",
+      "position": [
+        40,
+        3.8,
+        8
+      ],
+      "style": "database",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "oracle"
+      ],
+      "doorXZ": [
+        40,
+        13.5
+      ],
+      "doorTargetXZ": [
+        40,
+        15
+      ]
+    },
+    {
+      "id": "bld:facility:google",
+      "legacyId": "google",
+      "roomKey": "google",
+      "name": "Google Cloud",
+      "department": "it",
+      "grade": "A",
+      "position": [
+        27,
+        3.8,
+        20
+      ],
+      "style": "cloud",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "google"
+      ],
+      "doorXZ": [
+        27,
+        17.5
+      ],
+      "doorTargetXZ": [
+        27,
+        15.5
+      ]
+    },
+    {
+      "id": "bld:facility:telegram",
+      "legacyId": "telegram",
+      "roomKey": "telegram",
+      "name": "Telegram Tiếp Sóng",
+      "department": "it",
+      "grade": "C",
+      "position": [
+        39,
+        3.8,
+        21.5
+      ],
+      "style": "gateway",
+      "kind": "facility",
+      "front": "+Z",
+      "sourceKeys": [
+        "telegram"
+      ],
+      "doorXZ": [
+        39,
+        17
+      ],
+      "doorTargetXZ": [
+        39,
+        15
+      ]
+    },
+    {
+      "id": "bld:project:proj_24",
+      "legacyId": "proj_24",
+      "projectId": "proj_24",
+      "clientLabel": "Internal",
+      "status": "Đang làm",
+      "name": "AN PHIM Website 2027",
+      "department": "internal",
+      "grade": "B",
+      "position": [
+        24,
+        5.2,
+        -14.5
+      ],
+      "style": "web",
+      "kind": "project",
+      "front": "+Z",
+      "level": 2,
+      "doorXZ": [
+        24,
+        -13.5
+      ],
+      "doorTargetXZ": [
+        24,
+        -9.5
+      ]
+    },
+    {
+      "id": "bld:project:proj_25",
+      "legacyId": "proj_25",
+      "projectId": "proj_25",
+      "clientLabel": "Internal",
+      "status": "Đang làm",
+      "name": "AN PHIM Trailer",
+      "department": "internal",
+      "grade": "A",
+      "position": [
+        36,
+        3.8,
+        -17
+      ],
+      "style": "studio",
+      "kind": "project",
+      "front": "+Z",
+      "level": 2,
+      "doorXZ": [
+        36,
+        -14
+      ],
+      "doorTargetXZ": [
+        36,
+        -12
+      ]
+    },
+    {
+      "id": "bld:project:proj_05",
+      "legacyId": "proj_05",
+      "projectId": "proj_05",
+      "clientLabel": "Internal",
+      "status": "Tạm dừng",
+      "name": "Phim lịch sử",
+      "department": "internal",
+      "grade": "A",
+      "position": [
+        46.0,
+        3.1,
+        -22.5
+      ],
+      "style": "history",
+      "kind": "project",
+      "front": "+Z",
+      "level": 1,
+      "doorXZ": [
+        44.5,
+        -22
+      ],
+      "doorTargetXZ": [
+        42,
+        -22
+      ]
+    }
+  ],
+  "schedule": {
+    "id": "bld:facility:schedule",
+    "legacyId": "schedule",
+    "roomKey": "schedule",
+    "name": "Lịch Làm Việc",
+    "positionXZ": [
+      17,
+      31.5
+    ],
+    "roadClass": 3,
+    "extraWalk": false,
+    "position": [
+      17,
+      3.8,
+      31.5
+    ],
+    "grade": "A"
+  },
+  "aliasMapping": [
+    {
+      "displayName": "Database",
+      "buildingId": "bld:facility:supabase",
+      "sourceKeys": [
+        "supabase"
+      ]
+    },
+    {
+      "displayName": "Oracle Cloud",
+      "buildingId": "bld:facility:oracle",
+      "sourceKeys": [
+        "oracle"
+      ]
+    },
+    {
+      "displayName": "Google Cloud",
+      "buildingId": "bld:facility:google",
+      "sourceKeys": [
+        "google"
+      ]
+    },
+    {
+      "displayName": "Telegram Bot",
+      "buildingId": "bld:facility:telegram",
+      "sourceKeys": [
+        "telegram"
+      ]
+    }
+  ],
+  "internalLevels": [
+    {
+      "level": 1,
+      "x": 53,
+      "y": 3.1
+    },
+    {
+      "level": 2,
+      "x": 43,
+      "y": 3.8
+    },
+    {
+      "level": 3,
+      "x": 33,
+      "y": 4.5
+    },
+    {
+      "level": 4,
+      "x": 20,
+      "y": 5.2
+    }
+  ],
+  "expansion": {
+    "reservedParcels": [
+      {
+        "id": "reserved:internal:01",
+        "center": [
+          25,
+          -46
+        ],
+        "size": [
+          7,
+          7
+        ],
+        "active": false
+      }
+    ],
+    "allocation": "append stable parcel binding; never reshuffle old building IDs; reserve is not a new project"
+  },
+  "departments": [
+    {
+      "id": "administration",
+      "name": "HÀNH CHÍNH",
+      "labelXZ": [
+        -35,
+        -13
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "TÀI CHÍNH",
+      "labelXZ": [
+        -32,
+        25
+      ]
+    },
+    {
+      "id": "internal",
+      "name": "INTERNAL PROJECTS",
+      "labelXZ": [
+        40,
+        -6
+      ]
+    },
+    {
+      "id": "it",
+      "name": "KHU IT",
+      "labelXZ": [
+        39,
+        25
+      ]
+    }
+  ],
+  "roadPlan": {
+    "ringCorners": [
+      [
+        42,
+        20,
+        0
+      ],
+      [
+        -36,
+        20,
+        90
+      ],
+      [
+        -36,
+        -40,
+        180
+      ],
+      [
+        42,
+        -40,
+        270
+      ]
+    ],
+    "ringCornerRadius": 16,
+    "branches": [],
+    "walks": [
+      [
+        "walk:ecosystem-loop",
+        [
+          [
+            -19,
+            14
+          ],
+          [
+            -19,
+            0
+          ],
+          [
+            -19,
+            -15
+          ],
+          [
+            -19,
+            -19.5
+          ],
+          [
+            -16,
+            -20
+          ],
+          [
+            0,
+            -20
+          ],
+          [
+            16,
+            -20
+          ],
+          [
+            19,
+            -18
+          ],
+          [
+            19,
+            -15
+          ],
+          [
+            19,
+            0
+          ],
+          [
+            19,
+            14
+          ]
+        ]
+      ],
+      [
+        "walk:commons-ring",
+        [[7, 5.5], [9.5, 8.3], [9.25, 11.8], [7, 14.5], [3.5, 14.1], [0, 14.15], [-3.5, 14.1], [-7, 14.5], [-9.25, 11.8], [-9.5, 8.3], [-7, 5.5]]
+      ],
+      [
+        "walk:dropoff-commons",
+        [
+          [
+            0,
+            17.5
+          ],
+          [
+            0,
+            16.5
+          ]
+        ]
+      ],
+      [
+        "walk:HQ-west",
+        [
+          [
+            -7,
+            5.5
+          ],
+          [
+            -13,
+            3
+          ],
+          [
+            -19,
+            0
+          ]
+        ]
+      ],
+      [
+        "walk:HQ-east",
+        [
+          [
+            7,
+            5.5
+          ],
+          [
+            13,
+            3
+          ],
+          [
+            19,
+            0
+          ]
+        ]
+      ],
+      [
+        "walk:commons-finance",
+        [
+          [
+            -7,
+            14.5
+          ],
+          [
+            -13,
+            14.5
+          ],
+          [
+            -19,
+            14
+          ]
+        ]
+      ],
+      [
+        "walk:commons-IT",
+        [
+          [
+            7,
+            14.5
+          ],
+          [
+            13,
+            14.5
+          ],
+          [
+            19,
+            14
+          ]
+        ]
+      ],
+      [
+        "walk:admin-court",
+        [
+          [
+            -19,
+            -19.5
+          ],
+          [
+            -19,
+            -15
+          ],
+          [
+            -23.5,
+            -15
+          ],
+          [
+            -23.5,
+            -18
+          ],
+          [
+            -20,
+            -21
+          ]
+        ]
+      ],
+      [
+        "walk:finance-court",
+        [
+          [
+            -19,
+            14
+          ],
+          [
+            -20,
+            16
+          ],
+          [
+            -25,
+            16
+          ],
+          [
+            -30,
+            16
+          ]
+        ]
+      ],
+      [
+        "walk:IT-court",
+        [
+          [
+            19,
+            14
+          ],
+          [
+            22,
+            15
+          ],
+          [
+            27,
+            15
+          ],
+          [
+            32.5,
+            15
+          ],
+          [
+            38,
+            15
+          ]
+        ]
+      ],
+      [
+        "walk:internal-court",
+        [
+          [
+            19,
+            0
+          ],
+          [
+            20,
+            -9.5
+          ],
+          [
+            24,
+            -9.5
+          ],
+          [
+            36,
+            -9.5
+          ],
+          [
+            42,
+            -9.5
+          ],
+          [
+            42,
+            -22
+          ],
+          [
+            36,
+            -21.5
+          ],
+          [
+            19,
+            -20.5
+          ],
+          [
+            16,
+            -20
+          ]
+        ]
+      ],
+      [
+        "walk:visitor-sidewalk",
+        [
+          [
+            9.5,
+            32
+          ],
+          [
+            9.5,
+            20
+          ],
+          [
+            7,
+            14.5
+          ]
+        ]
+      ]
+    ],
+    "arrival": {
+      "id": "road:HQ-arrival",
+      "class": 2,
+      "width": 4,
+      "access": "visitors to HQ dropoff only",
+      "points": [
+        [
+          -7,
+          32
+        ],
+        [
+          -7,
+          24.5
+        ],
+        [
+          0,
+          17.5
+        ],
+        [
+          7,
+          24.5
+        ],
+        [
+          7,
+          32
+        ]
+      ],
+      "gateXZ": [
+        [
+          -7,
+          32
+        ],
+        [
+          7,
+          32
+        ]
+      ],
+      "dropoffXZ": [
+        0,
+        17.5
+      ],
+      "turningIntent": "continuous horseshoe dropoff, terminates south of Central Commons",
+      "curve": "horseshoe-cubic",
+      "centerXZ": [
+        0,
+        24.5
+      ],
+      "turnRadius": 7
+    }
+  },
+  "landscapePlan": {
+    "gardenBeds": [
+      [
+        -13,
+        -9,
+        3,
+        4
+      ],
+      [
+        13,
+        -8,
+        3,
+        4
+      ],
+      [
+        -7,
+        -17,
+        4,
+        2
+      ],
+      [
+        7,
+        -17,
+        4,
+        2
+      ],
+      [
+        -34,
+        -34,
+        6,
+        3
+      ],
+      [
+        -45,
+        -9,
+        6,
+        6
+      ],
+      [
+        -34,
+        28,
+        6,
+        2
+      ],
+      [
+        32,
+        -43,
+        5,
+        3
+      ],
+      [
+        47,
+        -43,
+        5,
+        3
+      ],
+      [
+        43,
+        -6,
+        7,
+        5
+      ],
+      [
+        37,
+        28,
+        8,
+        2
+      ],
+      [
+        -12,
+        15,
+        2,
+        3
+      ],
+      [
+        0,
+        15,
+        2.2,
+        2.8
+      ]
+    ],
+    "campusPineGroves": [
+      [
+        -44,
+        -13
+      ],
+      [
+        -40,
+        27
+      ],
+      [
+        39,
+        -7
+      ],
+      [
+        48,
+        28
+      ],
+      [
+        -29,
+        -36
+      ],
+      [
+        26,
+        -44
+      ]
+    ],
+    "pendingBroadleaf": false
+  },
+  "walkablePlaza": {
+    "center": [
+      0,
+      9.5
+    ],
+    "radii": [
+      11,
+      6.5
+    ],
+    "type": "Central Commons - core pedestrian pedestrian heart connecting HQ and 4 courtyards"
+  },
+  "arrivalProfile": {
+    "startZ": 32,
+    "endZ": 17.5,
+    "startY": 4.2,
+    "endY": 5.2
+  },
+  "doorTargetZ": {
+    "administration": -19.5,
+    "finance": 19,
+    "internal": -20,
+    "it": 18.5,
+    "campus": 4
+  },
+  "physicalLayers": [
+    "perimeter",
+    "HQ public arrival",
+    "internal pedestrian ecosystem",
+    "department courts"
+  ],
+  "oldSpursRemoved": true,
+  "doorConnectors": [
+    {
+      "id": "door:bld:facility:hq",
+      "points": [
+        [
+          0,
+          1.2
+        ],
+        [
+          0,
+          2.5
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:documents",
+      "points": [
+        [
+          -28,
+          -18
+        ],
+        [
+          -25,
+          -18
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:drive",
+      "points": [
+        [
+          -20,
+          -26
+        ],
+        [
+          -20,
+          -24
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:bank",
+      "points": [
+        [
+          -30,
+          10
+        ],
+        [
+          -30,
+          14
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:reserve",
+      "points": [
+        [
+          -20,
+          21
+        ],
+        [
+          -20,
+          18
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:supabase",
+      "points": [
+        [
+          27,
+          10
+        ],
+        [
+          27,
+          13.2
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:oracle",
+      "points": [
+        [
+          38,
+          10
+        ],
+        [
+          38,
+          13.2
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:google",
+      "points": [
+        [
+          27,
+          20
+        ],
+        [
+          27,
+          18
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:telegram",
+      "points": [
+        [
+          38,
+          20
+        ],
+        [
+          38,
+          18
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:ai",
+      "points": [
+        [
+          24,
+          -26
+        ],
+        [
+          24,
+          -22
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:facility:hermes",
+      "points": [
+        [
+          36,
+          -28
+        ],
+        [
+          36,
+          -25
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:project:proj_24",
+      "points": [
+        [
+          24,
+          -16
+        ],
+        [
+          24,
+          -14
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:project:proj_25",
+      "points": [
+        [
+          36,
+          -17
+        ],
+        [
+          36,
+          -15
+        ]
+      ]
+    },
+    {
+      "id": "door:bld:project:proj_05",
+      "points": [
+        [
+          47,
+          -22
+        ],
+        [
+          45,
+          -22
+        ]
+      ]
+    }
+  ]
+}

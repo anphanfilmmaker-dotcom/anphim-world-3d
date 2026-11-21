@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "2.4.0-ecosystem",
+  "phaseA": "complete before scene implementation",
+  "physical": "physical-topology.json",
+  "operations": "operational-graph.json",
+  "system": "system-graph.json",
+  "preservedV23": "../world_v23_preserved/index.html",
+  "rationale": [
+    "Public vehicle access stops at HQ horseshoe; no direct visitor spurs to departments.",
+    "Small walkable loop with two shared cross-campus sides, not a giant circular symbol.",
+    "Department courts have multiple routes to peers without entering HQ.",
+    "Relationships remain overlay data, never converted one-to-one into roads."
+  ],
+  "crossings": [
+    {
+      "id": "cross:arrival-west",
+      "xz": [
+        -7,
+        24
+      ],
+      "classes": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": "cross:arrival-east",
+      "xz": [
+        7,
+        24
+      ],
+      "classes": [
+        2,
+        1
+      ]
+    }
+  ],
+  "reservedExpansion": [
+    {
+      "department": "administration",
+      "center": [
+        -43,
+        -29
+      ]
+    },
+    {
+      "department": "finance",
+      "center": [
+        -44,
+        6
+      ]
+    },
+    {
+      "department": "internal",
+      "center": [
+        33,
+        -43
+      ]
+    },
+    {
+      "department": "it",
+      "center": [
+        48,
+        4
+      ]
+    }
+  ]
+}

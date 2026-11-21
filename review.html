@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AN PHIM World V2.5 · Art Review C Gallery & Audit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1117;
+      --card-bg: rgba(18, 26, 40, 0.88);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --teal: #14b8a6;
+      --teal-glow: rgba(20, 184, 166, 0.25);
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --sky: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: radial-gradient(circle at 50% 0%, #152238 0%, var(--bg) 75%);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Header */
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0d9488, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 19px;
+      color: white;
+      box-shadow: 0 4px 14px var(--teal-glow);
+    }
+
+    .brand-title h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-title p {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badges {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-teal {
+      background: rgba(20, 184, 166, 0.15);
+      color: #2dd4bf;
+      border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+
+    .badge-emerald {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Actions Bar */
+    .nav-bar {
+      display: flex;
+      gap: 12px;
+      margin: 28px 0;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      color: white;
+      box-shadow: 0 4px 14px var(--teal-glow);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0f766e, #0d9488);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Card */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 32px;
+      backdrop-filter: blur(12px);
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-subtitle {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Gallery Grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(640px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .gallery-card {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(20, 184, 166, 0.4);
+    }
+
+    .gallery-img-wrap {
+      width: 100%;
+      height: 380px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gallery-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-card:hover .gallery-img-wrap img {
+      transform: scale(1.02);
+    }
+
+    .gallery-meta {
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-grow: 1;
+    }
+
+    .gallery-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gallery-desc {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .gallery-tag {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--teal);
+    }
+
+    /* Approval Banner */
+    .approval-banner {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.06));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 40px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .approval-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .approval-text h4 {
+      color: #fbbf24;
+      font-size: 16.5px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .approval-text p {
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">C</div>
+        <div class="brand-title">
+          <h1>AN PHIM World — Art Review C Gallery</h1>
+          <p>SYMMETRY RESTORED · LIVE SCHEDULE KIOSK · TELEGRAM BROADCAST TOWER</p>
+        </div>
+      </div>
+      <div class="badges">
+        <span class="badge badge-amber">⚡ ART APPROVAL: PENDING USER REVIEW</span>
+        <span class="badge badge-emerald">🛡️ STAIRS &amp; CONTACT: 25/25 PASS</span>
+        <span class="badge badge-teal">📡 TELEGRAM: BROADCAST TOWER</span>
+        <span class="badge badge-emerald">📅 SCHEDULE: DATABASE CONNECTED</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Actions Bar -->
+    <div class="nav-bar">
+      <a href="index.html" class="btn btn-primary" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Mở Trực tiếp 3D Interactive Campus (Art Review C)
+      </a>
+      <a href="TERRAIN_INTEGRATION.md" class="btn btn-secondary" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Đọc TERRAIN_INTEGRATION.md
+      </a>
+      <a href="GROUND_PLANE_CHANGES.md" class="btn btn-secondary" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Đọc GROUND_PLANE_CHANGES.md
+      </a>
+      <a href="VALIDATION.json" class="btn btn-secondary" target="_blank">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+        Xem Dữ liệu VALIDATION.json
+      </a>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>1. Hoàn Thiện Các Yêu Cầu Chỉ Đạo Của Sếp</span>
+      </div>
+      <div class="card-subtitle">
+        Cân xứng hai bên tiền sảnh HQ, Kiosk Lịch làm việc lớn kết nối Database, nâng Website ngang bằng AI Team và đổi Telegram thành Tháp tiếp sóng viễn thông.
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-number" style="color: #38bdf8;">100% Cân Xứng</div>
+          <div class="stat-label">Hai Bên Sườn Tiền Sảnh HQ</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" style="color: #10b981;">Database Live</div>
+          <div class="stat-label">Kiosk Lịch Làm Việc Sếp</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" style="color: #2dd4bf;">Y = 5.2m</div>
+          <div class="stat-label">Website Ngang Bằng AI Team</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" style="color: #fbbf24;">4 Loa Nén + 2 Chảo</div>
+          <div class="stat-label">Trạm Tiếp Sóng Telegram</div>
+        </div>
+      </div>
+
+      <p style="font-size: 14px; color: #cbd5e1; line-height: 1.7;">
+        <strong>Chi tiết các cải tiến đã thực thi:</strong><br>
+        1. <strong>Cân xứng 2 bên tiền sảnh HQ:</strong> Điều chỉnh dải san nền và sườn đồi phía Tây đối xứng hoàn hảo với phía Đông qua trục $X = 0$, triệt tiêu hoàn toàn vết lõm và nếp gấp sẫm màu bên trái.<br>
+        2. <strong>Kiosk Lịch làm việc LED bề thế:</strong> Đặt trang trọng trên mặt sàn sảnh chính Forecourt ($X = 5.2, Z = 8.5$), nằm bên phải cầu thang đón tiếp. Tích hợp màn hình LED kỹ thuật số và kết nối trực tiếp với bảng `schedule` PostgreSQL.<br>
+        3. <strong>Tòa nhà AN PHIM Website 2027:</strong> Nâng từ cao độ $3.8\text{m}$ lên $5.2\text{m}$ đứng cùng một thềm terrace thượng với AI Team, loại bỏ hoàn toàn cảm giác bị lọt thỏm xuống dưới.<br>
+        4. <strong>Trạm tiếp sóng &amp; Loa phát thanh Telegram:</strong> Thiết kế tháp thép giàn không gian cao $13.5\text{m}$, 4 loa phóng thanh nén công cộng 4 hướng, 2 chảo vi ba tiếp sóng và đèn beacon chớp đỏ trên đỉnh tháp.
+      </p>
+    </div>
+
+    <!-- 12 Render Views Gallery Card -->
+    <div class="card">
+      <div class="card-title">
+        <span>2. Bộ Sưu tập 12 Góc Nhìn Three.js Thực tế Nghiệm Thu (2560 &times; 1440)</span>
+      </div>
+      <div class="card-subtitle">
+        Kết xuất sắc nét sau khi cân xứng mặt bằng, nâng Website, dựng tháp Telegram và bố trí Kiosk Lịch làm việc.
+      </div>
+
+      <div class="gallery-grid">
+
+        <!-- VIEW 1 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_CAMPUS_TOPVIEW.png" alt="Campus Topview">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>01. Art C Campus Topview</span>
+              <span class="gallery-tag">ORTHO TOPVIEW</span>
+            </div>
+            <div class="gallery-desc">
+              Toàn cảnh mặt bằng từ trên cao: Hai bên sườn tiền sảnh HQ cân đối hoàn hảo, Kiosk Lịch làm việc nổi bật bên phải cầu thang và Tháp Telegram vươn cao.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_CAMPUS_OVERVIEW.png" alt="Campus Overview">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>02. Art C Campus Overview</span>
+              <span class="gallery-tag">ISOMETRIC DIORAMA</span>
+            </div>
+            <div class="gallery-desc">
+              Góc nhìn phối cảnh: Mặt đất phẳng đều, các sườn đồi hai bên tiền sảnh HQ thoải tự nhiên không còn vết lõm gấp nếp.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 3 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_HQ_FORECOURT.png" alt="HQ Forecourt & Schedule Kiosk">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>03. HQ Forecourt &amp; Kiosk Lịch Làm Việc</span>
+              <span class="gallery-tag">TIỀN SẢNH ĐÓN TIẾP</span>
+            </div>
+            <div class="gallery-desc">
+              Kiosk Lịch làm việc bề thế đặt ngay trước sảnh chính bên phải cầu thang, hiển thị LED kết nối Database PostgreSQL.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 4 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_HQ_ARRIVAL.png" alt="HQ Arrival High Angle">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>04. HQ Arrival — Cân Xứng 2 Bên</span>
+              <span class="gallery-tag">TRỤC ĐỐI XỨNG</span>
+            </div>
+            <div class="gallery-desc">
+              Tuyến đường xe tiếp cận HQ nhìn từ trên cao: Xác nhận hai bên sườn trái và phải hoàn toàn cân bằng, không còn bất kỳ hố sụt nào.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 5 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_ARRIVAL_LOW.png" alt="HQ Arrival Low Angle">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>05. HQ Arrival — Low Angle</span>
+              <span class="gallery-tag">MẶT CẮT KỸ THUẬT</span>
+            </div>
+            <div class="gallery-desc">
+              Góc máy tầm mắt: Đường xe hạ cốt âm bám sát địa hình, vỉa hè mỏng 0.08m uốn cong R=7m đón trả khách sang trọng.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 6 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_INTERNAL_TERRACES.png" alt="Internal Terraces & Website">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>06. Internal Terraces — Website Ngang AI Team</span>
+              <span class="gallery-tag">CÙNG CAO ĐỘ Y = 5.2M</span>
+            </div>
+            <div class="gallery-desc">
+              Khối AN PHIM Website 2027 đứng vững chãi trên cùng thềm terrace thượng với AI Team, không còn bị lọt thấp xuống.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 7 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_IT_COURTYARD.png" alt="IT Courtyard & Telegram Tower">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>07. IT Courtyard — Tháp Tiếp Sóng Telegram</span>
+              <span class="gallery-tag">4 LOA NÉN + 2 CHẢO VI BA</span>
+            </div>
+            <div class="gallery-desc">
+              Trạm tiếp sóng Telegram vươn cao với 4 loa phát thanh nén công cộng hướng 4 phía, chảo vi ba tiếp sóng và đèn đỏ đỉnh tháp.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 8 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_CENTRAL_COMMONS.png" alt="Central Commons">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>08. Central Commons Mới (Phía Sau HQ)</span>
+              <span class="gallery-tag">CÔNG VIÊN NỘI BỘ</span>
+            </div>
+            <div class="gallery-desc">
+              Không gian sinh hoạt nội bộ ấm cúng phía sau HQ, ghế nghỉ ven bồn hoa phục vụ giao lưu thư giãn.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 9 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_ADMIN_COURTYARD.png" alt="Administration Courtyard">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>09. Administration Courtyard</span>
+              <span class="gallery-tag">KHỐI HÀNH CHÍNH &amp; HR</span>
+            </div>
+            <div class="gallery-desc">
+              Sân lát nội bộ Ban Hành chính tại (-23, -18), kết nối đường dạo bộ liên khu thông suốt.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 10 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_FINANCE_COURTYARD.png" alt="Finance Courtyard">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>10. Finance Courtyard</span>
+              <span class="gallery-tag">KHỐI TÀI CHÍNH</span>
+            </div>
+            <div class="gallery-desc">
+              Sân lát nội bộ Ban Tài chính tại (-25, 16), thu gọn khoảng lấn để sườn tiền sảnh HQ giữ nguyên vẻ đẹp cân đối.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 11 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_DEBUG_GROUND.png" alt="Ground Plane Debug">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>11. Ground Plane Debug (Vật liệu Nền)</span>
+              <span class="gallery-tag">506K TRIANGLES TỐI ƯU</span>
+            </div>
+            <div class="gallery-desc">
+              Kiểm tra 5 sub-materials trên cùng 1 mesh: Lưới đã được tối ưu hóa siêu nhẹ mà vẫn giữ độ nét hoàn hảo.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 12 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_DEBUG_ELEVATION.png" alt="Elevation Debug">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>12. Elevation &amp; Slope Debug</span>
+              <span class="gallery-tag">CÂN BẰNG ĐỐI XỨNG</span>
+            </div>
+            <div class="gallery-desc">
+              Đường đồng mức cao độ: Hai bên sườn tiền sảnh HQ đối xứng đồng đều, độ dốc chuyển tiếp êm dịu.
+            </div>
+          </div>
+        </div>
+        <!-- VIEW 13 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_OPERATIONS.png" alt="Operations Network Architecture">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>13. Operations Network Architecture</span>
+              <span class="gallery-tag">4 KẾT NỐI LỊCH LÀM VIỆC</span>
+            </div>
+            <div class="gallery-desc">
+              Kiến trúc vận hành chuẩn AN PHIM: Kiosk Lịch làm việc kết nối 4 chiều (HQ, AI Team, Database, Telegram), AI Team đối soát Bank thu chi, đường năng lượng bay lơ lửng +0.42m.
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 14 -->
+        <div class="gallery-card">
+          <div class="gallery-img-wrap">
+            <img src="AFTER_SYSTEM.png" alt="System Infrastructure Dependencies">
+          </div>
+          <div class="gallery-meta">
+            <div class="gallery-title">
+              <span>14. System Infrastructure Dependencies</span>
+              <span class="gallery-tag">HẠ TẦNG KỸ THUẬT</span>
+            </div>
+            <div class="gallery-desc">
+              Đồ thị phụ thuộc hệ thống: Oracle Cloud VPS 24/7 host Telegram Bot, Supabase Cloud DB lưu trữ bảng schedule và các trigger webhook.
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- User Review Banner -->
+    <div class="approval-banner">
+      <div class="approval-icon">🛡️</div>
+      <div class="approval-text">
+        <h4>BƯỚC 1 HOÀN TẤT: CẢNH QUAN SA BÀN, HÀNG RÀO XÉN TỈA & VẠCH KẺ ĐƯỜNG ĐÃ ÁP DỤNG</h4>
+        <p>
+          Đã triển khai thành công theo ảnh concept của Sếp: Hàng rào cây xén tỉa (manicured hedges) bo viền toàn campus, đảo cây trung tâm U-turn có cây đại thụ và đá cảnh, bồn cây & hồ nước đối xứng tiền sảnh HQ, cây thông lá kim cao vút, cây hoa anh đào nở rộ, vạch sơn kẻ đường sang đường và pin năng lượng mặt trời trên mái HQ.
+          Kính mời Sếp mở trang <a href="index.html" target="_blank" style="color:#fbbf24; font-weight:bold; text-decoration:underline;">Interactive 3D Campus</a> để chiêm ngưỡng trực tiếp ạ!
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

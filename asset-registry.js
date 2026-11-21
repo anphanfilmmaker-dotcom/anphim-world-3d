@@ -22,7 +22,7 @@ export function createAssetRegistry(adapter,report){
   const socket=new T.Object3D();socket.name='entry-socket';socket.position.set(0,0,z+.13);g.add(socket);return g;
  }
  function instance(root,points,parent,terrain){root.updateMatrixWorld(true);const b=new T.Box3().setFromObject(root),sz=b.getSize(new T.Vector3()),c=b.getCenter(new T.Vector3());
-  for(const mesh of root.children){const geo=mesh.geometry.clone();geo.translate(-c.x,-b.min.y,-c.z);const m=new T.InstancedMesh(geo,mesh.material,points.length),o=new T.Object3D();for(let i=0;i<points.length;i++){const p=points[i];o.position.set(p.x,terrain.height(p.x,p.z)+(p.yOffset||0),p.z);o.rotation.y=p.yaw||0;o.scale.setScalar(p.h/sz.y);o.updateMatrix();m.setMatrixAt(i,o.matrix);}m.castShadow=m.receiveShadow=true;m.computeBoundingSphere();parent.add(m);}
+  for(const mesh of root.children){const geo=mesh.geometry.clone();geo.translate(-c.x,-b.min.y,-c.z);const m=new T.InstancedMesh(geo,mesh.material,points.length),o=new T.Object3D();for(let i=0;i<points.length;i++){const p=points[i];o.position.set(p.x,terrain.height(p.x,p.z)+(p.yOffset||0),p.z);o.rotation.y=p.yaw||0;o.scale.setScalar(p.h/sz.y);o.updateMatrix();m.setMatrixAt(i,o.matrix);}m.castShadow = (sz.y >= 1.2); m.receiveShadow = true;m.computeBoundingSphere();parent.add(m);}
  }
  return {load,building,instance};
 }

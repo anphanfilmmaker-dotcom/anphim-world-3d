@@ -1,0 +1,24 @@
+{
+  "buildingType": "oracle",
+  "version": 3,
+  "savedAt": "15:26:00 18/11/2026",
+  "colors": {
+    "glassColor": "#2D8781",
+    "accentColor": "#ED8038"
+  },
+  "toggles": {
+    "ribbonWindows": true,
+    "oracleSign": true,
+    "canopy": true,
+    "trees": true,
+    "orangeRoof": true,
+    "penthouse": true
+  },
+  "scales": {
+    "towerScale": 1,
+    "podiumScale": 1
+  },
+  "modifiedParts": [],
+  "deletedPartIds": [],
+  "deletedParts": []
+}

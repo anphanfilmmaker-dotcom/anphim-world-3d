@@ -1,0 +1,23 @@
+{
+  "buildingType": "telegram",
+  "version": 3,
+  "savedAt": "2026-11-16T12:13:45.449Z",
+  "colors": {
+    "glassColor": "#2D8781",
+    "accentColor": "#ED8038"
+  },
+  "toggles": {
+    "dish": true,
+    "antennaMast": true,
+    "controlBuilding": true,
+    "portal": true,
+    "roofEquipment": true
+  },
+  "scales": {
+    "towerScale": 1,
+    "podiumScale": 1
+  },
+  "modifiedParts": [],
+  "deletedPartIds": [],
+  "deletedParts": []
+}

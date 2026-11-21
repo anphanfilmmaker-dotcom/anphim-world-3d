@@ -1,0 +1,115 @@
+﻿
+
+  // -------------------------------------------------------------
+  // HELPER Dá»°NG Bá»¤I CÃ‚Y LOW-POLY CRYSTAL / FACETED BUSH (CHUáº¨N THEO áº¢NH MáºªU Sáº¾P Gá»¬I)
+  // -------------------------------------------------------------
+  function createFacetedBush(options = {}) {
+    const bush = new T.Group();
+    bush.name = 'faceted-crystal-bush';
+
+    // TÃ´ng mÃ u xanh gradient low-poly: xanh lá»¥c báº£o tÆ°Æ¡i, xanh ngá»c sÃ¡ng vÃ  xanh rá»«ng sÃ¢u
+    const bushGreenMat = new T.MeshStandardMaterial({
+      color: 0x2FA84F,
+      roughness: 0.62,
+      metalness: 0.05,
+      flatShading: true
+    });
+
+    const bushBrightMat = new T.MeshStandardMaterial({
+      color: 0x4CD97B,
+      roughness: 0.55,
+      metalness: 0.05,
+      flatShading: true
+    });
+
+    const bushDeepMat = new T.MeshStandardMaterial({
+      color: 0x1A5C30,
+      roughness: 0.70,
+      metalness: 0.05,
+      flatShading: true
+    });
+
+    const trunkMat = new T.MeshStandardMaterial({
+      color: 0x4A3728,
+      roughness: 0.85,
+      flatShading: true
+    });
+
+    const potMat = new T.MeshStandardMaterial({
+      color: 0xDDD0BA, // MÃ u cháº­u Ä‘Ã¡ sa tháº¡ch Ä‘á»“ng bá»™ vá»›i sáº£nh Ä‘Ã³n
+      roughness: 0.75,
+      flatShading: true
+    });
+
+    const s = options.scale || 1.0;
+    const rot = options.rotY || 0;
+
+    // 1. Cháº­u cÃ¢y Ä‘Ã¡ hÃ¬nh bÃ¡t giÃ¡c thanh lá»‹ch (Octagonal Planter Pot)
+    const potGeo = new T.CylinderGeometry(0.30 * s, 0.24 * s, 0.22 * s, 8);
+    const potMesh = new T.Mesh(potGeo, potMat);
+    potMesh.position.y = 0.11 * s;
+    potMesh.castShadow = true;
+    potMesh.receiveShadow = true;
+    bush.add(potMesh);
+
+    // Gá»‘c cÃ¢y gá»— nhá»
+    const trunkGeo = new T.CylinderGeometry(0.06 * s, 0.08 * s, 0.35 * s, 6);
+    const trunkMesh = new T.Mesh(trunkGeo, trunkMat);
+    trunkMesh.position.y = 0.26 * s;
+    trunkMesh.castShadow = true;
+    bush.add(trunkMesh);
+
+    // 2. Cá»¥m tÃ¡n cÃ¢y Low-poly Ä‘a táº§ng gÃ³c cáº¡nh (Faceted Low-Poly Crystal Foliage)
+    // Táº§ng Ä‘áº¿ tÃ¡n cÃ¢y
+    const baseGeo = new T.IcosahedronGeometry(0.36 * s, 0);
+    const baseMesh = new T.Mesh(baseGeo, bushDeepMat);
+    baseMesh.position.y = 0.52 * s;
+    baseMesh.scale.set(1.05, 0.90, 1.05);
+    baseMesh.rotation.set(0.2, rot + 0.3, -0.1);
+    baseMesh.castShadow = true;
+    baseMesh.receiveShadow = true;
+    bush.add(baseMesh);
+
+    // Khá»‘i tÃ¡n trung tÃ¢m lá»›n nháº¥t
+    const midGeo = new T.IcosahedronGeometry(0.42 * s, 0);
+    const midMesh = new T.Mesh(midGeo, bushGreenMat);
+    midMesh.position.y = 0.80 * s;
+    midMesh.scale.set(0.95, 1.25, 0.95);
+    midMesh.rotation.set(-0.15, rot + 1.2, 0.2);
+    midMesh.castShadow = true;
+    midMesh.receiveShadow = true;
+    bush.add(midMesh);
+
+    // NhÃ¡nh phá»¥ nhÃ´ ra bÃªn hÃ´ng trÃ¡i (báº¥t Ä‘á»‘i xá»©ng tá»± nhiÃªn)
+    const sideLGeo = new T.IcosahedronGeometry(0.24 * s, 0);
+    const sideLMesh = new T.Mesh(sideLGeo, bushBrightMat);
+    sideLMesh.position.set(-0.18 * s, 0.70 * s, 0.12 * s);
+    sideLMesh.scale.set(0.85, 1.10, 0.85);
+    sideLMesh.rotation.set(0.4, rot + 2.1, 0.3);
+    sideLMesh.castShadow = true;
+    bush.add(sideLMesh);
+
+    // NhÃ¡nh phá»¥ nhÃ´ ra bÃªn hÃ´ng pháº£i
+    const sideRGeo = new T.IcosahedronGeometry(0.22 * s, 0);
+    const sideRMesh = new T.Mesh(sideRGeo, bushDeepMat);
+    sideRMesh.position.set(0.18 * s, 0.66 * s, -0.10 * s);
+    sideRMesh.scale.set(0.90, 1.05, 0.90);
+    sideRMesh.rotation.set(-0.3, rot + 3.4, -0.2);
+    sideRMesh.castShadow = true;
+    bush.add(sideRMesh);
+
+    // Äá»‰nh chÃ³p nhá»n tÃ¡n cÃ¢y vÆ°Æ¡n cao nhÆ° áº£nh máº«u
+    const topGeo = new T.IcosahedronGeometry(0.28 * s, 0);
+    const topMesh = new T.Mesh(topGeo, bushBrightMat);
+    topMesh.position.y = 1.15 * s;
+    topMesh.scale.set(0.80, 1.35, 0.80);
+    topMesh.rotation.set(0.1, rot + 0.7, 0.15);
+    topMesh.castShadow = true;
+    topMesh.receiveShadow = true;
+    bush.add(topMesh);
+
+    return bush;
+  }
+
+  // -------------------------------------------------------------
+  // HELPER Dá»°NG Báº¢NG HIá»†U 3D Ná»”I CHá»® "BANK" (Extruded 3D Titanium Gray Letters on Emerald Fascia)

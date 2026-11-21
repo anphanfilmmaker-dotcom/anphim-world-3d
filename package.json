@@ -1,6 +1,6 @@
 {
   "name": "anphim-world-3d-campus",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Interactive 3D Creative Campus Diorama built with Three.js & WebGL",
   "type": "module",
   "scripts": {

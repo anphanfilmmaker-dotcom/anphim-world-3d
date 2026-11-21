@@ -1,3 +1,805 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AN PHIM V2.4 · Complete Campus Proof</title><style>
-*{box-sizing:border-box}body{margin:0;background:#cfe5ed;color:#254d3a;font:13px/1.5 system-ui}#scene{position:fixed;inset:0}canvas{display:block}.panel{background:#f9f4e9ed;backdrop-filter:blur(10px);border:1px solid #254d3a22;border-radius:16px;box-shadow:0 8px 30px #254d3a10}header{position:fixed;left:20px;top:20px;padding:18px 22px;max-width:400px}small{letter-spacing:.18em;font-size:10px}h1{font-size:22px;margin:8px 0}p{margin:5px 0}aside{position:fixed;right:20px;top:20px;width:245px;padding:17px}h2{font-size:14px;margin:0 0 10px}label{display:block;margin:6px 0}input{accent-color:#254d3a}button{border:0;background:#254d3a0c;color:#254d3a;border-radius:8px;padding:8px 10px;cursor:pointer;font:inherit}button:hover,button[aria-pressed=true]{background:#254d3a;color:#f2e6ce}nav{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:7px;white-space:nowrap}#building-nav{display:flex;flex-wrap:wrap;gap:3px;margin-top:10px}#building-nav button{font-size:10px;padding:5px}details{border-top:1px solid #254d3a22;margin-top:12px;padding-top:9px}summary{cursor:pointer}#selection{position:fixed;bottom:90px;left:20px;width:350px;padding:20px}#selected-copy{white-space:pre-line;font-size:12px}#close{float:right}.tag{font-size:10px;background:#ed803820;border-radius:6px;padding:3px 7px;display:inline-block}.footer{position:fixed;bottom:3px;left:20px;font-size:10px}a{color:#254d3a}.note{font-size:11px;margin-top:12px}#proof-report{display:none}@media(max-width:850px){header{max-width:270px;padding:12px}aside{width:190px;font-size:11px}nav{max-width:96vw;overflow:auto}nav button{font-size:11px;padding:8px}h1{font-size:18px}}
-</style><script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head><body><main id="scene" aria-label="Complete Campus 3D"></main><header class="panel"><small>AN PHIM WORLD V2.4 · PHASE 02</small><h1>Creative Operations Campus</h1><p>Stylized 3D City Builder + Cozy Diorama</p><p role="status" id="status">Đang dựng Campus…</p><span class="tag">Visual review · chưa nghiệm thu mỹ thuật</span></header><aside class="panel"><h2>Central Campus</h2><p>HQ · Hành chính · Tài chính · Internal · IT</p><details open><summary>Cảnh quan ba tầng</summary><label><input type="checkbox" data-layer="groundcover" checked>Groundcover</label><label><input type="checkbox" data-layer="shrubs" checked>Shrubs</label><label><input type="checkbox" data-layer="canopy" checked>Canopy</label></details><details><summary>Kiểm tra quy hoạch</summary><label><input type="checkbox" data-layer="parcels">Parcel</label><label><input type="checkbox" data-layer="footprints">Footprint</label><label><input type="checkbox" data-layer="labels" checked>Labels</label><label><input type="checkbox" data-layer="biomes">Biome</label></details><details><summary>Chọn công trình</summary><div id="building-nav"></div></details><p class="note">Kéo xoay Free Orbit · bấm công trình để xem ID. HEX brand tạm. Không kết nối database production.</p><p class="note"><a href="references/hq-4.png" target="_blank">HQ reference đã khóa</a> · <a href="https://github.com" target="_blank">Documentation</a></p></aside><nav class="panel" aria-label="Camera"><button data-view="overview">Campus Overview</button><button data-view="hero">Hero HQ</button><button data-view="top">Topview</button><button data-view="front">Front HQ</button><button data-view="side">Side HQ</button><button data-view="back" aria-pressed="false">Back HQ</button><button id="photo">Xuất PNG</button></nav><section id="selection" class="panel" hidden><button id="close" aria-label="Đóng chi tiết">×</button><h2 id="selected-title"></h2><p id="selected-copy"></p></section><p class="footer">Proof riêng · V1 & V2.1 giữ nguyên · không phải full AN PHIM World</p><pre id="proof-report" hidden></pre><script type="module" src="main.js?rev=42"></script></body></html>
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AN PHIM V2.5 · Connected Campus Cockpit</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;color:#254d3a;background:#cfe5ed;font:13px/1.45 system-ui}
+#scene{position:fixed;inset:0}
+canvas{display:block}
+.panel{background:#f9f4e9ed;border:1px solid #254d3a20;border-radius:14px;box-shadow:0 8px 25px #254d3a12}
+header{position:fixed;left:18px;top:18px;padding:16px 20px;max-width:350px}
+h1{font-size:21px;margin:6px 0}
+h2{font-size:14px;margin:0 0 8px}
+p{margin:5px 0}
+small{letter-spacing:.12em;font-size:10px}
+button,select{font:inherit;color:#254d3a;border:0;background:#254d3a0b;border-radius:7px;padding:7px 9px;cursor:pointer}
+button[aria-pressed=true],button:hover{background:#254d3a;color:#fff6df}
+.modes{display:flex;gap:4px;margin-top:10px}
+.badge{display:inline-block;background:#ed80381b;padding:3px 6px;font-size:10px;border-radius:5px}
+aside{position:fixed;right:18px;top:18px;padding:16px;width:255px;max-height:calc(100vh - 110px);overflow:auto}
+details{border-top:1px solid #254d3a20;margin-top:10px;padding-top:8px}
+summary{cursor:pointer}
+label{display:block;margin:5px 0}
+input{accent-color:#254d3a}
+nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:45;padding:6px 14px;display:flex;gap:6px;max-width:97vw;overflow:auto;white-space:nowrap;background:rgba(249, 244, 233, 0.94);border:1px solid #254d3a25;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,0.12);backdrop-filter:blur(10px)}
+#selection{display:none !important}
+#selected-copy{white-space:pre-line;font-size:11px}
+#close{float:right}
+#building-nav{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+#building-nav button{font-size:10px;padding:4px}
+#mode-status{font-size:11px;max-width:300px}
+#network-controls select{width:100%;margin:4px 0}
+#relation-list{padding-left:16px;font-size:11px}
+#relation-list li{margin:7px 0}
+#network-legend{font-size:11px;background:#ed803812;padding:8px;border-radius:7px}
+.footer{position:fixed;bottom:2px;left:18px;font-size:9px}
+#proof-report{display:none}
+a{color:inherit}
+@media(max-width:800px){
+  header{width:240px;font-size:11px;padding:12px}
+  h1{font-size:17px}
+  aside{width:200px;font-size:11px}
+  nav button{font-size:10px;padding:6px}
+  #selection{width:250px}
+}
+
+.deck-map-controls {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  color: #f1f5f9;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  user-select: none;
+}
+.deck-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.deck-header {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+.deck-pills {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.deck-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: #e2e8f0;
+  font-weight: 500;
+  font-size: 11px;
+  margin: 0 !important;
+  transition: color 0.15s ease;
+}
+.deck-label:hover {
+  color: #38bdf8;
+}
+.deck-label input[type="checkbox"] {
+  accent-color: #0ea5e9;
+  cursor: pointer;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+}
+.deck-separator {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+<script src="./vendor/turf.min.js"></script>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+
+<main id="scene" aria-label="Connected Campus 3D"></main>
+
+<!-- FLOATING TOP BAR: TỐI GIẢN, TRONG SUỐT, SANG TRỌNG CHUẨN APPLE / STRATEGY HUD -->
+<!-- FLOATING TOP BAR: FLIP7 RETRO-PLAYFUL TACTILE DESIGN SYSTEM -->
+<nav id="clean-top-nav" style="position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:8px;background:rgba(255, 255, 255, 0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid rgba(43, 168, 162, 0.3);border-radius:999px;padding:6px 16px;box-shadow:0 10px 30px rgba(43, 168, 162, 0.16), 0 2px 8px rgba(0,0,0,0.06);color:#0f172a;font-size:11px;user-select:none;">
+  <div style="display:flex;align-items:center;gap:6px;font-weight:900;color:#1E8C86;padding-right:10px;border-right:1.5px solid rgba(43, 168, 162, 0.2);">
+    <span style="font-size:14px;">🏢</span> <span style="letter-spacing:0.4px;">AN PHIM CAMPUS</span>
+  </div>
+
+  <!-- Các góc camera nhanh (Flip7 Teal Pill Buttons) -->
+  <div style="display:flex;align-items:center;gap:5px;">
+    <button data-quick-view="overview" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Toàn cảnh</button>
+    <button data-quick-view="top" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Topview</button>
+    <button data-quick-view="arrival" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Sảnh HQ</button>
+    <button data-quick-view="it" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Khu IT</button>
+    <button data-quick-view="finance" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Tài chính</button>
+    <button data-quick-view="internal" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Nội bộ</button>
+    <button data-quick-view="commons" class="hud-nav-btn" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;transition:all 0.15s ease;">Công viên</button>
+    <button data-quick-view="vistax" class="hud-nav-btn" style="background:linear-gradient(135deg, #FFD23F 0%, #E6B800 100%);color:#1e293b;border:1px solid #FFE47A;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:900;cursor:pointer;box-shadow:0 3px 10px rgba(255, 210, 63, 0.4);">⭐ Quận VistaX</button>
+  </div>
+
+  <span style="width:1.5px;height:18px;background:rgba(43, 168, 162, 0.25);margin:0 4px;"></span>
+
+  <!-- Nút Mở Xưởng Tòa Nhà 3D (Building Studio) -->
+  <a href="./building-studio.html" title="Mở Xưởng Tinh Chỉnh Kiến Trúc Tòa Nhà (Building Studio & Tuner)" style="background:linear-gradient(135deg, #f97316 0%, #ea580c 100%);color:#ffffff;border:1px solid #fb923c;border-radius:999px;padding:5px 13px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;text-decoration:none;box-shadow:0 4px 12px rgba(249, 115, 22, 0.35);">
+    <span>🏛️</span> <span>Xưởng Tòa Nhà 3D</span>
+  </a>
+
+  <!-- Nút Mở Kho 146 Models 3D (Flip7 Primary Teal Pill CTA) -->
+  <a href="./model-gallery.html" title="Mở Phòng Trưng Bày 146 Models 3D Chuẩn Hóa (Studio Turntable)" style="background:linear-gradient(135deg, #2BA8A2 0%, #1E8C86 100%);color:#ffffff;border:1px solid #3CC4BD;border-radius:999px;padding:5px 13px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;text-decoration:none;box-shadow:0 4px 12px rgba(43, 168, 162, 0.35);">
+    <span>🎨</span> <span>Kho 146 Models 3D</span>
+  </a>
+
+  <!-- Nút Lưới Ô Tọa Độ [G] (Flip7 Pill) -->
+  <button id="btn-toggle-grid-hud" title="Bật/Tắt Lưới Ô Tọa Độ 5m và Số Mốc trên mặt đất [Phím G]" style="background:#FFF8E7;color:#92400e;border:1.5px solid #FDE68A;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>📐</span> <span id="lbl-grid-btn">Lưới Tọa Độ [G]</span>
+  </button>
+
+  <!-- Nút Công Cụ Sửa [E] (Flip7 Pill) -->
+  <button id="btn-toggle-editor-hud" title="Bật/Tắt Khay Công Cụ Sửa Nhanh SimCity [Phím E]" style="background:#FFF8E7;color:#92400e;border:1.5px solid #FDE68A;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🛠️</span> <span>Công Cụ Sửa [E]</span>
+  </button>
+
+  <!-- Nút Tắt/Bật Click Tòa Nhà (Mặc định TẮT để làm ngoại cảnh) -->
+  <button id="btn-toggle-building-click" title="Click để Bật/Tắt chế độ click chọn tòa nhà (Cockpit / Cutaway)" style="background:#f1f5f9;color:#64748b;border:1.5px solid #cbd5e1;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span id="ico-building-click">🔒</span> <span id="lbl-building-click">Click Tòa: TẮT</span>
+  </button>
+
+  <!-- Nút Bật/Tắt Bảng Chi Tiết Phải -->
+  <button id="btn-toggle-aside-hud" title="Hiện/Ẩn Bảng Thông Số Chi Tiết Phải" style="background:#E8F6F5;color:#1E8C86;border:1px solid #2BA8A2;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;">
+    <span>⚙️ Chi tiết</span>
+  </button>
+</nav>
+
+<!-- LIVE COORDINATE BADGE GÓC DƯỚI PHẢI (RÊ CHUỘT LÀ THẤY TỌA ĐỘ NGAY) -->
+<div id="live-coord-badge" style="position:fixed;bottom:16px;right:16px;z-index:90;background:rgba(15, 23, 42, 0.92);backdrop-filter:blur(12px);border:1px solid rgba(56, 189, 248, 0.4);border-radius:10px;padding:6px 12px;color:#f1f5f9;font-family:monospace;font-size:11px;box-shadow:0 8px 24px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;" title="Click để copy tọa độ này vào clipboard">
+  <span style="color:#38bdf8;">📍 Tọa độ:</span>
+  <b id="live-coord-text" style="color:#34d399;">X: 0.00 | Z: 0.00</b>
+  <span id="live-coord-tip" style="font-size:9px;color:#94a3b8;background:#1e293b;padding:2px 5px;border-radius:4px;">Click để Copy</span>
+</div>
+
+<header class="panel" style="display:none !important;">
+  <small>AN PHIM · ART REVIEW D · HQ LANDSCAPE REVIEW</small>
+  <h1>Connected Campus</h1>
+  <p id="status" role="status">Đang dựng hệ sinh thái…</p>
+  <span class="badge">Visual proof · chưa Art Approved</span>
+  <div class="modes">
+    <button data-mode="world" aria-pressed="true">World</button>
+    <button data-mode="operations">Operations</button>
+    <button data-mode="system">System</button>
+  </div>
+  <p id="mode-status">Campus vật lý · không overlay</p>
+</header>
+
+<aside class="panel" id="main-aside-panel" style="display:none !important;">
+  <h2>AN PHIM Campus</h2>
+  <p>HQ đón khách · Central Commons · 4 courtyards</p>
+  
+  <div style="background:#fef3c7;border:1px solid #f59e0b;padding:8px;border-radius:8px;margin:10px 0;">
+    <label style="font-weight:bold;color:#92400e;margin:0;cursor:pointer;">
+      <input id="massing-review" type="checkbox"> Massing Review
+    </label>
+    <small style="display:block;color:#b45309;font-size:10px;margin-top:3px;">Ẩn đồ trang trí · chỉ đánh giá hình khối & quy hoạch</small>
+  </div>
+
+      <div style="background:#f8fafc;border:2px solid #059669;padding:10px;border-radius:10px;margin:10px 0;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+    <button id="btn-toggle-edit" style="width:100%;background:#059669;color:#fff;font-weight:bold;padding:10px;border-radius:6px;cursor:pointer;border:none;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span>🛠️</span> <span>Chế độ Biên tập: TẮT</span>
+    </button>
+
+        <div id="edit-panel" hidden style="margin-top:10px;">
+      <!-- City Builder Toolbar Tabs (6 Tabs: Tòa nhà, Đồ vật, Cây/Công viên, Đường, Đất & Sơn, Ủi/Xóa) -->
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);gap:2px;background:#1e293b;padding:3px;border-radius:6px;margin-bottom:8px;">
+        <button id="tab-btn-select" title="[V]: Universal Select & Transform" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#059669;color:#fff;border:none;border-radius:4px;cursor:pointer;">↖️ Select</button>
+        <button id="tab-btn-buildings" title="[1]: Move Buildings" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#334155;color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;">🏛️ Build</button>
+        <button id="tab-btn-props" title="[2]: Place Props" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#334155;color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;">🪑 Props</button>
+        <button id="tab-btn-foliage" title="[3]: Trees & Parks" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#334155;color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;">🌳 Trees</button>
+        <button id="tab-btn-roads" title="[4]: Roads & Surfaces" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#334155;color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;">🛣️ Roads</button>
+        <button id="tab-btn-terrain" title="[5]: Terrain & Sculpt" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#334155;color:#e2e8f0;border:none;border-radius:4px;cursor:pointer;">⛰️ Land</button>
+        <button id="tab-btn-bulldoze" title="[B]: Bulldozer" style="padding:5px 1px;font-size:8px;font-weight:bold;background:#450a0a;color:#fca5a5;border:none;border-radius:4px;cursor:pointer;">🚜 Demolish</button>
+      </div>
+
+      <!-- Grid Toolbar & Snap Controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#ecfdf5;border:1px solid #10b981;padding:5px 7px;border-radius:6px;margin-bottom:6px;font-size:10px;color:#065f46;">
+        <label style="cursor:pointer;display:flex;align-items:center;gap:4px;font-weight:bold;">
+          <input type="checkbox" id="chk-show-grid"> 📐 Show Grid [G]
+        </label>
+        <label style="cursor:pointer;display:flex;align-items:center;gap:3px;">
+          <input type="checkbox" id="chk-grid-snap" checked> Snap to Grid
+        </label>
+        <select id="sel-grid-step" title="Kích thước mỗi ô lưới SimCity" style="font-size:9.5px;font-weight:bold;padding:2px 4px;border-radius:4px;border:1px solid #059669;background:#fff;color:#065f46;">
+          <option value="1" selected>1m Grid (Default)</option>
+          <option value="2">2m Grid</option>
+          <option value="4">4m Grid (Large)</option>
+        </select>
+      </div>
+
+      
+        <!-- Quick status in aside -->
+        <div style="font-size:10px;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:5px 8px;border-radius:6px;margin-bottom:8px;text-align:center;">
+          🛠️ <b>Bảng công cụ</b> đang hiển thị phía dưới màn hình
+        </div>
+<hr style="margin:8px 0;border:none;border-top:1px solid #cbd5e1;">
+
+      <!-- History & Persistence Footer: Undo, Redo, Save, Export -->
+      <div style="display:flex;gap:3px;margin-bottom:4px;">
+        <button id="btn-global-undo" style="flex:1;background:#475569;color:#fff;font-size:10px;padding:6px;border:none;border-radius:4px;cursor:pointer;">↩️ Undo (Ctrl+Z)</button>
+        <button id="btn-global-redo" style="flex:1;background:#475569;color:#fff;font-size:10px;padding:6px;border:none;border-radius:4px;cursor:pointer;">↪️ Redo (Ctrl+Y)</button>
+        <button id="btn-global-save" style="flex:1.5;background:#059669;color:#fff;font-size:10px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">💾 Save Studio</button>
+      </div>
+      <div style="display:flex;gap:3px;">
+        <button id="btn-export-full" style="flex:1;background:#0284c7;color:#fff;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">📥 Export JSON</button>
+        <label style="flex:1;background:#d97706;color:#fff;font-size:9px;padding:4px;border-radius:4px;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;">
+          📤 Import JSON <input id="file-import-full" type="file" accept=".json" style="display:none;">
+        </label>
+      </div>
+      <div id="save-status-toast" style="font-size:9px;color:#047857;text-align:center;margin-top:4px;min-height:14px;font-weight:bold;">
+        Click "Save Studio" to persist changes
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div id="network-controls" hidden>
+    <label for="network-focus">Tập trung theo nhóm</label>
+    <select id="network-focus">
+      <option value="internal">Internal / Projects</option>
+      <option value="campus">HQ</option>
+      <option value="administration">Hành chính</option>
+      <option value="finance">Tài chính</option>
+      <option value="it">IT / Data</option>
+    </select>
+    <label for="relation-type">Loại quan hệ</label>
+    <select id="relation-type">
+      <option value="all">Tất cả loại</option>
+      <option value="documents">Tài liệu / hồ sơ</option>
+      <option value="finance">Tài chính</option>
+      <option value="execution">Thực thi</option>
+      <option value="reporting">Báo cáo / giám sát</option>
+      <option value="data">Dữ liệu</option>
+    </select>
+    <label><input id="animate-flow" type="checkbox" checked>Chuyển động minh họa</label>
+    <button id="clear-focus">Bỏ chọn công trình</button>
+    <ul id="relation-list"></ul>
+  </div>
+  <p id="network-legend" hidden></p>
+
+
+
+  <details>
+    <summary>Chọn công trình (14 + Lịch)</summary>
+    <div id="building-nav"></div>
+  </details>
+
+  <p><a href="MASTERPLAN.md" target="_blank">Masterplan A</a> · <a href="review.html">Review</a> · <a href="../world_v25_connected_campus/index.html" target="_blank">V2.5 Reference</a></p>
+  <p style="font-size:10px">Snapshot chỉ đọc. Không kết nối production. System: proposal unverified.</p>
+</aside>
+
+<nav class="panel" aria-label="Camera" style="display:none !important;">
+  <button data-view="overview">Overview</button>
+  <button data-view="top">Topview</button>
+  <button data-view="arrival">HQ Arrival</button>
+  <button data-view="commons">Central Commons</button>
+  <button data-view="admin">Admin Court</button>
+  <button data-view="finance">Finance Court</button>
+  <button data-view="it">IT Court</button>
+  <button data-view="internal">Internal Terraces</button>
+  <button data-view="oracle">Oracle Cloud</button>
+  <button data-view="hero">HQ Hero</button>
+  <span style="border-left:2px solid #94a3b8;margin:0 4px;height:16px;display:inline-block;vertical-align:middle;"></span>
+  <button class="mode-nav-btn" data-mode="mode3" style="background:#0284c7;color:#fff;font-weight:bold;padding:5px 10px;border-radius:6px;cursor:pointer;outline:2px solid #38bdf8;">⭐ Cách 3: Lego (Chốt)</button>
+  <button class="mode-nav-btn" data-mode="mode1" style="background:#1e293b;color:#94a3b8;font-weight:bold;padding:5px 10px;border-radius:6px;cursor:pointer;">📦 Cách 1: Low-Poly</button>
+  <button class="mode-nav-btn" data-mode="mode2" style="background:#1e293b;color:#94a3b8;font-weight:bold;padding:5px 10px;border-radius:6px;cursor:pointer;">🖼️ Cách 2: 2.5D Card</button>
+  <button id="photo">Xuất PNG</button>
+</nav>
+
+<section id="selection" class="panel" hidden>
+  <button id="close" aria-label="Đóng chi tiết">×</button>
+  <h2 id="selected-title"></h2>
+  <p id="selected-copy"></p>
+</section>
+
+<p class="footer">Physical topology ≠ operational graph ≠ system graph · Art Review C Proof · V1–V2.5 preserved</p>
+<pre id="proof-report" hidden></pre>
+<select id="ground-debug" style="display:none"><option value="off">Off</option></select>
+<!-- BẢNG ĐIỀU KHIỂN CẢNH QUAN & QUY HOẠCH GÓC DƯỚI TRÁI -->
+<div id="deck-map-controls" class="deck-map-controls" style="display:none !important;">
+  <div class="deck-section">
+    <div class="deck-header">Cảnh quan 3 tầng</div>
+    <div class="deck-pills">
+      <label class="deck-label"><input type="checkbox" data-layer="groundcover" checked> Thảm cỏ</label>
+      <label class="deck-label"><input type="checkbox" data-layer="shrubs" checked> Bụi hoa</label>
+      <label class="deck-label"><input type="checkbox" data-layer="canopy" checked> Tán cây</label>
+    </div>
+  </div>
+  <div class="deck-separator"></div>
+  <div class="deck-section">
+    <div class="deck-header">Kiểm tra quy hoạch</div>
+    <div class="deck-pills">
+      <label class="deck-label"><input type="checkbox" id="toggle-footprints"> Ranh giới & Móng</label>
+      <label class="deck-label"><input type="checkbox" data-layer="labels" checked> Nhãn tên</label>
+      <label class="deck-label"><input type="checkbox" data-layer="biomes" checked> Biome phân khu</label>
+      <label class="deck-label"><input id="circulation" type="checkbox"> Circulation</label>
+    </div>
+  </div>
+</div>
+<script>
+  // AAA Urban Resilient Engine: Clear legacy corrupted session caches
+  try {
+    localStorage.removeItem('ANPHIM_CAMPUS_STUDIO_STATE_V26');
+    localStorage.removeItem('ANPHIM_CAMPUS_STUDIO_STATE_V25');
+  } catch(e) {}
+</script>
+<script type="module" src="main.js?rev=v26_bank_titanium_v2"></script>
+
+<script>
+  // Bulletproof tab switching: works instantly even before modules finish loading
+  function setupEditorTabs() {
+    const tabs = ['select', 'buildings', 'props', 'foliage', 'roads', 'terrain', 'bulldoze'];
+    tabs.forEach(tab => {
+      const btn = document.getElementById('tab-btn-' + tab);
+      if (!btn) return;
+      btn.onclick = function(e) {
+        if (e) e.stopPropagation();
+        tabs.forEach(t => {
+          const b = document.getElementById('tab-btn-' + t);
+          const c = document.getElementById('tab-content-' + t);
+          if (b) {
+            b.style.background = (t === tab) ? '#059669' : '#cbd5e1';
+            b.style.color = (t === tab) ? '#ffffff' : '#334155';
+          }
+          if (c) c.hidden = (t !== tab);
+        });
+        if (window.editorSwitchTab) {
+          window.editorSwitchTab(tab);
+        }
+      };
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupEditorTabs);
+  } else {
+    setupEditorTabs();
+  }
+</script>
+
+
+<!-- BOTTOM TOOLBAR DRAWER (Hiển thị chi tiết công cụ Editor ở phía dưới) -->
+<div id="bottom-editor-drawer" hidden style="position:fixed;bottom:74px;left:50%;transform:translateX(-50%);z-index:48;width:min(1120px, 96vw);max-height:250px;overflow-y:auto;background:rgba(15, 23, 42, 0.94);backdrop-filter:blur(16px);border:2px solid #10b981;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,0.5);padding:10px 16px;color:#f8fafc;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span style="font-weight:bold;color:#34d399;font-size:11px;letter-spacing:0.04em;">🛠️ SIMCITY STUDIO TOOLS</span>
+      <span style="font-size:9.5px;color:#94a3b8;">(Select tool from dock or press hotkeys [V, 1-6, B])</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="btn-toggle-drawer-collapse" style="font-size:10px;padding:4px 10px;background:#1e293b;border:1px solid #475569;color:#e2e8f0;border-radius:6px;cursor:pointer;">Collapse ▼</button>
+    </div>
+  </div>
+  <div id="bottom-drawer-content">
+<!-- Tab 0: Universal Selection & Transform Tool (Select [V]) -->
+      <div id="tab-content-select">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(30, 41, 59, 0.75);padding:8px 12px;border-radius:8px;border:1px solid #334155;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;">↖️</span>
+            <div>
+              <div style="font-weight:bold;color:#38bdf8;font-size:11px;">UNIVERSAL SELECT & TRANSFORM [HOTKEY: V]</div>
+              <div style="font-size:9.5px;color:#94a3b8;">Click any Building, Tree, Prop, Road Handle, or Orange Court to move, rotate, or delete with Gizmo!</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-select-tool-rot" style="background:#0284c7;color:#fff;font-size:9.5px;font-weight:bold;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;">⟳ Rotate 90° [R]</button>
+            <button id="btn-select-tool-del" style="background:#dc2626;color:#fff;font-size:9.5px;font-weight:bold;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;">🗑️ Delete [Del]</button>
+          </div>
+        </div>
+        <div id="select-active-target-info" style="font-size:10px;color:#cbd5e1;background:rgba(15, 23, 42, 0.6);padding:6px 10px;border-radius:6px;border:1px dashed #475569;">
+          🎯 Current Target: <i>(Click on any object in the 3D scene)</i>
+        </div>
+      </div>
+
+      <!-- Tab 1: Công trình & Tòa nhà (Buildings Inspector & Planner) -->
+      <div id="tab-content-buildings">
+        <div id="edit-target-name" style="font-weight:bold;color:#065f46;font-size:11px;margin-bottom:4px;">Selected Building: (Click any building or select below)</div>
+        
+        <div style="font-weight:bold;color:#475569;font-size:9px;margin-bottom:2px;">🏛️ AN PHIM 14 Campus Buildings List:</div>
+        <div id="buildings-quick-list" style="max-height:115px;overflow-y:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:3px;margin-bottom:6px;font-size:9px;">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Chế độ Gizmo 3D & Smart Align -->
+        <div style="display:flex;gap:3px;margin-bottom:6px;">
+          <button id="btn-mode-translate" style="flex:1;background:#047857;color:#fff;font-size:9.5px;font-weight:bold;padding:6px 3px;border:none;border-radius:4px;cursor:pointer;">✥ Kéo di chuyển [W]</button>
+          <button id="btn-mode-rotate" style="flex:1;background:#05966930;color:#065f46;font-size:9.5px;font-weight:bold;padding:6px 3px;border:1px solid #05966960;border-radius:4px;cursor:pointer;">🔄 Vòng xoay [E]</button>
+          <button id="btn-smart-align-road" title="Tự động xoay mặt tiền nhà hướng thẳng ra con đường gần nhất" style="flex:1.1;background:#0284c7;color:#fff;font-size:9.5px;font-weight:bold;padding:6px 3px;border:none;border-radius:4px;cursor:pointer;">🧲 Hít hướng đường</button>
+        </div>
+
+        <!-- Cụm Nút Xoay Tòa Nhà Trực Tiếp -->
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;padding:6px;margin-bottom:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:bold;color:#334155;margin-bottom:4px;">
+            <span>🔄 XOAY TÒA NHÀ (Bấm nút hoặc phím [R]):</span>
+            <span id="edit-rot-badge" style="background:#059669;color:#fff;padding:1px 6px;border-radius:8px;font-family:monospace;font-size:9px;">0°</span>
+          </div>
+          <div style="display:flex;gap:3px;margin-bottom:4px;">
+            <button id="btn-rotate-ccw" title="Xoay ngược chiều kim đồng hồ 90 độ" style="flex:1;background:#059669;color:#fff;font-size:10px;font-weight:bold;padding:6px 2px;border:none;border-radius:4px;cursor:pointer;">⟲ -90°</button>
+            <button id="btn-rotate-cw" title="Xoay thuận chiều kim đồng hồ 90 độ" style="flex:1;background:#059669;color:#fff;font-size:10px;font-weight:bold;padding:6px 2px;border:none;border-radius:4px;cursor:pointer;">⟳ +90°</button>
+            <button id="btn-rotate-45" title="Xoay 45 độ" style="width:46px;background:#0284c7;color:#fff;font-size:10px;font-weight:bold;padding:6px 2px;border:none;border-radius:4px;cursor:pointer;">+45°</button>
+            <button id="btn-rotate-180" title="Quay ngược 180 độ" style="width:46px;background:#64748b;color:#fff;font-size:10px;font-weight:bold;padding:6px 2px;border:none;border-radius:4px;cursor:pointer;">180°</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:9px;color:#64748b;">Góc:</span>
+            <input type="range" id="slider-rotate-y" min="0" max="360" step="5" value="0" style="flex:1;cursor:pointer;">
+            <input type="number" id="inp-rotate-y" min="0" max="360" step="15" value="0" style="width:44px;font-size:9px;text-align:center;padding:2px;border:1px solid #cbd5e1;border-radius:3px;">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#334155;margin-bottom:6px;">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px;">
+            <input type="checkbox" id="chk-ground-snap" checked> Bám dính mặt đất (Ground snap)
+          </label>
+        </div>
+        <div id="collision-hud" style="padding:6px;border-radius:5px;font-size:10px;font-weight:bold;text-align:center;background:#dcfce7;color:#166534;border:1px solid #86efac;margin-bottom:6px;">
+          ✅ Tọa độ an toàn · Không va chạm
+        </div>
+        <div style="font-size:10px;color:#374151;margin-bottom:6px;">
+          Tọa độ: <span id="edit-coords" style="font-family:monospace;font-weight:bold;">[0, 0]</span> | Góc: <span id="edit-rot" style="font-family:monospace;font-weight:bold;">0°</span>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button id="btn-copy-coords" style="flex:1;background:#0284c7;color:#fff;font-size:10px;padding:5px;border:none;border-radius:4px;cursor:pointer;">📋 Copy Tọa độ</button>
+          <button id="btn-download-layout" style="flex:1;background:#d97706;color:#fff;font-size:10px;padding:5px;border:none;border-radius:4px;cursor:pointer;">💾 Lưu Topology</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Đồ trang trí & Ngoại cảnh (Props & Street Furniture) -->
+      <div id="tab-content-props" hidden>
+        <div id="prop-target-name" style="font-weight:bold;color:#065f46;font-size:11px;margin-bottom:4px;">Đang chọn: (Click vào đồ trang trí)</div>
+        <div style="font-weight:bold;color:#475569;font-size:9px;margin-bottom:2px;">Chọn loại đồ trang trí để đặt:</div>
+        <select id="sel-prop-type" style="width:100%;font-size:10px;padding:5px;border-radius:4px;border:1px solid #cbd5e1;margin-bottom:6px;background:#fff;">
+          <option value="bench">🪑 Ghế ngồi gỗ cam (Park Bench)</option>
+          <option value="lamp">💡 Đèn sân vườn (Bollard Lamp)</option>
+          <option value="rock">🪨 Tảng đá cảnh (Granite Rock)</option>
+          <option value="trash_can">🗑️ Thùng rác công viên (Trash Can)</option>
+          <option value="signpost">🪧 Biển chỉ dẫn (Signpost)</option>
+        </select>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:4px;font-size:9px;color:#166534;margin-bottom:6px;">
+          💡 <b>Cách dùng:</b> Click xuống đất để đặt món mới, hoặc <b>Kéo hàng thẳng</b> để rải hàng đèn/ghế dọc đường. Click vào đồ vật bất kỳ trên 3D để dời/xoay!
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:4px;margin-bottom:6px;font-size:9.5px;">
+          <label style="flex:1;display:flex;align-items:center;gap:3px;cursor:pointer;font-weight:bold;color:#065f46;">
+            <input type="radio" name="prop-place-mode" value="single" checked> 📍 Đặt từng món
+          </label>
+          <label style="flex:1.2;display:flex;align-items:center;gap:3px;cursor:pointer;font-weight:bold;color:#0284c7;">
+            <input type="radio" name="prop-place-mode" value="line"> 📏 Kéo hàng thẳng
+          </label>
+          <select id="sel-prop-line-spacing" title="Khoảng cách giữa các đồ vật khi kéo hàng" style="font-size:9px;padding:2px;border-radius:3px;border:1px solid #94a3b8;">
+            <option value="3">Cách 3m</option>
+            <option value="4" selected>Cách 4m</option>
+            <option value="6">Cách 6m</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:3px;margin-bottom:6px;">
+          <button id="btn-prop-translate" style="flex:1;background:#047857;color:#fff;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Dịch chuyển [W]</button>
+          <button id="btn-prop-rotate" style="flex:1;background:#05966930;color:#065f46;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Xoay [E]</button>
+          <button id="btn-prop-scale" style="flex:1;background:#05966930;color:#065f46;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Scale</button>
+        </div>
+        <div style="display:flex;gap:3px;margin-bottom:6px;">
+          <button id="btn-prop-rot-ccw" style="flex:1;background:#059669;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">⟲ Xoay -90°</button>
+          <button id="btn-prop-rot-cw" style="flex:1;background:#059669;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">⟳ Xoay +90°</button>
+          <button id="btn-prop-rot-45" style="width:45px;background:#0284c7;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">+45°</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;">
+          <button id="btn-prop-duplicate" style="flex:1;background:#0284c7;color:#fff;font-size:9px;padding:5px;border:none;border-radius:4px;cursor:pointer;">📋 Duplicate [Ctrl+D]</button>
+          <button id="btn-prop-delete" style="flex:1;background:#ef4444;color:#fff;font-size:9px;padding:5px;border:none;border-radius:4px;cursor:pointer;">🗑️ Xóa đối tượng [Del]</button>
+        </div>
+        <div style="font-weight:bold;color:#475569;font-size:9px;margin-bottom:2px;">Đồ trang trí đã đặt trong Campus:</div>
+        <div id="props-placed-list" style="max-height:85px;overflow-y:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:3px;font-size:9px;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Tab 3: Cây cối & Thảm thực vật (Foliage & Nature) -->
+      <div id="tab-content-foliage" hidden>
+        <div id="foliage-target-name" style="font-weight:bold;color:#065f46;font-size:11px;margin-bottom:4px;">Đang chọn: (Click vào cây)</div>
+        <div style="font-weight:bold;color:#475569;font-size:9px;margin-bottom:2px;">Chọn loại cây:</div>
+        <select id="sel-foliage-type" style="width:100%;font-size:10px;padding:5px;border-radius:4px;border:1px solid #cbd5e1;margin-bottom:6px;background:#fff;">
+          <optgroup label="🌿 Cụm cây & Bụi nhỏ tự nhiên (Không đế cỏ)">
+            <option value="garden1">🌿 Cụm bụi cây City Pack (garden1)</option>
+            <option value="plant_bushSmall">🌾 Bụi cây nhỏ tự nhiên (bushSmall)</option>
+            <option value="plant_bush">🌱 Bụi cây tròn vừa (plant_bush)</option>
+            <option value="plant_bushDetailed">🍃 Bụi cây lá rậm (bushDetailed)</option>
+          </optgroup>
+          <optgroup label="🌳 Cây thân gỗ cảnh quan">
+            <option value="tree2">🌳 Cây xanh đô thị (tree2)</option>
+            <option value="tree6">🌲 Cây xanh tán lớn (tree6)</option>
+            <option value="tree_round">🌳 Cây sồi tán tròn (Oak)</option>
+            <option value="tree_pine">🌲 Cây thông cảnh quan (Pine)</option>
+            <option value="tree_flower">🌸 Cây hoa trắng nở rộ (Flowering)</option>
+          </optgroup>
+          <optgroup label="🏞️ Tổ hợp Công viên dựng sẵn (1-Click Park)">
+            <option value="park_mini_oasis">🏞️ Tiểu cảnh: Ghế gỗ + Đèn + 3 Bụi cây</option>
+            <option value="park_tree_grove">🌲 Rừng tiểu cảnh: 2 Cây lớn + 4 Bụi nhỏ + Đá</option>
+          </optgroup>
+        </select>
+        <div style="display:flex;gap:3px;margin-bottom:6px;">
+          <button id="btn-foliage-translate" style="flex:1;background:#047857;color:#fff;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Dịch chuyển [W]</button>
+          <button id="btn-foliage-rotate" style="flex:1;background:#05966930;color:#065f46;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Xoay [E]</button>
+          <button id="btn-foliage-scale" style="flex:1;background:#05966930;color:#065f46;font-size:9px;padding:4px;border:none;border-radius:4px;cursor:pointer;">Scale</button>
+        </div>
+        <div style="display:flex;gap:3px;margin-bottom:6px;">
+          <button id="btn-foliage-rot-ccw" style="flex:1;background:#059669;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">⟲ Xoay -90°</button>
+          <button id="btn-foliage-rot-cw" style="flex:1;background:#059669;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">⟳ Xoay +90°</button>
+          <button id="btn-foliage-rot-45" style="width:45px;background:#0284c7;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">+45°</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:4px;margin-bottom:6px;font-size:9px;">
+          <label style="flex:1;display:flex;align-items:center;gap:2px;cursor:pointer;font-weight:bold;color:#065f46;">
+            <input type="radio" name="foliage-place-mode" value="single" checked> 📍 Từng cây
+          </label>
+          <label style="flex:1.15;display:flex;align-items:center;gap:2px;cursor:pointer;font-weight:bold;color:#0284c7;">
+            <input type="radio" name="foliage-place-mode" value="line"> 📏 Kéo hàng
+          </label>
+          <label style="flex:1.1;display:flex;align-items:center;gap:2px;cursor:pointer;color:#334155;">
+            <input type="radio" name="foliage-place-mode" value="brush"> 🖌️ Rải rừng
+          </label>
+          <select id="sel-foliage-line-spacing" title="Khoảng cách giữa các cây khi kéo hàng thẳng" style="font-size:8.5px;padding:1px 2px;border-radius:3px;border:1px solid #94a3b8;">
+            <option value="2.5">2.5m</option>
+            <option value="4" selected>4m</option>
+            <option value="6">6m</option>
+            <option value="8">8m</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <button id="btn-foliage-duplicate" style="flex:1;background:#0284c7;color:#fff;font-size:10px;padding:5px;border:none;border-radius:4px;cursor:pointer;">📋 Duplicate [Ctrl+D]</button>
+          <button id="btn-foliage-delete" style="flex:1;background:#ef4444;color:#fff;font-size:10px;padding:5px;border:none;border-radius:4px;cursor:pointer;">🗑️ Xóa cây [Del]</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <button id="btn-foliage-clear" style="flex:1;background:#64748b;color:#fff;font-size:10px;padding:4px;border:none;border-radius:4px;cursor:pointer;">🧹 Dọn tất cả cây mới trồng</button>
+        </div>
+        <div style="font-weight:bold;color:#475569;font-size:9px;margin-bottom:2px;">Cây & Tiểu cảnh mới trồng:</div>
+        <div id="foliage-placed-list" style="max-height:75px;overflow-y:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:3px;font-size:9px;">
+          <!-- Populated dynamically -->
+        </div>
+        <small style="display:block;margin-top:4px;font-size:9px;color:#047857;">• "Quét rải rừng" tự động rải cây ngẫu nhiên bám địa hình và tự né lòng đường</small>
+      </div>
+
+      <!-- Tab 4: Đường đi, Đường Vàng & Hộp Sân Cam (SimCity Grid + Native Court/Walk Editor) -->
+      <div id="tab-content-roads" hidden>
+        <!-- Chế độ con trong Tab Đường -->
+        <div style="display:grid;grid-template-columns:1fr 1.25fr 0.85fr;gap:3px;margin-bottom:6px;background:#e2e8f0;padding:3px;border-radius:5px;">
+          <label style="font-size:9px;font-weight:bold;color:#065f46;background:#fff;padding:4px 3px;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer;">
+            <input type="radio" name="road-draw-mode" value="grid" checked> 🔲 Grid Road
+          </label>
+          <label style="font-size:9px;font-weight:bold;color:#b45309;background:#fef3c7;padding:4px 3px;border-radius:4px;border:1px solid #f59e0b;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer;">
+            <input type="radio" name="road-draw-mode" value="native"> 🟧 Courts & Walkways
+          </label>
+          <label style="font-size:9px;color:#334155;background:#fff;padding:4px 3px;border-radius:4px;display:flex;align-items:center;justify-content:center;gap:2px;cursor:pointer;">
+            <input type="radio" name="road-draw-mode" value="points"> 📍 Spline Curve
+          </label>
+        </div>
+
+        <!-- PANEL A: LÁT ĐƯỜNG THEO Ô LƯỚI / CHẤM CONG -->
+        <div id="road-grid-panel">
+          <div style="font-weight:bold;color:#065f46;font-size:10px;margin-bottom:3px;">🛣️ Road Surface Material:</div>
+          <div style="display:flex;gap:4px;margin-bottom:6px;">
+            <select id="sel-road-type" style="flex:1;font-size:10px;padding:5px;border-radius:4px;border:1px solid #cbd5e1;background:#fff;font-weight:bold;">
+              <option value="road_yellow" selected>🟨 Đường đi bộ Campus (Màu vàng cam #dca658 - Viền xanh hòa sắc #808d59)</option>
+              <option value="road_orange">🟧 Hộp / Sân gạch màu cam Campus (#b76e4b - Không viền)</option>
+              <option value="road_asphalt">🚗 Đường nhựa xe chạy (#535b55 - Kẻ vạch trắng)</option>
+              
+              <option value="plaza_park">🏛️ Sàn quảng trường đá Granite</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:5px;background:#f1f5f9;padding:4px;border-radius:4px;border:1px solid #cbd5e1;font-size:9px;">
+            <label style="flex:1;display:flex;align-items:center;gap:3px;cursor:pointer;font-weight:bold;color:#065f46;">
+              <input type="radio" name="grid-road-brush" value="line" checked> ➖ Line Ribbon
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:3px;cursor:pointer;font-weight:bold;color:#0284c7;">
+              <input type="radio" name="grid-road-brush" value="box"> ⬛ Box Area Paving
+            </label>
+          </div>
+          <div id="road-status-box" style="background:#ecfdf5;border:1px solid #10b981;border-radius:5px;padding:5px;font-size:9px;color:#065f46;margin-bottom:6px;line-height:1.35;">
+            <span id="road-points-count">• <b>Click hoặc Kéo chuột trái</b> qua các ô lưới để lát đường.<br>• <b>Giữ Shift + Click</b> để xóa ô đường, hoặc bấm sang mục <b>🟧 Courts & Walkways</b> ở trên để kéo/chỉnh đường vàng & sân cam có sẵn!</span>
+          </div>
+          <div id="spline-road-btns" style="display:none;gap:4px;margin-bottom:6px;">
+            <button id="btn-finish-road" style="flex:1;background:#059669;color:#fff;font-size:10px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">✅ Finish Road [Enter]</button>
+            <button id="btn-undo-road-pt" style="background:#64748b;color:#fff;font-size:9px;padding:6px 8px;border:none;border-radius:4px;cursor:pointer;">↩️ Undo Node</button>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:6px;">
+            <button id="btn-delete-selected-road" style="flex:1.2;background:#dc2626;color:#fff;font-size:9.5px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">🗑️ Delete Selected Road</button>
+            <button id="btn-clear-roads" style="background:#dc2626;color:#fff;font-size:9.5px;font-weight:bold;padding:5px 8px;border:none;border-radius:4px;cursor:pointer;">🗑️ Clear New Roads</button>
+          </div>
+        </div>
+
+        <!-- PANEL B: CHỈNH SỬA ĐƯỜNG MÀU VÀNG & HỘP SÂN MÀU CAM GỐC -->
+        <div id="native-surface-panel" hidden style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:6px;padding:6px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div style="font-weight:bold;color:#92400e;font-size:10.5px;">
+              🟧 ORANGE COURTS & 🟨 WALKWAY HANDLES:
+            </div>
+            <button id="btn-court-add-new" style="background:#ea580c;color:#fff;font-size:9.5px;font-weight:bold;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;">+ Add Orange Court</button>
+          </div>
+          <div id="native-target-status" style="background:#ffffff;border:1px solid #fcd34d;border-radius:4px;padding:4px 6px;font-size:9.5px;font-weight:bold;color:#b45309;margin-bottom:6px;">
+            👉 Click <b>Orange Box (🟠)</b> or <b>Yellow Node (🟡)</b> on ground to move & resize!
+          </div>
+
+          <!-- Bộ chỉnh khi đang chọn HỘP MÀU CAM (Orange Court) -->
+          <div id="native-court-controls" hidden style="background:#fff7ed;border:1px solid #fdba74;border-radius:5px;padding:5px;margin-bottom:5px;">
+            <div style="font-size:9px;color:#9a3412;margin-bottom:3px;display:flex;justify-content:space-between;">
+              <span>↔️ Width (W): <b id="lbl-court-w">10m</b></span>
+              <input type="number" id="inp-court-w" min="1" max="50" step="0.5" value="10" style="width:45px;font-size:9px;padding:1px 3px;">
+            </div>
+            <input type="range" id="rng-court-w" min="1.5" max="42" step="0.5" value="10" style="width:100%;margin:0 0 4px 0;">
+
+            <div style="font-size:9px;color:#9a3412;margin-bottom:3px;display:flex;justify-content:space-between;">
+              <span>↕️ Depth (D): <b id="lbl-court-d">8m</b></span>
+              <input type="number" id="inp-court-d" min="1" max="50" step="0.5" value="8" style="width:45px;font-size:9px;padding:1px 3px;">
+            </div>
+            <input type="range" id="rng-court-d" min="1.5" max="42" step="0.5" value="8" style="width:100%;margin:0 0 4px 0;">
+
+            <div style="font-size:9px;color:#9a3412;margin-bottom:3px;display:flex;justify-content:space-between;">
+              <span>🔘 Corner Radius (R): <b id="lbl-court-r">1.5m</b></span>
+              <span>Rotation: <b id="lbl-court-rot">0°</b></span>
+            </div>
+            <input type="range" id="rng-court-r" min="0.1" max="6.0" step="0.2" value="1.5" style="width:100%;margin:0 0 5px 0;">
+
+            <div style="display:flex;gap:3px;margin-bottom:4px;">
+              <button id="btn-court-rot-ccw" style="flex:0.8;background:#d97706;color:#fff;font-size:9px;font-weight:bold;padding:4px;border:none;border-radius:3px;cursor:pointer;">⟲ -45°</button>
+              <button id="btn-court-rot-cw" style="flex:0.8;background:#d97706;color:#fff;font-size:9px;font-weight:bold;padding:4px;border:none;border-radius:3px;cursor:pointer;">⟳ +45°</button>
+              <button id="btn-court-duplicate" title="Nhân bản Hộp màu cam này" style="flex:1.1;background:#0284c7;color:#fff;font-size:9px;font-weight:bold;padding:4px;border:none;border-radius:3px;cursor:pointer;">📋 Duplicate</button>
+              <button id="btn-court-delete" style="flex:1;background:#dc2626;color:#fff;font-size:9px;font-weight:bold;padding:4px;border:none;border-radius:3px;cursor:pointer;">🗑️ Xóa</button>
+            </div>
+          </div>
+
+          <!-- Bộ chỉnh khi đang chọn ĐƯỜNG MÀU VÀNG (Yellow Walkway) -->
+          <div id="native-walk-controls" hidden style="background:#fefce8;border:1px solid #fde047;border-radius:5px;padding:5px;margin-bottom:5px;">
+            <div style="font-size:9px;color:#854d0e;margin-bottom:3px;display:flex;justify-content:space-between;">
+              <span>↔️ Walkway Width: <b id="lbl-walk-w">2.0m</b></span>
+            </div>
+            <input type="range" id="rng-walk-w" min="0.8" max="6.0" step="0.2" value="2.0" style="width:100%;margin:0 0 5px 0;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:4px;">
+              <button id="btn-walk-add-pt" title="Thêm 1 điểm nối tiếp để kéo dài đường vàng" style="background:#ca8a04;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 3px;border:none;border-radius:3px;cursor:pointer;">➕ Extend End</button>
+              <button id="btn-walk-split-seg" title="Chèn thêm 1 nút tròn vào chính giữa đoạn đường để uốn cong" style="background:#0284c7;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 3px;border:none;border-radius:3px;cursor:pointer;">🔹 Insert Node</button>
+              <button id="btn-walk-straighten" title="Nắn thẳng nhánh đường màu vàng này" style="background:#059669;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 3px;border:none;border-radius:3px;cursor:pointer;">📏 Làm thẳng nhánh</button>
+              <button id="btn-walk-del-pt" title="Xóa điểm mốc màu vàng đang chọn" style="background:#ea580c;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 3px;border:none;border-radius:3px;cursor:pointer;">✂️ Xóa điểm này</button>
+            </div>
+            <div style="display:flex;gap:3px;margin-bottom:2px;">
+              <button id="btn-walk-delete" title="Xóa toàn bộ nhánh đường màu vàng này" style="flex:1;background:#dc2626;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 3px;border:none;border-radius:3px;cursor:pointer;">🗑️ Xóa toàn bộ nhánh đường vàng này</button>
+            </div>
+          </div>
+
+          <!-- Nút thêm mới / Khôi phục Hộp Cam & Đường Vàng -->
+          <div style="display:flex;gap:3px;">
+            <button id="btn-add-new-court" style="flex:1;background:#ea580c;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 2px;border:none;border-radius:4px;cursor:pointer;">➕ Thêm Hộp Cam</button>
+            <button id="btn-add-new-walk" style="flex:1;background:#ca8a04;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 2px;border:none;border-radius:4px;cursor:pointer;">➕ Thêm Đường Vàng</button>
+            <button id="btn-reset-native-surfaces" title="Khôi phục toàn bộ Hộp Cam & Đường Vàng về trạng thái gốc" style="background:#64748b;color:#fff;font-size:8.5px;font-weight:bold;padding:5px 6px;border:none;border-radius:4px;cursor:pointer;">🔄 Gốc</button>
+          </div>
+        </div>
+
+        <div id="selected-road-info" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:4px;padding:5px;font-size:9px;color:#991b1b;margin-bottom:4px;">
+          Đang chọn: <b id="selected-road-name">-</b>
+        </div>
+        <div style="max-height:85px;overflow-y:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:4px;margin-bottom:4px;font-size:9px;" id="roads-dynamic-list">
+          <!-- Dynamic road list -->
+        </div>
+      </div>
+
+      <!-- Tab 5: Đất & Sơn (Sculpt Terrain & Surface Paint) -->
+      <div id="tab-content-terrain" hidden>
+        <div id="terrain-active-badge" style="background:#ecfdf5;border:1px solid #10b981;border-radius:5px;padding:4px 6px;font-size:9.5px;font-weight:bold;color:#065f46;margin-bottom:6px;text-align:center;">
+          🎯 Đang chọn cọ: <b>🟢 Đắp cao địa hình</b> (Kéo chuột trái trên mặt đất)
+        </div>
+        <div style="font-weight:bold;color:#065f46;font-size:10.5px;margin-bottom:4px;">⛰️ 1. Nắn địa hình (Bấm chọn & Kéo chuột trái):</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-bottom:6px;">
+          <button id="btn-sculpt-raise" style="background:#047857;color:#fff;font-size:9px;font-weight:bold;padding:5px 4px;border:none;border-radius:4px;cursor:pointer;">🟢 Đắp cao</button>
+          <button id="btn-sculpt-lower" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 4px;border:none;border-radius:4px;cursor:pointer;">🔴 Hạ thấp</button>
+          <button id="btn-sculpt-flatten" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 4px;border:none;border-radius:4px;cursor:pointer;">🟡 San phẳng nền</button>
+          <button id="btn-sculpt-smooth" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 4px;border:none;border-radius:4px;cursor:pointer;">🔵 Làm mịn dốc</button>
+        </div>
+        <div style="font-size:9px;color:#374151;margin-bottom:3px;">
+          Bán kính cọ nắn: <span id="lbl-brush-size" style="font-weight:bold;">6.0m</span>
+          <input id="rng-brush-size" type="range" min="1.5" max="22" step="0.5" value="6.0" style="width:100%;margin:1px 0 3px 0;">
+        </div>
+        <div style="font-size:9px;color:#374151;margin-bottom:4px;">
+          Độ mạnh cọ nắn: <span id="lbl-brush-strength" style="font-weight:bold;">0.40</span>
+          <input id="rng-brush-strength" type="range" min="0.05" max="1.5" step="0.05" value="0.4" style="width:100%;margin:1px 0 3px 0;">
+        </div>
+
+        <div style="font-weight:bold;color:#065f46;font-size:10.5px;margin:8px 0 4px 0;border-top:1px solid #cbd5e1;padding-top:6px;">🎨 2. Sơn chất liệu mặt đất (Bấm chọn & Kéo chuột trái):</div>
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:2px;margin-bottom:4px;">
+          <button id="btn-paint-grass" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 1px;border:none;border-radius:4px;cursor:pointer;">🌾 Cỏ xanh</button>
+          <button id="btn-paint-dirt" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 1px;border:none;border-radius:4px;cursor:pointer;">🟫 Đất cam</button>
+          <button id="btn-paint-gravel" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 1px;border:none;border-radius:4px;cursor:pointer;">🟨 Cát vàng</button>
+          <button id="btn-paint-stone" style="background:#e2e8f0;color:#334155;font-size:9px;font-weight:bold;padding:5px 1px;border:none;border-radius:4px;cursor:pointer;">⬜ Đá sỏi</button>
+        </div>
+        <div style="font-size:9px;color:#374151;margin-bottom:3px;">
+          Bán kính cọ sơn: <span id="lbl-paint-size" style="font-weight:bold;">5.0m</span>
+          <input id="rng-paint-size" type="range" min="1" max="20" step="0.5" value="5" style="width:100%;margin:1px 0;">
+        </div>
+        <div style="font-size:9px;color:#374151;margin-bottom:6px;">
+          Độ đậm cọ sơn: <span id="lbl-paint-intensity" style="font-weight:bold;">0.35</span>
+          <input id="rng-paint-intensity" type="range" min="0.05" max="1.0" step="0.05" value="0.35" style="width:100%;margin:1px 0;">
+        </div>
+
+        <div style="display:flex;gap:4px;">
+          <button id="btn-reset-terrain" style="flex:1;background:#64748b;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">🔄 Reset Địa hình</button>
+          <button id="btn-reset-paint" style="flex:1;background:#64748b;color:#fff;font-size:9px;font-weight:bold;padding:5px;border:none;border-radius:4px;cursor:pointer;">🔄 Reset Màu cỏ</button>
+        </div>
+        <small style="display:block;margin-top:4px;font-size:9px;color:#047857;">• Chọn bất kỳ nút Nắn hoặc Sơn ở trên rồi <b>Kéo chuột trái trực tiếp</b> trên mặt đất! (Hỗ trợ Ctrl+Z)</small>
+      </div>
+
+      <!-- Tab 6: Công cụ Ủi & Phá dỡ nhanh (SimCity Bulldozer Tool) -->
+      <div id="tab-content-bulldoze" hidden>
+        <div style="background:#fef2f2;border:2px solid #ef4444;border-radius:6px;padding:8px;margin-bottom:8px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:2px;">🚜</div>
+          <div style="font-weight:bold;color:#991b1b;font-size:11px;">SIMCITY BULLDOZER (DEMOLISH MODE)</div>
+          <div style="font-size:9.5px;color:#b91c1c;margin-top:3px;">
+            Click or Drag across <b>trees, bushes, road segments, or paving blocks</b> to demolish individually!
+          </div>
+        </div>
+        <div id="bulldoze-hover-info" style="background:#fff;border:1px solid #fca5a5;border-radius:4px;padding:6px;font-size:10px;color:#7f1d1d;margin-bottom:8px;text-align:center;font-weight:bold;">
+          🎯 Target: (Hover cursor over tree, road segment, or block)
+        </div>
+        <div style="font-size:9px;color:#475569;margin-bottom:6px;">
+          🛡️ <b>Safety:</b> 14 Main Buildings are protected from demolition. Press <b>Ctrl+Z</b> to Undo!
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <button id="btn-bulldoze-all-foliage" style="flex:1;background:#dc2626;color:#fff;font-size:9px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">🧹 Clear New Foliage</button>
+          <button id="btn-bulldoze-all-roads" style="flex:1;background:#991b1b;color:#fff;font-size:9px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">🛣️ Clear New Roads</button>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button id="btn-restore-demolished" title="Khôi phục lại toàn bộ cây cối, bụi cây và ghế đá gốc của Campus đã bị ủi" style="flex:1;background:#059669;color:#fff;font-size:9px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">🌱 Restore Demolished Trees</button>
+          <button id="btn-reset-all-campus" title="Đặt lại toàn bộ Campus về trạng thái nguyên bản ban đầu" style="flex:1;background:#475569;color:#fff;font-size:9px;font-weight:bold;padding:6px;border:none;border-radius:4px;cursor:pointer;">🔄 Reset Campus</button>
+        </div>
+      </div>
+  </div>
+</div>
+
+
+<div id="simcity-dock" hidden style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(15, 23, 42, 0.94);backdrop-filter:blur(14px);border:2px solid #10b981;border-radius:14px;padding:6px 14px;display:none;align-items:center;gap:6px;box-shadow:0 12px 36px rgba(0,0,0,0.45);color:#fff;">
+  <div style="font-size:10px;font-weight:bold;color:#34d399;padding-right:8px;border-right:1px solid #334155;line-height:1.2;">
+    🎮 SIM STUDIO<br><span style="font-size:8px;color:#94a3b8;font-weight:normal;">Keys [V, 1-6]</span>
+  </div>
+  <button class="sim-dock-btn" data-dock-tab="select" title="Selection & Transform Tool [V]" style="background:#059669;color:#fff;border:1px solid #34d399;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>↖️</span> <span>Select [V]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="buildings" title="Move Buildings [1]" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🏛️</span> <span>Buildings [1]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="props" title="Props & Benches [2]" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🪑</span> <span>Props [2]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="foliage" title="Trees & Parks [3]" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🌳</span> <span>Trees [3]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="roads" title="Roads & Walkways [4]" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🛣️</span> <span>Roads [4]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="terrain" title="Terrain & Paint [5]" style="background:#1e293b;color:#e2e8f0;border:1px solid #475569;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>⛰️</span> <span>Terrain [5]</span>
+  </button>
+  <button class="sim-dock-btn" data-dock-tab="bulldoze" title="Bulldozer Demolish [B]" style="background:#450a0a;color:#fca5a5;border:1px solid #ef4444;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;">
+    <span>🚜</span> <span>Bulldoze [B]</span>
+  </button>
+  <div style="border-left:1px solid #334155;padding-left:8px;display:flex;gap:4px;">
+    <button id="dock-btn-rotate" title="Rotate selected object 90° [R]" style="background:#0284c7;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:10px;font-weight:bold;cursor:pointer;">⟳ Rotate [R]</button>
+    <button id="dock-btn-undo" title="Undo [Ctrl+Z]" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:6px 8px;font-size:10px;cursor:pointer;">↩️</button>
+    <button id="dock-btn-close-clean" title="Đóng công cụ sửa [Esc]" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:10px;font-weight:bold;cursor:pointer;">✕ Đóng [Esc]</button>
+    <button id="dock-btn-save" title="Save Studio [Ctrl+S] (No auto-save)" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:10px;font-weight:bold;cursor:pointer;">💾 Save</button>
+  </div>
+</div>
+</div>
+
+</html>

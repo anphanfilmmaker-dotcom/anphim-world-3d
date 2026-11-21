@@ -1,0 +1,927 @@
+{
+  "schemaVersion": "2.5.0-connected-campus",
+  "sourceRoot": "D:\\Download\\3D model\\V2",
+  "authorization": "User supplied CODEX IMPLEMENTATION TASK V2.3, Pasted text(3).txt, Nature Kit explicitly authorized",
+  "assets": [
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-a.glb",
+      "name": "building-a",
+      "bytes": 108936,
+      "triangles": 1252,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.44179391860961914,
+            0.0,
+            -0.4699999690055847
+          ],
+          "max": [
+            0.4417939782142639,
+            1.2929999828338623,
+            0.4700000286102295
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "5cf220f90ee3f21e7abe38055ca409a48aa8ef1d5ffab6e2deb99e5a5e1ed5e0",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-a.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-a.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-b.glb",
+      "name": "building-b",
+      "bytes": 106408,
+      "triangles": 1276,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.48500001430511475,
+            0.0,
+            -0.4699999690055847
+          ],
+          "max": [
+            0.4850000739097595,
+            1.2929999828338623,
+            0.4700000286102295
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "3b5d3ac0799c024781d92bb15971d42f4f8e380554dc5cf6a40c2f07d948947a",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-b.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-b.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-c.glb",
+      "name": "building-c",
+      "bytes": 102788,
+      "triangles": 1195,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.44179391860961914,
+            0.0,
+            -0.5450000166893005
+          ],
+          "max": [
+            0.4417939782142639,
+            0.8930000066757202,
+            0.5450000762939453
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "f6887608a95a165503561730252c30506938803731c6546efca12bd47b1666bd",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-c.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-c.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-e.glb",
+      "name": "building-e",
+      "bytes": 128208,
+      "triangles": 1509,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.8199999928474426,
+            0.0,
+            -0.5039456486701965
+          ],
+          "max": [
+            0.8200000524520874,
+            0.8930000066757202,
+            0.5039458870887756
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "edbe5b49858a3c83e72d3cf496129c06082ef3a3d6005769f8883138e275b456",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-e.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-e.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-h.glb",
+      "name": "building-h",
+      "bytes": 127384,
+      "triangles": 1512,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.44179391860961914,
+            0.0,
+            -0.5039456486701965
+          ],
+          "max": [
+            0.44179391860961914,
+            1.2929999828338623,
+            0.5039454698562622
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "6881613ce218bb33a0f56137d4d33b00d307c47e518fbb21ccba1083efbea896",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-h.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-h.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-commercial_2.1",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-commercial_2.1\\Models\\GLB format\\building-i.glb",
+      "name": "building-i",
+      "bytes": 209728,
+      "triangles": 2544,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.6200000047683716,
+            0.0,
+            -0.6509999632835388
+          ],
+          "max": [
+            0.6200000643730164,
+            1.6800000667572021,
+            0.6510000228881836
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "3e572277d3eead30e24668a653ec6a11a488228a219d4902f08638cbca7c3dfe",
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-i.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/building-i.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-commercial_2.1/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-industrial_2.0\\Models\\GLB format\\building-k.glb",
+      "name": "building-k",
+      "bytes": 65472,
+      "triangles": 702,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.6514295935630798,
+            0.0,
+            -0.4635878801345825
+          ],
+          "max": [
+            0.6514295935630798,
+            0.772741436958313,
+            0.4500000476837158
+          ]
+        },
+        {
+          "min": [
+            -0.6514295935630798,
+            0.0,
+            -0.4635878801345825
+          ],
+          "max": [
+            0.6514295935630798,
+            0.772741436958313,
+            0.4500000476837158
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "ae0692f7a9fa20bb4ae6cc4deb56d5e1919b1ba2188a1f282295ab2be5e9645d",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-k.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/building-k.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-industrial_2.0\\Models\\GLB format\\building-o.glb",
+      "name": "building-o",
+      "bytes": 76552,
+      "triangles": 868,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.8835879564285278,
+            0.0,
+            -1.862645149230957e-08
+          ],
+          "max": [
+            4.470348358154297e-08,
+            0.9179999828338623,
+            1.2400000095367432
+          ]
+        },
+        {
+          "min": [
+            -0.8835879564285278,
+            0.0,
+            -1.862645149230957e-08
+          ],
+          "max": [
+            4.470348358154297e-08,
+            0.9179999828338623,
+            1.2400000095367432
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "eec5728a268e122da91fa2cc4ed571a0b12e2cdd5c200828ab0d4f31ab1c8765",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-o.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/building-o.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-industrial_2.0\\Models\\GLB format\\building-p.glb",
+      "name": "building-p",
+      "bytes": 103760,
+      "triangles": 1162,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.8417938947677612,
+            0.0,
+            -0.4959999918937683
+          ],
+          "max": [
+            0.8417940139770508,
+            0.7145521640777588,
+            0.4959999918937683
+          ]
+        },
+        {
+          "min": [
+            -0.8417938947677612,
+            0.0,
+            -0.4959999918937683
+          ],
+          "max": [
+            0.8417940139770508,
+            0.7145521640777588,
+            0.4959999918937683
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "d3e701ba7bf548519731d9c68d5a47d09654bccef6f93be759eaafb55cdb2f78",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-p.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/building-p.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-industrial_2.0\\Models\\GLB format\\building-r.glb",
+      "name": "building-r",
+      "bytes": 173056,
+      "triangles": 1912,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -1.2417939901351929,
+            0.0,
+            -0.6360002756118774
+          ],
+          "max": [
+            1.2417941093444824,
+            1.3930000066757202,
+            0.635999858379364
+          ]
+        },
+        {
+          "min": [
+            -1.2417939901351929,
+            0.0,
+            -0.6360002756118774
+          ],
+          "max": [
+            1.2417941093444824,
+            1.3930000066757202,
+            0.635999858379364
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "3bf50032b629c97e249a9219851fd385347608bcb896c5bed06870e3957de5fe",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-r.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/building-r.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\Download\\3D model\\V2\\kenney_city-kit-industrial_2.0\\Models\\GLB format\\building-t.glb",
+      "name": "building-t",
+      "bytes": 139896,
+      "triangles": 1586,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.8608628511428833,
+            0.0,
+            -0.6950000524520874
+          ],
+          "max": [
+            0.8608629107475281,
+            1.014552116394043,
+            0.6950002312660217
+          ]
+        },
+        {
+          "min": [
+            -0.8608628511428833,
+            0.0,
+            -0.6950000524520874
+          ],
+          "max": [
+            0.8608629107475281,
+            1.014552116394043,
+            0.6950002312660217
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "865f92dc0ca0ce147c2b784bfda0773698e80896c372146e2b53811f1758607f",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-t.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/building-t.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_modular-buildings",
+      "source": "D:\\Download\\3D model\\V2\\kenney_modular-buildings\\Models\\GLB format\\building-sample-tower-b.glb",
+      "name": "building-sample-tower-b",
+      "bytes": 28904,
+      "triangles": 326,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.550000011920929,
+            -2.255973158774445e-17,
+            -0.550000011920929
+          ],
+          "max": [
+            0.550000011920929,
+            1.8875000476837158,
+            0.7000000476837158
+          ]
+        }
+      ],
+      "externalURIs": [
+        "Textures/colormap.png"
+      ],
+      "sha256": "b7360904ab4a6e26098b4ae6f761a6a98022c851faf04ea7760a0ef11328c704",
+      "url": "./assets/v23/kenney_modular-buildings/building-sample-tower-b.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_modular-buildings/building-sample-tower-b.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_modular-buildings/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": [
+        "Textures/colormap.png"
+      ]
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\grass_large.glb",
+      "name": "grass_large",
+      "bytes": 18504,
+      "triangles": 224,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.199141771,
+            0,
+            -0.212095484
+          ],
+          "max": [
+            0.209856063,
+            0.254,
+            0.1957935
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "af49a595624abca7249824eeefb944d4baf974abeeb5b16110d175da3563d6cd",
+      "url": "./assets/v23/kenney_nature-kit/grass_large.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/grass_large.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\plant_bushDetailed.glb",
+      "name": "plant_bushDetailed",
+      "bytes": 10172,
+      "triangles": 104,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.301271856,
+            0,
+            -0.301271856
+          ],
+          "max": [
+            0.301271856,
+            0.360410929,
+            0.301271856
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "2e0487020d68ccf664435db9d829c78ae00e6d2785ee3ec10b9f89cc70a10406",
+      "url": "./assets/v23/kenney_nature-kit/plant_bushDetailed.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/plant_bushDetailed.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\rock_largeA.glb",
+      "name": "rock_largeA",
+      "bytes": 7552,
+      "triangles": 80,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.392453343,
+            -2.932765e-16,
+            -0.5077307
+          ],
+          "max": [
+            0.392453343,
+            0.259775966,
+            0.5077307
+          ]
+        },
+        {
+          "min": [
+            -0.392453343,
+            -2.932765e-16,
+            -0.5077307
+          ],
+          "max": [
+            0.392453343,
+            0.259775966,
+            0.5077307
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "6dd15390fd96501dcd1454765a17ba61dbbd8d47705dfe5149c8dd92b353ce25",
+      "url": "./assets/v23/kenney_nature-kit/rock_largeA.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/rock_largeA.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\tree_default.glb",
+      "name": "tree_default",
+      "bytes": 9428,
+      "triangles": 114,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.377500027,
+            0,
+            -0.3269245
+          ],
+          "max": [
+            0.377500027,
+            1.70788741,
+            0.3269245
+          ]
+        },
+        {
+          "min": [
+            -0.377500027,
+            0,
+            -0.3269245
+          ],
+          "max": [
+            0.377500027,
+            1.70788741,
+            0.3269245
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "562d29638c902de3c7bee465d3a53bb77117efbc392ae04ed894faf6b5dc691d",
+      "url": "./assets/v23/kenney_nature-kit/tree_default.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/tree_default.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\tree_detailed.glb",
+      "name": "tree_detailed",
+      "bytes": 31412,
+      "triangles": 402,
+      "meshes": 1,
+      "materials": 3,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.4324826,
+            0,
+            -0.372135967
+          ],
+          "max": [
+            0.41463244,
+            1.332417,
+            0.389466524
+          ]
+        },
+        {
+          "min": [
+            -0.4324826,
+            0,
+            -0.372135967
+          ],
+          "max": [
+            0.41463244,
+            1.332417,
+            0.389466524
+          ]
+        },
+        {
+          "min": [
+            -0.4324826,
+            0,
+            -0.372135967
+          ],
+          "max": [
+            0.41463244,
+            1.332417,
+            0.389466524
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "c041daf2f0fb1d49e4325227cbcd58667adbe51e9b55e8c1f0a94b74cc521b3b",
+      "url": "./assets/v23/kenney_nature-kit/tree_detailed.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/tree_detailed.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_nature-kit",
+      "source": "D:\\Download\\3D model\\V2\\kenney_nature-kit\\Models\\GLTF format\\tree_oak.glb",
+      "name": "tree_oak",
+      "bytes": 14644,
+      "triangles": 196,
+      "meshes": 1,
+      "materials": 2,
+      "textures": 0,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.320277065,
+            1.60296534e-31,
+            -0.369824
+          ],
+          "max": [
+            0.320276946,
+            1.22623992,
+            0.369824
+          ]
+        },
+        {
+          "min": [
+            -0.320277065,
+            1.60296534e-31,
+            -0.369824
+          ],
+          "max": [
+            0.320276946,
+            1.22623992,
+            0.369824
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "d7fd8773674928c50c11b66d12c636d49bdcc15a8b1c7fbb98e6f63a3439a3f3",
+      "url": "./assets/v23/kenney_nature-kit/tree_oak.glb",
+      "integratedPath": "world_v24_ecosystem/assets/v23/kenney_nature-kit/tree_oak.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v24_ecosystem/assets/v23/kenney_nature-kit/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    },
+    {
+      "pack": "kenney_city-kit-industrial_2.0",
+      "source": "D:\\\\Download\\\\3D model\\\\kenney_city-kit-industrial_2.0\\\\Models\\\\GLB format\\\\building-m.glb",
+      "name": "building-m",
+      "bytes": 138920,
+      "triangles": 1580,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 1,
+      "animations": [],
+      "uv": true,
+      "positionBounds": [
+        {
+          "min": [
+            -0.5,
+            0.0,
+            -0.5
+          ],
+          "max": [
+            0.5,
+            1.4,
+            0.5
+          ]
+        }
+      ],
+      "externalURIs": [],
+      "sha256": "526881cb1851120a60195f76bd4d8c1963653cdda66e4d1d53f085b3395fb8a9",
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-m.glb",
+      "integratedPath": "world_v25_connected_campus/assets/v23/kenney_city-kit-industrial_2.0/building-m.glb",
+      "license": "CC0-1.0",
+      "licenseEvidence": "world_v25_connected_campus/assets/v23/kenney_city-kit-industrial_2.0/License.txt",
+      "frontAxis": "+Z entrance adapter, visual review required",
+      "pivot": "runtime normalized bottom Y=0",
+      "scale": "uniform fit to locked grade envelope",
+      "texturesCopied": []
+    }
+  ],
+  "bindings": {
+    "documents": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-h.glb",
+      "rotationY": 0
+    },
+    "drive": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-p.glb",
+      "rotationY": 0
+    },
+    "bank": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-e.glb",
+      "rotationY": 0
+    },
+    "reserve": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-k.glb",
+      "rotationY": 0
+    },
+    "ai": {
+      "url": "./assets/v23/kenney_modular-buildings/building-sample-tower-b.glb",
+      "rotationY": 0
+    },
+    "hermes": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-i.glb",
+      "rotationY": 0
+    },
+    "supabase": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-r.glb",
+      "rotationY": 3.14159265
+    },
+    "google": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-c.glb",
+      "rotationY": 0
+    },
+    "telegram": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-o.glb",
+      "rotationY": 0
+    },
+    "proj_24": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-a.glb",
+      "rotationY": 0
+    },
+    "proj_25": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-t.glb",
+      "rotationY": 0
+    },
+    "proj_05": {
+      "url": "./assets/v23/kenney_city-kit-commercial_2.1/building-b.glb",
+      "rotationY": 0
+    },
+    "oracle": {
+      "url": "./assets/v23/kenney_city-kit-industrial_2.0/building-m.glb",
+      "rotationY": 0
+    }
+  },
+  "auditFile": "phase02_campus_work/brief3/asset-audit.json",
+  "optionalNPC": "Deferred until architecture and landscape visual approval; animation audit retained",
+  "modules": {
+    "world_v24_ecosystem/architecture.js": "00fb45605e672409b8dbb124335df91a2307542c003c00d2094a5dadc304a001",
+    "world_v24_ecosystem/asset-registry.js": "fad0584254e9c2509e459693af2c8a5a86bf080a8d43ea4c4bb2c22f019a03d9",
+    "world_v24_ecosystem/capture.js": "7d53ca596b68fa3227632448b59541d80a665e26abe6e851e28d0de6e879b56a",
+    "world_v24_ecosystem/ecosystem-design.js": "760519d9d3d4f2860bf79654c43986dbc2e60812e4f55790064773272aa3f641",
+    "world_v24_ecosystem/landscape.js": "846e605cc1b40859b62df88302764b80b0faa034d605b5881ceafdc987e0660e",
+    "world_v24_ecosystem/main.js": "459d0df23042fe164f29c478aa1a6c44c3a604baa94502d28ee50c29917ab5ab",
+    "world_v24_ecosystem/materials.js": "f1c9257fbc6ae12091fbdfeea65c14ce339135279d1ff068283805ddfaf950d7",
+    "world_v24_ecosystem/network.js": "a488ef5537a7a86a25c7352976883aadeda62a5c007e593cd874280ab390d26f",
+    "world_v24_ecosystem/roads.js": "d918447ac02a2380bf8ec192f728977d15d8d6cd5e829e611a8a43ad17b6be9e",
+    "world_v24_ecosystem/terrain.js": "8263b8db9e0e3dd5ddb910460a3fcd84340740c40ee4fb520865592eedb28eb6"
+  }
+}

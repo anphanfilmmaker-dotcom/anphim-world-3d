@@ -1,0 +1,1329 @@
+{
+  "updatedAt": "2026-11-21T16:00:00.000000",
+  "kpi": {
+    "cashAvailable": 348520000.0,
+    "cashAvailableFormatted": "348.520.000 đ",
+    "receivable": 182400000.0,
+    "receivableFormatted": "182.400.000 đ",
+    "activeProjectsCount": 8,
+    "missingDocumentsCount": 3,
+    "pendingActionsCount": 1
+  },
+  "projects": [
+    {
+      "id": "proj_1",
+      "name": "Brand Identity 3D",
+      "client": "Alpha Media",
+      "status": "Đang làm",
+      "budget": 45000000.0,
+      "budgetFormatted": "45.000.000 đ",
+      "received": 22500000.0,
+      "receivedFormatted": "22.500.000 đ",
+      "paymentd1": 22500000.0,
+      "paymentd2": 22500000.0,
+      "paymentd3": 0.0,
+      "duedate": "11/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_2",
+      "name": "Cinematic Film Trailer",
+      "client": "Creative Studio",
+      "status": "Chờ feedback",
+      "budget": 50000000.0,
+      "budgetFormatted": "50.000.000 đ",
+      "received": 15000000.0,
+      "receivedFormatted": "15.000.000 đ",
+      "paymentd1": 15000000.0,
+      "paymentd2": 35000000.0,
+      "paymentd3": 0.0,
+      "duedate": "12/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_3",
+      "name": "Campus WebGL Diorama",
+      "client": "Global Tech",
+      "status": "Đang làm",
+      "budget": 55000000.0,
+      "budgetFormatted": "55.000.000 đ",
+      "received": 27500000.0,
+      "receivedFormatted": "27.500.000 đ",
+      "paymentd1": 27500000.0,
+      "paymentd2": 27500000.0,
+      "paymentd3": 0.0,
+      "duedate": "13/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_4",
+      "name": "Commercial Spot VFX",
+      "client": "Starlight Film",
+      "status": "Hoàn thành",
+      "budget": 60000000.0,
+      "budgetFormatted": "60.000.000 đ",
+      "received": 60000000.0,
+      "receivedFormatted": "60.000.000 đ",
+      "paymentd1": 60000000.0,
+      "paymentd2": 0.0,
+      "paymentd3": 0.0,
+      "duedate": "14/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": true
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_5",
+      "name": "Feature Animation Pre-Viz",
+      "client": "Nexus Entertainment",
+      "status": "Đang làm",
+      "budget": 65000000.0,
+      "budgetFormatted": "65.000.000 đ",
+      "received": 32500000.0,
+      "receivedFormatted": "32.500.000 đ",
+      "paymentd1": 32500000.0,
+      "paymentd2": 32500000.0,
+      "paymentd3": 0.0,
+      "duedate": "15/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_6",
+      "name": "Interactive 3D Web",
+      "client": "Vanguard Studio",
+      "status": "Cần revise",
+      "budget": 70000000.0,
+      "budgetFormatted": "70.000.000 đ",
+      "received": 21000000.0,
+      "receivedFormatted": "21.000.000 đ",
+      "paymentd1": 21000000.0,
+      "paymentd2": 49000000.0,
+      "paymentd3": 0.0,
+      "duedate": "16/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_7",
+      "name": "Music Video Post-Production",
+      "client": "Alpha Media",
+      "status": "Đang làm",
+      "budget": 75000000.0,
+      "budgetFormatted": "75.000.000 đ",
+      "received": 37500000.0,
+      "receivedFormatted": "37.500.000 đ",
+      "paymentd1": 37500000.0,
+      "paymentd2": 37500000.0,
+      "paymentd3": 0.0,
+      "duedate": "17/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_8",
+      "name": "Corporate Brand Film",
+      "client": "Creative Studio",
+      "status": "Tạm dừng",
+      "budget": 80000000.0,
+      "budgetFormatted": "80.000.000 đ",
+      "received": 24000000.0,
+      "receivedFormatted": "24.000.000 đ",
+      "paymentd1": 24000000.0,
+      "paymentd2": 56000000.0,
+      "paymentd3": 0.0,
+      "duedate": "18/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_9",
+      "name": "Documentary Color Grading",
+      "client": "Global Tech",
+      "status": "Đang làm",
+      "budget": 85000000.0,
+      "budgetFormatted": "85.000.000 đ",
+      "received": 42500000.0,
+      "receivedFormatted": "42.500.000 đ",
+      "paymentd1": 42500000.0,
+      "paymentd2": 42500000.0,
+      "paymentd3": 0.0,
+      "duedate": "19/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_10",
+      "name": "Motion Graphics Identity",
+      "client": "Starlight Film",
+      "status": "Chờ feedback",
+      "budget": 90000000.0,
+      "budgetFormatted": "90.000.000 đ",
+      "received": 27000000.0,
+      "receivedFormatted": "27.000.000 đ",
+      "paymentd1": 27000000.0,
+      "paymentd2": 63000000.0,
+      "paymentd3": 0.0,
+      "duedate": "20/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_11",
+      "name": "Virtual Studio Environment",
+      "client": "Nexus Entertainment",
+      "status": "Đang làm",
+      "budget": 95000000.0,
+      "budgetFormatted": "95.000.000 đ",
+      "received": 47500000.0,
+      "receivedFormatted": "47.500.000 đ",
+      "paymentd1": 47500000.0,
+      "paymentd2": 47500000.0,
+      "paymentd3": 0.0,
+      "duedate": "21/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_12",
+      "name": "Title Sequence Design",
+      "client": "Vanguard Studio",
+      "status": "Hoàn thành",
+      "budget": 100000000.0,
+      "budgetFormatted": "100.000.000 đ",
+      "received": 100000000.0,
+      "receivedFormatted": "100.000.000 đ",
+      "paymentd1": 100000000.0,
+      "paymentd2": 0.0,
+      "paymentd3": 0.0,
+      "duedate": "22/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": true
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_13",
+      "name": "Brand Identity 3D #13",
+      "client": "Alpha Media",
+      "status": "Đang làm",
+      "budget": 105000000.0,
+      "budgetFormatted": "105.000.000 đ",
+      "received": 52500000.0,
+      "receivedFormatted": "52.500.000 đ",
+      "paymentd1": 52500000.0,
+      "paymentd2": 52500000.0,
+      "paymentd3": 0.0,
+      "duedate": "23/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_14",
+      "name": "Cinematic Film Trailer #14",
+      "client": "Creative Studio",
+      "status": "Cần revise",
+      "budget": 110000000.0,
+      "budgetFormatted": "110.000.000 đ",
+      "received": 33000000.0,
+      "receivedFormatted": "33.000.000 đ",
+      "paymentd1": 33000000.0,
+      "paymentd2": 77000000.0,
+      "paymentd3": 0.0,
+      "duedate": "24/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_15",
+      "name": "Campus WebGL Diorama #15",
+      "client": "Global Tech",
+      "status": "Đang làm",
+      "budget": 115000000.0,
+      "budgetFormatted": "115.000.000 đ",
+      "received": 57500000.0,
+      "receivedFormatted": "57.500.000 đ",
+      "paymentd1": 57500000.0,
+      "paymentd2": 57500000.0,
+      "paymentd3": 0.0,
+      "duedate": "25/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_16",
+      "name": "Commercial Spot VFX #16",
+      "client": "Starlight Film",
+      "status": "Tạm dừng",
+      "budget": 120000000.0,
+      "budgetFormatted": "120.000.000 đ",
+      "received": 36000000.0,
+      "receivedFormatted": "36.000.000 đ",
+      "paymentd1": 36000000.0,
+      "paymentd2": 84000000.0,
+      "paymentd3": 0.0,
+      "duedate": "26/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_17",
+      "name": "Feature Animation Pre-Viz #17",
+      "client": "Nexus Entertainment",
+      "status": "Đang làm",
+      "budget": 125000000.0,
+      "budgetFormatted": "125.000.000 đ",
+      "received": 62500000.0,
+      "receivedFormatted": "62.500.000 đ",
+      "paymentd1": 62500000.0,
+      "paymentd2": 62500000.0,
+      "paymentd3": 0.0,
+      "duedate": "27/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_18",
+      "name": "Interactive 3D Web #18",
+      "client": "Vanguard Studio",
+      "status": "Chờ feedback",
+      "budget": 130000000.0,
+      "budgetFormatted": "130.000.000 đ",
+      "received": 39000000.0,
+      "receivedFormatted": "39.000.000 đ",
+      "paymentd1": 39000000.0,
+      "paymentd2": 91000000.0,
+      "paymentd3": 0.0,
+      "duedate": "10/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_19",
+      "name": "Music Video Post-Production #19",
+      "client": "Alpha Media",
+      "status": "Đang làm",
+      "budget": 135000000.0,
+      "budgetFormatted": "135.000.000 đ",
+      "received": 67500000.0,
+      "receivedFormatted": "67.500.000 đ",
+      "paymentd1": 67500000.0,
+      "paymentd2": 67500000.0,
+      "paymentd3": 0.0,
+      "duedate": "11/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_20",
+      "name": "Corporate Brand Film #20",
+      "client": "Creative Studio",
+      "status": "Hoàn thành",
+      "budget": 140000000.0,
+      "budgetFormatted": "140.000.000 đ",
+      "received": 140000000.0,
+      "receivedFormatted": "140.000.000 đ",
+      "paymentd1": 140000000.0,
+      "paymentd2": 0.0,
+      "paymentd3": 0.0,
+      "duedate": "12/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": true
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_21",
+      "name": "Documentary Color Grading #21",
+      "client": "Global Tech",
+      "status": "Đang làm",
+      "budget": 145000000.0,
+      "budgetFormatted": "145.000.000 đ",
+      "received": 72500000.0,
+      "receivedFormatted": "72.500.000 đ",
+      "paymentd1": 72500000.0,
+      "paymentd2": 72500000.0,
+      "paymentd3": 0.0,
+      "duedate": "13/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_22",
+      "name": "Motion Graphics Identity #22",
+      "client": "Starlight Film",
+      "status": "Cần revise",
+      "budget": 150000000.0,
+      "budgetFormatted": "150.000.000 đ",
+      "received": 45000000.0,
+      "receivedFormatted": "45.000.000 đ",
+      "paymentd1": 45000000.0,
+      "paymentd2": 105000000.0,
+      "paymentd3": 0.0,
+      "duedate": "14/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_23",
+      "name": "Virtual Studio Environment #23",
+      "client": "Nexus Entertainment",
+      "status": "Đang làm",
+      "budget": 155000000.0,
+      "budgetFormatted": "155.000.000 đ",
+      "received": 77500000.0,
+      "receivedFormatted": "77.500.000 đ",
+      "paymentd1": 77500000.0,
+      "paymentd2": 77500000.0,
+      "paymentd3": 0.0,
+      "duedate": "15/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_24",
+      "name": "Title Sequence Design #24",
+      "client": "Vanguard Studio",
+      "status": "Tạm dừng",
+      "budget": 160000000.0,
+      "budgetFormatted": "160.000.000 đ",
+      "received": 48000000.0,
+      "receivedFormatted": "48.000.000 đ",
+      "paymentd1": 48000000.0,
+      "paymentd2": 112000000.0,
+      "paymentd3": 0.0,
+      "duedate": "16/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_25",
+      "name": "Brand Identity 3D #25",
+      "client": "Alpha Media",
+      "status": "Đang làm",
+      "budget": 165000000.0,
+      "budgetFormatted": "165.000.000 đ",
+      "received": 82500000.0,
+      "receivedFormatted": "82.500.000 đ",
+      "paymentd1": 82500000.0,
+      "paymentd2": 82500000.0,
+      "paymentd3": 0.0,
+      "duedate": "17/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_26",
+      "name": "Cinematic Film Trailer #26",
+      "client": "Creative Studio",
+      "status": "Chờ feedback",
+      "budget": 170000000.0,
+      "budgetFormatted": "170.000.000 đ",
+      "received": 51000000.0,
+      "receivedFormatted": "51.000.000 đ",
+      "paymentd1": 51000000.0,
+      "paymentd2": 119000000.0,
+      "paymentd3": 0.0,
+      "duedate": "18/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_27",
+      "name": "Campus WebGL Diorama #27",
+      "client": "Global Tech",
+      "status": "Đang làm",
+      "budget": 175000000.0,
+      "budgetFormatted": "175.000.000 đ",
+      "received": 87500000.0,
+      "receivedFormatted": "87.500.000 đ",
+      "paymentd1": 87500000.0,
+      "paymentd2": 87500000.0,
+      "paymentd3": 0.0,
+      "duedate": "19/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_28",
+      "name": "Commercial Spot VFX #28",
+      "client": "Starlight Film",
+      "status": "Hoàn thành",
+      "budget": 180000000.0,
+      "budgetFormatted": "180.000.000 đ",
+      "received": 180000000.0,
+      "receivedFormatted": "180.000.000 đ",
+      "paymentd1": 180000000.0,
+      "paymentd2": 0.0,
+      "paymentd3": 0.0,
+      "duedate": "20/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": true
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "id": "proj_29",
+      "name": "Feature Animation Pre-Viz #29",
+      "client": "Nexus Entertainment",
+      "status": "Đang làm",
+      "budget": 185000000.0,
+      "budgetFormatted": "185.000.000 đ",
+      "received": 92500000.0,
+      "receivedFormatted": "92.500.000 đ",
+      "paymentd1": 92500000.0,
+      "paymentd2": 92500000.0,
+      "paymentd3": 0.0,
+      "duedate": "21/12/2026",
+      "nextaction": "Review milestone deliverables",
+      "milestones": [
+        {
+          "date": "01/11/2026",
+          "name": "Brief / Scope",
+          "completed": true
+        },
+        {
+          "date": "15/11/2026",
+          "name": "Production",
+          "completed": false
+        },
+        {
+          "date": "05/12/2026",
+          "name": "Final Delivery",
+          "completed": false
+        }
+      ],
+      "documents": [
+        {
+          "title": "Contract Agreement.pdf",
+          "status": "Signed"
+        },
+        {
+          "title": "Creative Brief.pdf",
+          "status": "Approved"
+        }
+      ]
+    }
+  ],
+  "recentExpenses": [
+    {
+      "id": "exp_1",
+      "description": "Cloud GPU Cluster Hosting",
+      "amount": 8500000,
+      "amountFormatted": "8.500.000 đ",
+      "date": "20/11/2026",
+      "category": "IT / Infrastructure"
+    },
+    {
+      "id": "exp_2",
+      "description": "Sound FX Library License",
+      "amount": 3200000,
+      "amountFormatted": "3.200.000 đ",
+      "date": "18/11/2026",
+      "category": "Production"
+    },
+    {
+      "id": "exp_3",
+      "description": "3D Stylized Texture Asset Pack",
+      "amount": 4600000,
+      "amountFormatted": "4.600.000 đ",
+      "date": "15/11/2026",
+      "category": "Art & Design"
+    }
+  ],
+  "allExpenses": [
+    {
+      "id": "exp_1",
+      "description": "Cloud GPU Cluster Hosting",
+      "amount": 8500000,
+      "amountFormatted": "8.500.000 đ",
+      "date": "20/11/2026",
+      "category": "IT / Infrastructure"
+    },
+    {
+      "id": "exp_2",
+      "description": "Sound FX Library License",
+      "amount": 3200000,
+      "amountFormatted": "3.200.000 đ",
+      "date": "18/11/2026",
+      "category": "Production"
+    },
+    {
+      "id": "exp_3",
+      "description": "3D Stylized Texture Asset Pack",
+      "amount": 4600000,
+      "amountFormatted": "4.600.000 đ",
+      "date": "15/11/2026",
+      "category": "Art & Design"
+    }
+  ],
+  "allIncomes": [
+    {
+      "id": "inc_1",
+      "description": "Milestone 1 Payment - Film Trailer",
+      "amount": 60000000,
+      "amountFormatted": "60.000.000 đ",
+      "date": "19/11/2026",
+      "category": "Production"
+    },
+    {
+      "id": "inc_2",
+      "description": "Deposit - Brand Identity 3D",
+      "amount": 42500000,
+      "amountFormatted": "42.500.000 đ",
+      "date": "10/11/2026",
+      "category": "Commercial"
+    }
+  ],
+  "actionsPending": [
+    {
+      "id": "act_1",
+      "title": "Phê duyệt kế hoạch Art Direction Campus V2.5",
+      "priority": "High",
+      "assignee": "Sếp An Phan",
+      "deadline": "22/11/2026"
+    }
+  ],
+  "dailyBriefing": {
+    "tramanh": {
+      "activeProjectsSummary": "Đang có 8 dự án đang chạy tiến độ.",
+      "pendingActionsSummary": "1 việc cần Sếp ra quyết định.",
+      "highlights": [
+        "Brand Identity 3D: Đang làm (Hạn: 15/12/2026)",
+        "Cinematic Film Trailer: Chờ feedback (Hạn: 25/11/2026)",
+        "Campus WebGL Diorama: Đang làm (Hạn: 30/11/2026)",
+        "Commercial Spot VFX: Đang làm (Hạn: 10/12/2026)"
+      ]
+    },
+    "hermes": {
+      "systemStatus": "Hoạt động bình thường (24/7)",
+      "mailScanStatus": "0 email lạ chưa phân loại",
+      "dbLatency": "38ms (PostgreSQL Cloud)",
+      "backupStatus": "Đã sao lưu tự động"
+    }
+  }
+}

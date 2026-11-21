@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "operational-target-graph",
+  "source": "AN PHIM Master Architecture - Boot Guidelines & Actual Staffing SOP",
+  "liveTelemetry": false,
+  "defaultFocus": "campus",
+  "maxVisibleEdges": 6,
+  "nodes": [
+    {
+      "id": "bld:facility:hq",
+      "department": "campus",
+      "name": "AN PHIM HQ"
+    },
+    {
+      "id": "bld:facility:schedule",
+      "department": "campus",
+      "name": "Lịch làm việc"
+    },
+    {
+      "id": "bld:facility:documents",
+      "department": "administration",
+      "name": "Giấy tờ"
+    },
+    {
+      "id": "bld:facility:drive",
+      "department": "administration",
+      "name": "Kho Drive"
+    },
+    {
+      "id": "bld:facility:bank",
+      "department": "finance",
+      "name": "Ngân hàng"
+    },
+    {
+      "id": "bld:facility:reserve",
+      "department": "finance",
+      "name": "Kho dự trữ / Tiết kiệm"
+    },
+    {
+      "id": "bld:facility:ai",
+      "department": "internal",
+      "name": "AI Team"
+    },
+    {
+      "id": "bld:facility:hermes",
+      "department": "internal",
+      "name": "Hermes"
+    },
+    {
+      "id": "bld:facility:supabase",
+      "department": "it",
+      "name": "Database"
+    },
+    {
+      "id": "bld:facility:google",
+      "department": "it",
+      "name": "Google Cloud"
+    },
+    {
+      "id": "bld:facility:telegram",
+      "department": "it",
+      "name": "Telegram Bot"
+    },
+    {
+      "id": "bld:project:proj_24",
+      "department": "internal",
+      "name": "AN PHIM Website 2027"
+    },
+    {
+      "id": "bld:project:proj_25",
+      "department": "internal",
+      "name": "AN PHIM Trailer"
+    },
+    {
+      "id": "bld:project:proj_05",
+      "department": "internal",
+      "name": "Phim lịch sử"
+    },
+    {
+      "id": "bld:facility:oracle",
+      "department": "it",
+      "name": "Oracle Cloud"
+    }
+  ],
+  "edges": [
+    {
+      "id": "op:schedule:hq",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:hq",
+      "type": "reporting",
+      "label": "Chỉ đạo & thực thi lịch trình hàng ngày",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:schedule:ai",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:ai",
+      "type": "execution",
+      "label": "Trâm Anh điều phối & sắp xếp khung giờ",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:schedule:supabase",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Đồng bộ bảng schedule (Single Source)",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:schedule:telegram",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:telegram",
+      "type": "reporting",
+      "label": "Thông báo nhắc lịch & nhận lệnh hẹn",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:hq:telegram",
+      "source": "bld:facility:hq",
+      "target": "bld:facility:telegram",
+      "type": "reporting",
+      "label": "Điều hành & chỉ đạo từ xa qua Telegram",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:telegram:ai",
+      "source": "bld:facility:telegram",
+      "target": "bld:facility:ai",
+      "type": "execution",
+      "label": "Phân phối task & phản hồi Agents",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:bank",
+      "source": "bld:facility:ai",
+      "target": "bld:facility:bank",
+      "type": "finance",
+      "label": "AI quét mail, đối soát sao kê thu chi",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:bank:reserve",
+      "source": "bld:facility:bank",
+      "target": "bld:facility:reserve",
+      "type": "finance",
+      "label": "Phân bổ quỹ tiền mặt & kho dự trữ",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:documents:bank",
+      "source": "bld:facility:documents",
+      "target": "bld:facility:bank",
+      "type": "finance",
+      "label": "Nghiệm thu & thanh toán Vietcombank",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:documents",
+      "source": "bld:facility:ai",
+      "target": "bld:facility:documents",
+      "type": "documents",
+      "label": "Minh Thư soạn HĐDV, BBTU, BBNT, BBTL",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:drive",
+      "source": "bld:facility:ai",
+      "target": "bld:facility:drive",
+      "type": "documents",
+      "label": "Lưu trữ tài nguyên, footage & hợp đồng",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:supabase",
+      "source": "bld:facility:ai",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Cập nhật dữ liệu dự án, khách hàng, chi phí",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:proj_24",
+      "source": "bld:facility:ai",
+      "target": "bld:project:proj_24",
+      "type": "execution",
+      "label": "Minh Đan dựng Website Rolling Video",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:proj_05",
+      "source": "bld:facility:ai",
+      "target": "bld:project:proj_05",
+      "type": "reporting",
+      "label": "Theo dõi tiến độ Winterland87 (K87K)",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:ai:proj_25",
+      "source": "bld:facility:ai",
+      "target": "bld:project:proj_25",
+      "type": "execution",
+      "label": "Sản xuất trailer & quảng bá thương hiệu",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:oracle:supabase",
+      "source": "bld:facility:oracle",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Đồng bộ database & chạy cronjob 24/7",
+      "bidirectional": true,
+      "status": "target-demo"
+    },
+    {
+      "id": "op:hermes:supabase",
+      "source": "bld:facility:hermes",
+      "target": "bld:facility:supabase",
+      "type": "execution",
+      "label": "Hermes Automation Engine thực thi ngầm",
+      "bidirectional": true,
+      "status": "target-demo"
+    }
+  ]
+}

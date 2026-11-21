@@ -1,0 +1,23 @@
+{
+  "buildingType": "hq",
+  "version": 3,
+  "savedAt": "2026-11-16T12:13:45.444Z",
+  "colors": {
+    "glassColor": "#2D8781",
+    "accentColor": "#ED8038"
+  },
+  "toggles": {
+    "canopy": true,
+    "solar": true,
+    "fins": true,
+    "lantern": true,
+    "shoulder": true
+  },
+  "scales": {
+    "towerScale": 1,
+    "podiumScale": 1
+  },
+  "modifiedParts": [],
+  "deletedPartIds": [],
+  "deletedParts": []
+}

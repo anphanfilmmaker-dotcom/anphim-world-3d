@@ -1,0 +1,2276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>AN PHIM — ARCHITECTURE STUDIO & BUILDING TUNER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 40%, #f1f5f9 0%, #cbd5e1 60%, #94a3b8 100%);
+      color: #0f172a;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      user-select: none;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* TOP HEADER BAR */
+    #top-bar {
+      position: absolute;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(43, 168, 162, 0.35);
+      border-radius: 40px;
+      padding: 6px 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(43, 168, 162, 0.1);
+      max-width: 96vw;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-right: 14px;
+      border-right: 1.5px solid rgba(43, 168, 162, 0.2);
+    }
+    .brand h1 {
+      font-size: 13.5px;
+      font-weight: 900;
+      color: #1E8C86;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .brand span {
+      background: #ED8038;
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* BUILDING SELECTOR TABS */
+    .bld-tabs {
+      display: flex;
+      gap: 5px;
+      overflow-x: auto;
+    }
+    .bld-tab-btn {
+      border: 1px solid #2BA8A2;
+      background: #E8F6F5;
+      color: #1E8C86;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bld-tab-btn:hover {
+      background: #d4f0ee;
+    }
+    .bld-tab-btn.active {
+      background: linear-gradient(135deg, #2BA8A2 0%, #1E8C86 100%);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(43, 168, 162, 0.35);
+      border-color: #3CC4BD;
+    }
+
+    /* RIGHT ACTIONS IN TOP BAR */
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 10px;
+      border-left: 1.5px solid rgba(43, 168, 162, 0.2);
+    }
+    .btn-return {
+      background: #FFF8E7;
+      color: #92400e;
+      border: 1.5px solid #FDE68A;
+      border-radius: 999px;
+      padding: 5px 13px;
+      font-size: 11px;
+      font-weight: 800;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .btn-return:hover {
+      background: #fef3c7;
+      transform: translateY(-1px);
+    }
+
+    /* FLOATING BOTTOM CAMERA TOOLBAR */
+    #cam-toolbar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.90);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 30px;
+      padding: 6px 14px;
+      color: #f8fafc;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+    }
+    .cam-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cam-btn:hover {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+    }
+    .cam-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #7dd3fc;
+    }
+    .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      margin: 0 4px;
+    }
+    .tool-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+    .tool-toggle input {
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+
+    /* RIGHT SIDEBAR: PARAMETRIC TUNER PANEL */
+    #sidebar-panel {
+      position: absolute;
+      right: 20px;
+      top: 80px;
+      bottom: 24px;
+      width: 350px;
+      z-index: 25;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1.5px solid rgba(43, 168, 162, 0.25);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      padding-bottom: 10px;
+    }
+    .panel-header h2 {
+      font-size: 14px;
+      font-weight: 900;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bld-badge {
+      background: #E8F6F5;
+      color: #1E8C86;
+      border: 1px solid #2BA8A2;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    /* GIZMO COMPONENT INSPECTOR */
+    #gizmo-inspector-card {
+      background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
+      border: 1.5px solid #2BA8A2;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 14px rgba(43, 168, 162, 0.15);
+    }
+    .gizmo-mode-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      background: rgba(15, 23, 42, 0.08);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .anchor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+    }
+    .anchor-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      padding: 5px 6px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .anchor-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .anchor-btn.active {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      box-shadow: 0 1px 4px rgba(15,118,110,0.3);
+    }
+    .gizmo-mode-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .gizmo-mode-btn:hover { color: #0f172a; }
+    .gizmo-mode-btn.active {
+      background: #ffffff;
+      color: #0f766e;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .gizmo-val-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .gizmo-val-row span { min-width: 55px; }
+    .gizmo-val-row input[type="range"] {
+      flex: 1;
+      height: 5px;
+      accent-color: #0f766e;
+      cursor: pointer;
+    }
+    .gizmo-input-wrap {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 1px 5px;
+      min-width: 60px;
+      max-width: 68px;
+      transition: all 0.2s;
+    }
+    .gizmo-input-wrap:focus-within {
+      border-color: #0f766e;
+      background: #ffffff;
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.25);
+    }
+    .gizmo-num-input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f766e;
+      text-align: right;
+      outline: none;
+      padding: 2px 0;
+      margin: 0;
+      -moz-appearance: textfield;
+    }
+    .gizmo-num-input::-webkit-outer-spin-button,
+    .gizmo-num-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .gizmo-input-wrap .unit {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      margin-left: 3px;
+      min-width: 10px;
+      user-select: none;
+    }
+
+    /* METRICS BOX */
+    .metrics-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .metric-item small {
+      display: block;
+      font-size: 9.5px;
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .metric-item b {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* SECTION GROUPS */
+    .section-title {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #1E8C86;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .control-group {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* SLIDERS */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .slider-label span {
+      color: #1E8C86;
+      font-family: monospace;
+    }
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: #cbd5e1;
+      outline: none;
+      accent-color: #1E8C86;
+    }
+
+    /* CHECKBOX TOGGLES */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #334155;
+      padding: 4px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #ED8038;
+      cursor: pointer;
+    }
+
+    /* COLOR PALETTES */
+    .color-swatches {
+      display: flex;
+      gap: 8px;
+    }
+    .swatch-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .swatch-btn:hover { transform: scale(1.15); }
+    .swatch-btn.active {
+      border: 2px solid #0f172a;
+      transform: scale(1.15);
+    }
+
+    /* ACTION BUTTONS */
+    .action-btns {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 10px;
+    }
+    .btn-action-primary {
+      background: linear-gradient(135deg, #ED8038 0%, #D86D26 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 14px rgba(237, 128, 56, 0.35);
+      transition: all 0.15s ease;
+    }
+    .btn-action-primary:hover {
+      background: linear-gradient(135deg, #f08d4b 0%, #e0742d 100%);
+      transform: translateY(-1px);
+    }
+    .btn-action-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-action-secondary:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* TOAST NOTIFICATION */
+    #toast {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 11.5px;
+      font-weight: 700;
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* AXIS GIZMO BADGE (BOTTOM LEFT) */
+    #info-badge {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 25;
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 12px;
+      padding: 8px 14px;
+      font-size: 10.5px;
+      color: #475569;
+      line-height: 1.5;
+    }
+  </style>
+
+  <script src="./vendor/turf.min.js"></script>
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+
+  <div id="toast">📋 Đã sao chép cấu hình vào Clipboard!</div>
+
+  <!-- TOP HEADER BAR -->
+  <header id="top-bar">
+    <div class="brand">
+      <h1>🏛️ AN PHIM ARCHITECTURE STUDIO</h1>
+      <span>3D Tuner</span>
+    </div>
+
+    <!-- TABS CHỌN TÒA NHÀ -->
+    <div class="bld-tabs" id="bld-tabs-container">
+      <button class="bld-tab-btn active" data-bld="hq">🏢 AN PHIM HQ</button>
+      <button class="bld-tab-btn" data-bld="bank">🏦 Ngân Hàng (Bank)</button>
+      <button class="bld-tab-btn" data-bld="vault">🔐 Kho Bạc (Vault)</button>
+      <button class="bld-tab-btn" data-bld="hermes">🔬 Hermes Lab</button>
+      <button class="bld-tab-btn" data-bld="telegram">📡 Trạm Vệ Tinh Telecom</button>
+      <button class="bld-tab-btn" data-bld="oracle">☁️ Oracle Cloud</button>
+      <button class="bld-tab-btn" data-bld="database">🗄️ Supabase (Database)</button>
+    </div>
+
+    <div class="top-actions">
+      <a id="btn-view-campus-live" href="./index.html" class="btn-return" style="background:#0284c7;border-color:#38bdf8;" title="Mở Campus và xem cận cảnh tòa nhà này">
+        <span>🚀</span> <span>Xem Trên Campus</span>
+      </a>
+      <a href="./index.html" class="btn-return" title="Quay lại Bản đồ Tổng thể Campus">
+        <span>⬅️</span> <span>Quay lại Campus</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- WEBGL CANVAS -->
+  <div id="webgl-canvas"></div>
+
+  <!-- INFO BADGE (BOTTOM LEFT) -->
+  <div id="info-badge">
+    <b style="color:#0f172a;">🎮 Điều khiển 3D:</b><br>
+    • Chuột trái: Xoay góc nhìn 360°<br>
+    • Chuột phải: Kéo dời khung hình (Pan)<br>
+    • Cuộn chuột: Phóng to / Thu nhỏ (Zoom)
+  </div>
+
+  <!-- FLOATING BOTTOM CAMERA TOOLBAR -->
+  <div id="cam-toolbar">
+    <button class="cam-btn active" data-cam="iso">Phối cảnh 3D</button>
+    <button class="cam-btn" data-cam="front">Mặt tiền (Front)</button>
+    <button class="cam-btn" data-cam="back">Mặt sau (Back)</button>
+    <button class="cam-btn" data-cam="side">Bên hông (Side)</button>
+    <button class="cam-btn" data-cam="top">Mặt bằng (Top)</button>
+
+    <div class="toolbar-sep"></div>
+
+    <label class="tool-toggle">
+      <input type="checkbox" id="chk-auto-rotate"> Xoay tự động
+    </label>
+    <label class="tool-toggle">
+      <input type="checkbox" id="chk-wireframe"> Khung dây
+    </label>
+    <label class="tool-toggle">
+      <input type="checkbox" id="chk-grid" checked> Thước đo Lưới
+    </label>
+  </div>
+
+  <!-- RIGHT SIDEBAR: PARAMETRIC TUNER PANEL -->
+  <aside id="sidebar-panel">
+    <div class="panel-header">
+      <div>
+        <h2 id="current-bld-title">AN PHIM Headquarter</h2>
+        <div style="font-size:11px; color:#0d9488; font-weight:600; margin-top:3px;">
+          📁 File cấu hình độc lập: <span id="current-bld-file" style="font-family:monospace; background:#e6fffa; padding:2px 6px; border-radius:4px; border:1px solid #99f6e4;">buildings_config/hq.json</span>
+        </div>
+      </div>
+      <span class="bld-badge" id="current-bld-grade">Grade E · Campus Scale</span>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics-box">
+      <div class="metric-item">
+        <small>Chiều Rộng (X)</small>
+        <b id="val-dim-w">17.0 m</b>
+      </div>
+      <div class="metric-item">
+        <small>Chiều Cao (Y)</small>
+        <b id="val-dim-h">24.0 m</b>
+      </div>
+      <div class="metric-item">
+        <small>Chiều Sâu (Z)</small>
+        <b id="val-dim-d">14.0 m</b>
+      </div>
+    </div>
+
+    <!-- GIZMO COMPONENT TUNER CARD -->
+    <div class="section-title">🎯 Tinh Chỉnh Chi Tiết Đang Chọn</div>
+    <div id="gizmo-inspector-card">
+      <div id="gizmo-empty-msg" style="font-size:11px;color:#64748b;line-height:1.5;text-align:center;padding:6px 0;">
+        👉 <b>Click chuột vào bất kỳ chi tiết nào</b> trên tòa nhà (mái đón, cột, tháp kính, lam cam...) để kéo to nhỏ trực tiếp!
+      </div>
+
+      <div id="gizmo-active-content" style="display:none;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <b id="gizmo-selected-title" style="font-size:12px;color:#0f766e;">Mái Đón Sảnh Chữ U</b>
+          <button id="btn-gizmo-deselect" style="border:none;background:#cbd5e1;color:#1e293b;padding:2px 7px;border-radius:6px;font-size:9.5px;font-weight:800;cursor:pointer;">Đóng [Esc]</button>
+        </div>
+
+        <!-- Chế độ Gizmo W/E/R -->
+        <div class="gizmo-mode-selector">
+          <button class="gizmo-mode-btn active" id="btn-mode-scale" title="Kéo to kéo nhỏ kích thước [Phím R]">
+            <span style="font-size:12px;">📏</span> <span>Kéo To/Nhỏ [R]</span>
+          </button>
+          <button class="gizmo-mode-btn" id="btn-mode-translate" title="Di chuyển vị trí [Phím W]">
+            <span style="font-size:12px;">✥</span> <span>Di Chuyển [W]</span>
+          </button>
+          <button class="gizmo-mode-btn" id="btn-mode-rotate" title="Xoay hướng [Phím E]">
+            <span style="font-size:12px;">🔄</span> <span>Xoay [E]</span>
+          </button>
+        </div>
+
+        <!-- ANCHOR POINT SELECTOR (TÂM NEO CO GIÃN) -->
+        <div style="display:flex;flex-direction:column;gap:5px;background:#ffffff;border-radius:8px;padding:8px;border:1px solid #ccfbf1;">
+          <div style="font-size:11px;font-weight:700;color:#0f766e;display:flex;justify-content:space-between;align-items:center;">
+            <span>📍 Điểm Neo (Anchor Point):</span>
+            <span id="anchor-badge" style="font-size:10px;color:#0284c7;background:#e0f2fe;padding:1px 6px;border-radius:4px;font-weight:800;">Neo Đáy Sàn</span>
+          </div>
+          <div class="anchor-grid">
+            <button class="anchor-btn active" data-anchor="bottom" title="Cố định chân đế trên sàn, chỉ dãn lên trên">⚓ Neo Đáy Sàn</button>
+            <button class="anchor-btn" data-anchor="center" title="Nở đều 2 phía từ tâm hình học">🎯 Tâm (Center)</button>
+            <button class="anchor-btn" data-anchor="left" title="Cố định mép trái, kéo dãn về bên phải">⬅️ Neo Trái</button>
+            <button class="anchor-btn" data-anchor="right" title="Cố định mép phải, kéo dãn về bên trái">➡️ Neo Phải</button>
+            <button class="anchor-btn" data-anchor="front" title="Cố định mặt trước, dãn về sau">⬇️ Neo Trước</button>
+            <button class="anchor-btn" data-anchor="back" title="Cố định mặt sau, dãn về trước">⬆️ Neo Sau</button>
+          </div>
+        </div>
+
+        <!-- Sliders & Typing Inputs Scale X, Y, Z -->
+        <div style="display:flex;flex-direction:column;gap:5px;background:#ffffff;border-radius:8px;padding:8px;border:1px solid #ccfbf1;">
+          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;">
+            <span>📐 Kích Thước (Scale):</span>
+            <span style="font-size:9.5px;color:#64748b;font-weight:600;">(Gõ số hoặc Kéo trượt)</span>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Rộng (X):</span>
+            <input type="range" id="rng-part-sx" min="0.1" max="4.0" step="0.05" value="1.0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác số kích thước X">
+              <input type="number" id="num-part-sx" class="gizmo-num-input" step="0.05" min="0.01" value="1.00">
+              <span class="unit">x</span>
+            </div>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Cao (Y):</span>
+            <input type="range" id="rng-part-sy" min="0.1" max="4.0" step="0.05" value="1.0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác số kích thước Y">
+              <input type="number" id="num-part-sy" class="gizmo-num-input" step="0.05" min="0.01" value="1.00">
+              <span class="unit">x</span>
+            </div>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Sâu (Z):</span>
+            <input type="range" id="rng-part-sz" min="0.1" max="4.0" step="0.05" value="1.0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác số kích thước Z">
+              <input type="number" id="num-part-sz" class="gizmo-num-input" step="0.05" min="0.01" value="1.00">
+              <span class="unit">x</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sliders & Typing Inputs Pos X, Y, Z -->
+        <div style="display:flex;flex-direction:column;gap:5px;background:#ffffff;border-radius:8px;padding:8px;border:1px solid #ccfbf1;">
+          <div style="font-size:10px;font-weight:800;color:#0f766e;text-transform:uppercase;letter-spacing:0.5px;display:flex;justify-content:space-between;">
+            <span>📍 Tọa Độ (Position):</span>
+            <span style="font-size:9.5px;color:#64748b;font-weight:600;">(Gõ số hoặc Kéo trượt)</span>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Dời X:</span>
+            <input type="range" id="rng-part-px" min="-25" max="25" step="0.1" value="0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác vị trí X (mét)">
+              <input type="number" id="num-part-px" class="gizmo-num-input" step="0.1" value="0.0">
+              <span class="unit">m</span>
+            </div>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Dời Y:</span>
+            <input type="range" id="rng-part-py" min="-10" max="35" step="0.1" value="0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác vị trí Y (mét)">
+              <input type="number" id="num-part-py" class="gizmo-num-input" step="0.1" value="0.0">
+              <span class="unit">m</span>
+            </div>
+          </div>
+          <div class="gizmo-val-row">
+            <span>Dời Z:</span>
+            <input type="range" id="rng-part-pz" min="-25" max="25" step="0.1" value="0">
+            <div class="gizmo-input-wrap" title="Nhấp vào để nhập chính xác vị trí Z (mét)">
+              <input type="number" id="num-part-pz" class="gizmo-num-input" step="0.1" value="0.0">
+              <span class="unit">m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nút Xóa Chi Tiết & Hoàn Tác -->
+        <div style="display:flex;gap:6px;">
+          <button id="btn-delete-part" style="flex:1;background:#ef4444;color:#ffffff;border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;box-shadow:0 2px 4px rgba(239,68,68,0.25);">
+            🗑️ Xóa Chi Tiết [Del]
+          </button>
+          <button id="btn-undo-delete" style="background:#ffffff;color:#334155;border:1.5px solid #cbd5e1;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;" title="Hoàn tác chi tiết vừa xóa [Ctrl+Z]">
+            ↩️ Hoàn tác
+          </button>
+        </div>
+
+        <button id="btn-reset-part-transform" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px;border-radius:8px;font-size:10.5px;font-weight:800;cursor:pointer;">
+          🔄 Khôi phục kích thước ban đầu
+        </button>
+      </div>
+    </div>
+
+    <!-- SECTION 1: TỶ LỆ & KÍCH THƯỚC -->
+    <div class="section-title">📐 Tỉ Lệ & Kích Thước</div>
+    <div class="control-group">
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>Chiều cao tháp kính (Tower Scale)</span>
+          <span id="lbl-tower-scale">100 %</span>
+        </div>
+        <input type="range" id="rng-tower-scale" min="70" max="140" step="2" value="100">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label">
+          <span>Tỷ lệ khối đế (Podium Width)</span>
+          <span id="lbl-podium-scale">100 %</span>
+        </div>
+        <input type="range" id="rng-podium-scale" min="80" max="120" step="2" value="100">
+      </div>
+
+      <label class="toggle-row">
+        <span>🏢 Nén tỷ lệ Campus chuẩn (Fit Grade E)</span>
+        <input type="checkbox" id="chk-campus-fit" checked>
+      </label>
+    </div>
+
+    <!-- SECTION 2: CHI TIẾT KIẾN TRÚC NGOẠI THẤT -->
+    <div class="section-title">✨ Chi Tiết Ngoại Thất & Mái</div>
+    <div class="control-group" id="toggles-container">
+      <!-- Dynamic toggles rendered per active building -->
+    </div>
+
+    <!-- SECTION 3: MÀU SẮC & VẬT LIỆU -->
+    <div class="section-title">🎨 Màu Sắc & Vật Liệu</div>
+    <div class="control-group">
+      <div style="font-size:11px;font-weight:700;color:#334155;">Màu Kính Kiến Trúc:</div>
+      <div class="color-swatches" id="swatches-glass">
+        <button class="swatch-btn active" data-color="#2D8781" style="background:#2D8781;" title="Teal Chuẩn AN PHIM"></button>
+        <button class="swatch-btn" data-color="#38bdf8" style="background:#38bdf8;" title="Xanh Da Trời"></button>
+        <button class="swatch-btn" data-color="#1e293b" style="background:#1e293b;" title="Khói Đen"></button>
+        <button class="swatch-btn" data-color="#059669" style="background:#059669;" title="Xanh Ngọc"></button>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:#334155;margin-top:6px;">Màu Cam Điểm Nhấn:</div>
+      <div class="color-swatches" id="swatches-accent">
+        <button class="swatch-btn active" data-color="#ED8038" style="background:#ED8038;" title="Cam AN PHIM"></button>
+        <button class="swatch-btn" data-color="#E0B542" style="background:#E0B542;" title="Vàng Gold"></button>
+        <button class="swatch-btn" data-color="#e11d48" style="background:#e11d48;" title="Đỏ Đô"></button>
+        <button class="swatch-btn" data-color="#0284c7" style="background:#0284c7;" title="Xanh Dương"></button>
+      </div>
+    </div>
+
+    <!-- ACTION BUTTONS: SAVE & EXPORT -->
+    <div class="action-btns" style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-action-primary" id="btn-save-studio" style="background:#0f766e;color:#ffffff;font-size:12px;font-weight:900;padding:11px;border-radius:10px;border:none;box-shadow:0 4px 14px rgba(15,118,110,0.35);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span>💾</span> <span>LƯU CẤU HÌNH [Ctrl + S]</span>
+      </button>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="btn-action-secondary" id="btn-export-json" style="padding:8px 6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;">
+          <span>📥</span> <span>Tải File .JSON</span>
+        </button>
+        <button class="btn-action-secondary" id="btn-import-json-btn" style="padding:8px 6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;">
+          <span>📂</span> <span>Nạp File .JSON</span>
+        </button>
+        <input type="file" id="file-import-json" accept=".json" style="display:none;">
+      </div>
+
+      <button class="btn-action-secondary" id="btn-copy-config">
+        <span>📋</span> <span>Sao Chép Báo Cáo Thông Số</span>
+      </button>
+
+      <button class="btn-action-secondary" id="btn-reset-default" style="color:#b91c1c;border-color:#fca5a5;background:#fff5f5;">
+        <span>🔄</span> <span>Khôi Phục Gốc (Reset Tất Cả)</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- THREE.JS SCENE SCRIPT -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from './vendor/OrbitControls.js';
+    import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
+    import { TransformControls } from './vendor/TransformControls.js';
+    import { createArchitecture } from './architecture.js?rev=v28_restored';
+
+    // 1. SCENE SETUP
+    const container = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdceaf0);
+
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.5, 500);
+    camera.position.set(52, 36, 62);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(0, 9, 0);
+    controls.maxPolarAngle = Math.PI * 0.48;
+    controls.minDistance = 6;
+    controls.maxDistance = 140;
+    // Chặn OrbitControls chiếm giữ chuột trái khi giữ phím Shift (dành riêng Shift + Click cho Multi-Select)
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN
+    };
+
+    // TRANSFORM CONTROLS GIZMO CHO TỪNG CHI TIẾT
+    const transformControls = new TransformControls(camera, renderer.domElement);
+    transformControls.size = 0.85;
+    transformControls.setMode('scale'); // Mặc định chế độ KÉO TO KÉO NHỎ
+    const tHelper = transformControls.getHelper ? transformControls.getHelper() : transformControls;
+    tHelper.visible = false;
+    scene.add(tHelper);
+
+    // Danh sách các BoxHelper bao quanh các chi tiết đang chọn (Cyan sáng, luôn nổi bật trên nền vật thể)
+    const boxHelpers = [];
+    function clearBoxHelpers() {
+      boxHelpers.forEach(h => {
+        scene.remove(h);
+        if (h.geometry) h.geometry.dispose();
+      });
+      boxHelpers.length = 0;
+    }
+    function updateBoxHelpers() {
+      clearBoxHelpers();
+      selectedMeshes.forEach(m => {
+        const h = new THREE.BoxHelper(m, 0x00f5ff);
+        h.material.depthTest = false; // Luôn hiển thị nổi trên bề mặt, không bị che khuất
+        h.material.transparent = true;
+        h.material.opacity = 0.95;
+        h.renderOrder = 9999;
+        scene.add(h);
+        boxHelpers.push(h);
+      });
+    }
+
+    let isGizmoDragging = false;
+    let selectedMesh = null;
+    let selectedMeshes = [];
+    let initialTransform = null;
+    let currentAnchor = 'bottom';
+    let lastScale = new THREE.Vector3(1, 1, 1);
+    let lastGizmoPos = new THREE.Vector3();
+    let lastGizmoScale = new THREE.Vector3(1, 1, 1);
+    const deletedHistory = [];
+    const currentDeletedPartIds = new Set();
+
+    function applyDeletedPartsFilter() {
+      if (!currentBuildingGroup) return;
+      const toRemove = [];
+      currentBuildingGroup.traverse(c => {
+        if (c.isMesh && c.userData.partId && currentDeletedPartIds.has(c.userData.partId)) {
+          toRemove.push(c);
+        }
+      });
+      toRemove.forEach(c => {
+        if (c.parent) c.parent.remove(c);
+      });
+    }
+
+    function initMeshOrig(mesh) {
+      if (!mesh || !mesh.userData) return;
+      if (!mesh.userData.origScale) {
+        mesh.userData.origScale = mesh.scale.clone();
+        mesh.userData.origPos = mesh.position.clone();
+        mesh.userData.origRot = mesh.rotation.clone();
+      }
+    }
+
+    function getMeshBaseDimensions(mesh) {
+      if (!mesh || !mesh.geometry) return { w: 1, h: 1, d: 1 };
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const b = mesh.geometry.boundingBox;
+      return {
+        w: Math.max(0.01, b.max.x - b.min.x),
+        h: Math.max(0.01, b.max.y - b.min.y),
+        d: Math.max(0.01, b.max.z - b.min.z)
+      };
+    }
+
+    function adjustPositionForAnchor(mesh, oldScale, newScale, anchor) {
+      if (!mesh || anchor === 'center') return;
+      const dims = getMeshBaseDimensions(mesh);
+      const dSx = newScale.x - oldScale.x;
+      const dSy = newScale.y - oldScale.y;
+      const dSz = newScale.z - oldScale.z;
+
+      if (anchor === 'bottom') {
+        mesh.position.y += (dims.h / 2) * dSy;
+      } else if (anchor === 'left') {
+        mesh.position.x += (dims.w / 2) * dSx;
+      } else if (anchor === 'right') {
+        mesh.position.x -= (dims.w / 2) * dSx;
+      } else if (anchor === 'front') {
+        mesh.position.z -= (dims.d / 2) * dSz;
+      } else if (anchor === 'back') {
+        mesh.position.z += (dims.d / 2) * dSz;
+      }
+    }
+
+    transformControls.addEventListener('dragging-changed', event => {
+      isGizmoDragging = event.value;
+      controls.enabled = !event.value;
+      if (event.value && selectedMesh) {
+        lastGizmoPos.copy(selectedMesh.position);
+        lastGizmoScale.copy(selectedMesh.scale);
+      } else if (!event.value && selectedMesh) {
+        syncInspectorFromMesh(selectedMesh);
+        boxHelpers.forEach(h => h.update());
+        measureDimensions();
+      }
+    });
+
+    transformControls.addEventListener('change', () => {
+      if (selectedMesh) {
+        const mode = transformControls.getMode();
+        if (selectedMeshes.length > 1) {
+          if (mode === 'translate') {
+            const deltaP = selectedMesh.position.clone().sub(lastGizmoPos);
+            if (deltaP.lengthSq() > 0) {
+              selectedMeshes.forEach(m => {
+                if (m !== selectedMesh) {
+                  m.position.add(deltaP);
+                }
+              });
+            }
+          } else if (mode === 'scale') {
+            const scaleDelta = new THREE.Vector3(
+              lastGizmoScale.x !== 0 ? selectedMesh.scale.x / lastGizmoScale.x : 1,
+              lastGizmoScale.y !== 0 ? selectedMesh.scale.y / lastGizmoScale.y : 1,
+              lastGizmoScale.z !== 0 ? selectedMesh.scale.z / lastGizmoScale.z : 1
+            );
+            selectedMeshes.forEach(m => {
+              if (m !== selectedMesh) {
+                const mOld = m.scale.clone();
+                m.scale.multiply(scaleDelta);
+                adjustPositionForAnchor(m, mOld, m.scale, currentAnchor);
+              }
+            });
+          }
+        }
+
+        if (mode === 'scale') {
+          adjustPositionForAnchor(selectedMesh, lastScale, selectedMesh.scale, currentAnchor);
+        }
+
+        lastScale.copy(selectedMesh.scale);
+        lastGizmoPos.copy(selectedMesh.position);
+        lastGizmoScale.copy(selectedMesh.scale);
+
+        syncInspectorFromMesh(selectedMesh);
+        boxHelpers.forEach(h => h.update());
+        measureDimensions();
+      }
+    });
+
+    // 2. LIGHTING (Mô phỏng ánh sáng mặt trời chính xác của Campus)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcbd5e1, 0.85);
+    scene.add(hemiLight);
+
+    const sun = new THREE.DirectionalLight(0xfff5ea, 1.4);
+    sun.position.set(45, 60, 40);
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 2048;
+    sun.shadow.mapSize.height = 2048;
+    sun.shadow.camera.near = 10;
+    sun.shadow.camera.far = 180;
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -25;
+    sun.shadow.camera.right = sun.shadow.camera.top = 25;
+    sun.shadow.bias = -0.0004;
+    scene.add(sun);
+
+    const fillLight = new THREE.DirectionalLight(0x94a3b8, 0.4);
+    fillLight.position.set(-35, 20, -35);
+    scene.add(fillLight);
+
+    // 3. STUDIO TURNTABLE PLATFORM
+    const studioGroup = new THREE.Group();
+    scene.add(studioGroup);
+
+    const platformGeo = new THREE.CylinderGeometry(20, 21, 0.5, 64);
+    const platformMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+    const platform = new THREE.Mesh(platformGeo, platformMat);
+    platform.position.y = -0.25;
+    platform.receiveShadow = true;
+    studioGroup.add(platform);
+
+    const ringGeo = new THREE.RingGeometry(19.7, 20.0, 64);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x2BA8A2,
+      emissive: 0x2BA8A2,
+      emissiveIntensity: 0.4,
+      roughness: 0.3
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.01;
+    studioGroup.add(ring);
+
+    const gridHelper = new THREE.GridHelper(36, 36, 0x2BA8A2, 0xcbd5e1);
+    gridHelper.position.y = 0.02;
+    studioGroup.add(gridHelper);
+
+    // 4. LOAD CAMPUS DATA & FACTORY
+    const [paletteRes, topoRes] = await Promise.all([
+      fetch('./campus-palette.json?rev=finalPaletteV3'),
+      fetch('./physical-topology.json?rev=sep_master_plan_v9')
+    ]);
+    const P = await paletteRes.json();
+    const L = await topoRes.json();
+
+    // Tự động dọn sạch triệt để mọi key localStorage cũ để loại bỏ hoàn toàn tình trạng đè cấu hình lỗi
+    ['hq', 'telegram', 'bank', 'vault', 'hermes', 'database', 'oracle'].forEach(b => {
+      try { localStorage.removeItem('anphim_studio_config_' + b); } catch (_) {}
+    });
+
+    // Nạp sẵn cấu hình mặc định độc lập của từng tòa nhà từ thư mục buildings_config/
+    const staticBuildingConfigs = {};
+    await Promise.all(['hq', 'telegram', 'bank', 'vault', 'hermes', 'database', 'oracle'].map(async b => {
+      try {
+        const res = await fetch(`./buildings_config/${b}.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) staticBuildingConfigs[b] = await res.json();
+      } catch (_) {}
+    }));
+
+    const buildingTitles = {
+      hq: 'AN PHIM Headquarter (Trụ Sở Chính)',
+      bank: 'Ngân Hàng Tài Chính (Finance Bank)',
+      vault: 'Kho Bạc Dự Trữ (Central Vault)',
+      hermes: 'Viện Nghiên Cứu Hermes (Hermes Lab)',
+      telegram: 'Trạm Phát Thanh & Vệ Tinh Telecom (Earth Station)',
+      oracle: 'Trung Tâm Dữ Liệu Oracle Cloud',
+      database: 'Trụ Sở Thung Lũng Silicon (Supabase Repository)'
+    };
+
+    let currentBuildingType = 'hq';
+    let currentBuildingGroup = null;
+
+    // Toggles state
+    const state = {
+      towerScale: 1.0,
+      podiumScale: 1.0,
+      campusFit: true,
+      toggles: {},
+      glassColor: '#2D8781',
+      accentColor: '#ED8038'
+    };
+
+    // BẢNG SCHEMA CỤM NGOẠI THẤT & MÁI ĐẶC THÙ CHO TỪNG TÒA NHÀ
+    const BUILDING_TOGGLES_SCHEMA = {
+      hq: [
+        { key: 'canopy', label: 'Mái đón sảnh chữ U Cam (Canopy)', icon: '🟧', default: true },
+        { key: 'solar', label: '3 Tấm Pin Mặt Trời (Solar Panels)', icon: '☀️', default: true },
+        { key: 'fins', label: 'Lam đứng trang trí màu cam (Orange Fins)', icon: '🪵', default: true },
+        { key: 'shoulder', label: 'Khối vai dốc trang trí (Shoulder Wedge)', icon: '📐', default: true },
+        { key: 'lantern', label: 'Bồn cây & Lầu vọng cảnh mái', icon: '🌿', default: true }
+      ],
+      bank: [
+        { key: 'portico', label: 'Cổng sảnh 4 cột & Mái đón cam', icon: '🏛️', default: true },
+        { key: 'sign', label: 'Bảng hiệu 3D BANK xám titan', icon: '💳', default: true },
+        { key: 'atm', label: 'Trạm Kiosk ATM góc', icon: '🏧', default: true },
+        { key: 'patio', label: 'Bàn cà phê & Dù che ngoài trời', icon: '☕', default: true },
+        { key: 'bushes', label: 'Cụm cây tinh thể đa giác', icon: '🌲', default: true },
+        { key: 'roofEquipment', label: 'Pin mặt trời & HVAC nóc', icon: '☀️', default: true },
+        { key: 'executiveWing', label: 'Khối văn phòng phụ giật cấp', icon: '🏢', default: true }
+      ],
+      oracle: [
+        { key: 'ribbonWindows', label: 'Dải cửa sổ băng ngang 3 tầng', icon: '🪟', default: true },
+        { key: 'oracleSign', label: 'Bộ chữ 3D ORACLE nổi đỏ', icon: '🔴', default: true },
+        { key: 'canopy', label: 'Mái đón sảnh chữ U & Cửa kính', icon: '🟧', default: true },
+        { key: 'trees', label: 'Dải hàng rào cây bụi Shrub Hedges & Đèn', icon: '🌿', default: true },
+        { key: 'orangeRoof', label: 'Diềm trần & Sàn mái màu cam', icon: '🟠', default: true },
+        { key: 'penthouse', label: 'Penthouse kỹ thuật nóc & HVAC', icon: '🏭', default: true }
+      ],
+      telegram: [
+        { key: 'dish', label: 'Chảo vệ tinh Parabol khổng lồ 4.6m', icon: '📡', default: true },
+        { key: 'antennaMast', label: 'Tháp truyền thông & Đèn cảnh báo', icon: '🗼', default: true },
+        { key: 'controlBuilding', label: 'Nhà điều hành trạm & Biển hiệu', icon: '🏢', default: true },
+        { key: 'portal', label: 'Mái đón kỹ thuật & Lối vào', icon: '🚪', default: true },
+        { key: 'roofEquipment', label: 'Cụm làm mát máy chủ & Tản nhiệt', icon: '❄️', default: true }
+      ],
+      vault: [
+        { key: 'blastDoor', label: 'Cửa thép kho bạc & Vô-lăng cam', icon: '🔐', default: true },
+        { key: 'buttresses', label: '4 Trụ góc bê tông viền cam', icon: '🛡️', default: true },
+        { key: 'goldPedestals', label: 'Bệ đá thỏi vàng trước lối vào', icon: '🪙', default: true },
+        { key: 'sign', label: 'Bảng hiệu 3D CENTRAL CASH VAULT', icon: '🏷️', default: true },
+        { key: 'roofEquipment', label: 'Cụm thông gió áp lực & Đèn Beacon', icon: '🚨', default: true }
+      ],
+      hermes: [
+        { key: 'glassDome', label: 'Mái vòm kính tháp nghiên cứu', icon: '🔮', default: true },
+        { key: 'roboticArm', label: 'Cánh tay Robot thông minh 3 khớp', icon: '🦾', default: true },
+        { key: 'sensorDish', label: 'Chảo cảm biến viễn thám trên cao', icon: '🛰️', default: true },
+        { key: 'portal', label: 'Cổng đón sảnh kính & Mái đón cam', icon: '🚪', default: true },
+        { key: 'sign', label: 'Bảng hiệu HERMES ROBOTICS LAB', icon: '🏷️', default: true }
+      ],
+      database: [
+        { key: 'supabaseLogo', label: 'Biểu tượng Logo 3D Supabase lục bảo', icon: '⚡', default: true },
+        { key: 'curtainWall', label: 'Vách kính tràn viền & Nan nhôm đứng', icon: '🪟', default: true },
+        { key: 'portal', label: 'Cổng đón sảnh vát nhô & Bậc tam cấp', icon: '🏛️', default: true },
+        { key: 'bollards', label: 'Hàng cột an ninh & Bồn cây tiểu cảnh', icon: '🛡️', default: true },
+        { key: 'roofEquipment', label: 'Cụm điều hòa công nghiệp HVAC nóc', icon: '❄️', default: true }
+      ]
+    };
+
+    function setToggleComponentVisibility(toggleKey, isVisible) {
+      if (!currentBuildingGroup) return;
+      currentBuildingGroup.traverse(c => {
+        if (c.userData.toggleKey === toggleKey) {
+          c.visible = isVisible;
+        }
+      });
+      // Đảm bảo những mesh đã bị xóa riêng lẻ vẫn luôn bị ẩn/loại bỏ
+      applyDeletedPartsFilter();
+      measureDimensions();
+    }
+
+    function renderComponentToggles(buildingType) {
+      const container = document.getElementById('toggles-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const list = BUILDING_TOGGLES_SCHEMA[buildingType] || BUILDING_TOGGLES_SCHEMA.hq;
+      if (!state.toggles) state.toggles = {};
+      list.forEach(item => {
+        const val = state.toggles[item.key] !== undefined ? state.toggles[item.key] : item.default;
+        state.toggles[item.key] = val;
+
+        const row = document.createElement('label');
+        row.className = 'toggle-row';
+        row.innerHTML = `
+          <span>${item.icon} ${item.label}</span>
+          <input type="checkbox" id="chk-comp-${item.key}" ${val ? 'checked' : ''}>
+        `;
+        const chk = row.querySelector('input');
+        chk.onchange = (e) => {
+          state.toggles[item.key] = e.target.checked;
+          setToggleComponentVisibility(item.key, e.target.checked);
+        };
+        container.appendChild(row);
+      });
+    }
+
+    // 5. MERGE & FIT EXACT PIPELINE AS MAIN.JS
+    function mergeBuilding(group) {
+      group.updateMatrixWorld(true);
+      const buckets = new Map();
+      for (const o of [...group.children]) {
+        if (!o.isMesh || Array.isArray(o.material)) continue;
+        const key = o.material.uuid;
+        if (!buckets.has(key)) buckets.set(key, { material: o.material, geometries: [] });
+        const geom = o.geometry.clone();
+        geom.applyMatrix4(o.matrix);
+        buckets.get(key).geometries.push(geom);
+      }
+      const out = new THREE.Group();
+      for (const b of buckets.values()) {
+        const merged = mergeGeometries(b.geometries, false);
+        if (merged) {
+          const m = new THREE.Mesh(merged, b.material);
+          m.castShadow = m.receiveShadow = true;
+          out.add(m);
+        }
+      }
+      return out;
+    }
+
+    // 6. BUILD EXACT 100% AUTHENTIC MODEL FROM CAMPUS
+    function tagBuildingParts(group, buildingType) {
+      let counter = 0;
+      group.traverse(c => {
+        if (c.isMesh) {
+          c.userData.partId = `${buildingType}_part_${counter++}`;
+          c.userData.origScale = c.scale.clone();
+          c.userData.origPos = c.position.clone();
+          c.userData.origRot = c.rotation.clone();
+        }
+      });
+    }
+
+    function buildAuthenticBuilding() {
+      // Create fresh architecture factory with current colors
+      const customP = JSON.parse(JSON.stringify(P));
+      customP.colors.referenceGlass = state.glassColor;
+      customP.colors.brandOrange = state.accentColor;
+      const A = createArchitecture(customP);
+
+      let raw;
+      if (currentBuildingType === 'hq') {
+        raw = A.HQ();
+
+        // Phân loại các khối chức năng HQ
+        raw.children.forEach(c => {
+          if (c.position.z >= 9.0 && (c.position.y <= 5.0)) {
+            c.userData.toggleKey = 'canopy';
+          }
+          if (c.position.y >= 25.0) {
+            c.userData.toggleKey = 'solar';
+          }
+          if ((c.position.x >= 9.5 && c.position.z >= 10.5) || (c.position.x <= -1.0 && c.position.z >= 7.8 && c.position.z <= 8.5)) {
+            c.userData.toggleKey = 'fins';
+          }
+          if (c.position.y >= 7.0 && c.position.x >= 4.0 && c.position.z <= 4.0) {
+            c.userData.toggleKey = 'lantern';
+          }
+          if (c.geometry && c.geometry.type === 'ExtrudeGeometry' && c.position.z === 2.1) {
+            c.userData.toggleKey = 'shoulder';
+          }
+        });
+
+      } else if (currentBuildingType === 'bank') {
+        raw = A.bankBuilding();
+      } else if (currentBuildingType === 'vault') {
+        raw = A.vaultBuilding();
+      } else if (currentBuildingType === 'hermes') {
+        raw = A.hermesLab();
+      } else if (currentBuildingType === 'telegram') {
+        raw = A.telegramTower();
+      } else if (currentBuildingType === 'database') {
+        raw = A.databaseBuilding();
+      } else if (currentBuildingType === 'oracle') {
+        raw = A.oracleCloudBuilding();
+      } else {
+        raw = A.HQ();
+      }
+
+      if (!raw) raw = new THREE.Group();
+
+      const out = raw.clone(true);
+      out.traverse(c => {
+        if (c.isMesh && c.geometry) {
+          c.geometry = c.geometry.clone();
+        }
+      });
+
+      // Gắn partId trước khi ẩn / lọc
+      tagBuildingParts(out, currentBuildingType);
+
+      // Thiết lập hiển thị theo trạng thái Bật/Tắt (Toggles riêng của từng tòa nhà)
+      if (state.toggles) {
+        out.traverse(c => {
+          if (c.userData.toggleKey) {
+            c.visible = state.toggles[c.userData.toggleKey] !== false;
+          }
+        });
+      }
+
+      out.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(out);
+      const center = b.getCenter(new THREE.Vector3());
+      out.position.set(-center.x, -b.min.y, -center.z);
+      return out;
+    }
+
+    function measureDimensions() {
+      if (!currentBuildingGroup) return;
+      currentBuildingGroup.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(currentBuildingGroup);
+      const sz = b.getSize(new THREE.Vector3());
+      document.getElementById('val-dim-w').textContent = sz.x.toFixed(1) + ' m';
+      document.getElementById('val-dim-h').textContent = sz.y.toFixed(1) + ' m';
+      document.getElementById('val-dim-d').textContent = sz.z.toFixed(1) + ' m';
+    }
+
+    function updateSceneBuilding(skipPreload = false) {
+      if (currentBuildingGroup) {
+        scene.remove(currentBuildingGroup);
+        currentBuildingGroup.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+            else c.material.dispose();
+          }
+        });
+      }
+
+      deselectPart();
+
+      // 1. Đọc trước toggles & colors từ cấu hình đã lưu
+      if (!skipPreload) {
+        preloadSavedState();
+      }
+
+      // 2. Tạo mô hình với partId cố định
+      currentBuildingGroup = buildAuthenticBuilding();
+      scene.add(currentBuildingGroup);
+
+      // 3. Nạp và áp dụng các tinh chỉnh / xóa chi tiết theo partId
+      loadSavedConfig();
+
+      // 4. Đo đạc kích thước & cập nhật wireframe
+      measureDimensions();
+      applyWireframe(document.getElementById('chk-wireframe').checked);
+    }
+
+    function applyWireframe(enabled) {
+      if (!currentBuildingGroup) return;
+      currentBuildingGroup.traverse(c => {
+        if (c.isMesh && c.material) {
+          if (Array.isArray(c.material)) c.material.forEach(m => m.wireframe = enabled);
+          else c.material.wireframe = enabled;
+        }
+      });
+    }
+
+    function updateReturnLinks() {
+      const viewMap = {
+        bank: 'finance',
+        vault: 'finance',
+        hermes: 'it',
+        oracle: 'oracle',
+        database: 'it',
+        telegram: 'cluster',
+        hq: 'hero'
+      };
+      const v = viewMap[currentBuildingType] || 'overview';
+      const liveBtn = document.getElementById('btn-view-campus-live');
+      if (liveBtn) liveBtn.href = `./index.html?view=${v}&t=${Date.now()}`;
+      const retBtn = document.querySelector('.btn-return:not(#btn-view-campus-live)');
+      if (retBtn) retBtn.href = `./index.html?view=${v}&t=${Date.now()}`;
+    }
+
+    // 8. EVENT BINDINGS
+    // Building Tabs
+    const tabs = document.querySelectorAll('.bld-tab-btn');
+    tabs.forEach(btn => {
+      btn.onclick = () => {
+        if (currentBuildingType === btn.dataset.bld) return;
+        tabs.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentBuildingType = btn.dataset.bld;
+        currentDeletedPartIds.clear();
+        deletedHistory.length = 0;
+        document.getElementById('current-bld-title').textContent = buildingTitles[currentBuildingType] || currentBuildingType;
+        const fileBadge = document.getElementById('current-bld-file');
+        if (fileBadge) fileBadge.textContent = `buildings_config/${currentBuildingType}.json`;
+        try { window.history.replaceState(null, '', '?type=' + currentBuildingType); } catch (_) {}
+        updateReturnLinks();
+        updateSceneBuilding();
+      };
+    });
+
+    // Sliders
+    const rngTower = document.getElementById('rng-tower-scale');
+    rngTower.oninput = () => {
+      state.towerScale = parseFloat(rngTower.value) / 100;
+      document.getElementById('lbl-tower-scale').textContent = rngTower.value + ' %';
+      updateSceneBuilding();
+    };
+
+    const rngPodium = document.getElementById('rng-podium-scale');
+    rngPodium.oninput = () => {
+      state.podiumScale = parseFloat(rngPodium.value) / 100;
+      document.getElementById('lbl-podium-scale').textContent = rngPodium.value + ' %';
+      updateSceneBuilding();
+    };
+
+    document.getElementById('chk-campus-fit').onchange = (e) => {
+      state.campusFit = e.target.checked;
+      document.getElementById('current-bld-grade').textContent = state.campusFit ? 'Grade E · Campus Scale' : 'Arch 1:1 Scale';
+      updateSceneBuilding();
+    };
+
+    // Color Swatches
+    document.querySelectorAll('#swatches-glass .swatch-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#swatches-glass .swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.glassColor = btn.dataset.color;
+        updateSceneBuilding(true);
+      };
+    });
+
+    document.querySelectorAll('#swatches-accent .swatch-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('#swatches-accent .swatch-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.accentColor = btn.dataset.color;
+        updateSceneBuilding(true);
+      };
+    });
+
+    // Camera Views
+    const camBtns = document.querySelectorAll('.cam-btn');
+    camBtns.forEach(btn => {
+      btn.onclick = () => {
+        camBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.cam;
+
+        if (mode === 'iso') {
+          camera.position.set(45, 30, 55);
+          controls.target.set(0, 9, 0);
+        } else if (mode === 'front') {
+          camera.position.set(0, 12, 58);
+          controls.target.set(0, 9, 0);
+        } else if (mode === 'back') {
+          camera.position.set(0, 12, -58);
+          controls.target.set(0, 9, 0);
+        } else if (mode === 'side') {
+          camera.position.set(-58, 12, 0);
+          controls.target.set(0, 9, 0);
+        } else if (mode === 'top') {
+          camera.position.set(0, 68, 0.1);
+          controls.target.set(0, 0, 0);
+        }
+        controls.update();
+      };
+    });
+
+    // Bottom Tools
+    document.getElementById('chk-auto-rotate').onchange = (e) => {
+      controls.autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    };
+    document.getElementById('chk-wireframe').onchange = (e) => {
+      applyWireframe(e.target.checked);
+    };
+    document.getElementById('chk-grid').onchange = (e) => {
+      gridHelper.visible = e.target.checked;
+    };
+
+    // --- HỆ THỐNG LƯU TRỮ & XUẤT NHẬP CẤU HÌNH (SAVE SYSTEM V2 - ĐỊNH DANH PART_ID CỐ ĐỊNH) ---
+    function getStudioSaveData() {
+      const partsData = [];
+      if (currentBuildingGroup) {
+        currentBuildingGroup.traverse((c) => {
+          if (!c.isMesh || !c.userData.partId) return;
+          const origS = c.userData.origScale || new THREE.Vector3(1, 1, 1);
+          const origP = c.userData.origPos || c.position.clone();
+          const origR = c.userData.origRot || c.rotation.clone();
+          
+          const isModified = Math.abs(c.scale.x - origS.x) > 0.001 ||
+                             Math.abs(c.scale.y - origS.y) > 0.001 ||
+                             Math.abs(c.scale.z - origS.z) > 0.001 ||
+                             Math.abs(c.position.x - origP.x) > 0.01 ||
+                             Math.abs(c.position.y - origP.y) > 0.01 ||
+                             Math.abs(c.position.z - origP.z) > 0.01 ||
+                             c.visible === false;
+          
+          if (isModified) {
+            partsData.push({
+              partId: c.userData.partId,
+              name: getFriendlyPartName(c),
+              position: { x: parseFloat(c.position.x.toFixed(3)), y: parseFloat(c.position.y.toFixed(3)), z: parseFloat(c.position.z.toFixed(3)) },
+              scale: { x: parseFloat(c.scale.x.toFixed(3)), y: parseFloat(c.scale.y.toFixed(3)), z: parseFloat(c.scale.z.toFixed(3)) },
+              rotation: { x: parseFloat(c.rotation.x.toFixed(3)), y: parseFloat(c.rotation.y.toFixed(3)), z: parseFloat(c.rotation.z.toFixed(3)) },
+              visible: c.visible !== false
+            });
+          }
+        });
+      }
+
+      const deletedPartIds = Array.from(currentDeletedPartIds);
+      const deletedNames = [];
+      deletedHistory.forEach(entry => {
+        const items = Array.isArray(entry) ? entry : [entry];
+        items.forEach(item => {
+          if (item.name && !deletedNames.includes(item.name)) deletedNames.push(item.name);
+        });
+      });
+
+      return {
+        buildingType: currentBuildingType,
+        version: 3,
+        savedAt: new Date().toLocaleString('vi-VN'),
+        colors: {
+          glassColor: state.glassColor,
+          accentColor: state.accentColor
+        },
+        toggles: { ...state.toggles },
+        scales: {
+          towerScale: state.towerScale,
+          podiumScale: state.podiumScale
+        },
+        modifiedParts: partsData,
+        deletedPartIds: deletedPartIds,
+        deletedParts: deletedNames
+      };
+    }
+
+    async function saveStudioConfig() {
+      const data = getStudioSaveData();
+      // Luôn dọn sạch localStorage để 100% nạp từ file JSON trên ổ cứng
+      try { localStorage.removeItem('anphim_studio_config_' + currentBuildingType); } catch (_) {}
+
+      // Cập nhật cấu hình in-memory
+      staticBuildingConfigs[currentBuildingType] = data;
+
+      // Gửi API lưu thẳng vào file riêng biệt buildings_config/{type}.json trên ổ cứng
+      try {
+        const res = await fetch('/api/save-building-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            buildingType: currentBuildingType,
+            data: data
+          })
+        });
+        const viewMap = {
+          bank: 'finance',
+          vault: 'finance',
+          hermes: 'it',
+          oracle: 'oracle',
+          database: 'it',
+          telegram: 'cluster',
+          hq: 'hero'
+        };
+        const targetView = viewMap[currentBuildingType] || 'overview';
+        if (res.ok) {
+          showToast(`💾 ĐÃ LƯU <b>${currentBuildingType}.json</b>! <a href="./index.html?view=${targetView}&t=${Date.now()}" style="color:#38bdf8;margin-left:8px;text-decoration:underline;font-weight:bold;">👉 Xem Cận Cảnh Trên Campus</a>`);
+          return;
+        }
+      } catch (e) {
+        console.warn('API save offline:', e);
+      }
+      showToast(`💾 ĐÃ LƯU THÀNH CÔNG (File riêng: ${currentBuildingType}.json)!`);
+    }
+
+    function preloadSavedState() {
+      // 100% nạp từ file JSON độc lập (staticBuildingConfigs)
+      try { localStorage.removeItem('anphim_studio_config_' + currentBuildingType); } catch (_) {}
+      const data = staticBuildingConfigs[currentBuildingType];
+      if (!data || !data.version || data.version < 3) {
+        renderComponentToggles(currentBuildingType);
+        return;
+      }
+
+      try {
+        if (data.colors) {
+          if (data.colors.glassColor) state.glassColor = data.colors.glassColor;
+          if (data.colors.accentColor) state.accentColor = data.colors.accentColor;
+          document.querySelectorAll('#swatches-glass .swatch-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.color === state.glassColor);
+          });
+          document.querySelectorAll('#swatches-accent .swatch-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.color === state.accentColor);
+          });
+        }
+
+        if (data.toggles && typeof data.toggles === 'object') {
+          state.toggles = { ...data.toggles };
+        } else {
+          state.toggles = {};
+        }
+        renderComponentToggles(currentBuildingType);
+
+        if (data.scales) {
+          if (data.scales.towerScale !== undefined) {
+            state.towerScale = data.scales.towerScale;
+            const el = document.getElementById('rng-tower-scale');
+            if (el) {
+              el.value = Math.round(state.towerScale * 100);
+              document.getElementById('lbl-tower-scale').textContent = el.value + ' %';
+            }
+          }
+          if (data.scales.podiumScale !== undefined) {
+            state.podiumScale = data.scales.podiumScale;
+            const el = document.getElementById('rng-podium-scale');
+            if (el) {
+              el.value = Math.round(state.podiumScale * 100);
+              document.getElementById('lbl-podium-scale').textContent = el.value + ' %';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Lỗi đọc preload cấu hình:', e);
+      }
+    }
+
+    function loadSavedConfig() {
+      // 100% nạp từ file JSON độc lập
+      try { localStorage.removeItem('anphim_studio_config_' + currentBuildingType); } catch (_) {}
+      if (staticBuildingConfigs[currentBuildingType]) {
+        applyStudioSaveData(staticBuildingConfigs[currentBuildingType]);
+      }
+    }
+
+    function applyStudioSaveData(data) {
+      if (!data || !currentBuildingGroup) return;
+      if (!data.version || data.version < 3) {
+        console.warn('Cấu hình lưu từ phiên bản cũ không tương thích (dưới v3), đã tự động reset để đảm bảo chuẩn kiến trúc.');
+        return;
+      }
+
+      // 1. Áp dụng xóa các chi tiết theo đúng partId (traverse toàn bộ cây node)
+      if (data.deletedPartIds && Array.isArray(data.deletedPartIds)) {
+        data.deletedPartIds.forEach(id => currentDeletedPartIds.add(id));
+      }
+      applyDeletedPartsFilter();
+
+      // 2. Áp dụng tinh chỉnh các chi tiết đã sửa theo đúng partId (traverse toàn bộ cây node)
+      if (data.modifiedParts && Array.isArray(data.modifiedParts)) {
+        const meshMap = new Map();
+        currentBuildingGroup.traverse(c => {
+          if (c.isMesh && c.userData.partId) {
+            meshMap.set(c.userData.partId, c);
+          }
+        });
+
+        data.modifiedParts.forEach(p => {
+          if (!p.partId) return;
+          const mesh = meshMap.get(p.partId);
+          if (mesh && mesh.isMesh) {
+            if (p.position) mesh.position.set(p.position.x, p.position.y, p.position.z);
+            if (p.scale) mesh.scale.set(p.scale.x, p.scale.y, p.scale.z);
+            if (p.rotation) mesh.rotation.set(p.rotation.x, p.rotation.y, p.rotation.z);
+            if (p.visible !== undefined) mesh.visible = p.visible;
+          }
+        });
+      }
+
+      measureDimensions();
+    }
+
+    function downloadJSONConfig() {
+      const data = getStudioSaveData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentBuildingType}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`📥 Đã tải file riêng: ${currentBuildingType}.json`);
+    }
+
+    document.getElementById('btn-save-studio').onclick = saveStudioConfig;
+    document.getElementById('btn-export-json').onclick = downloadJSONConfig;
+    document.getElementById('btn-import-json-btn').onclick = () => {
+      document.getElementById('file-import-json').click();
+    };
+    document.getElementById('file-import-json').onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          applyStudioSaveData(data);
+          saveStudioConfig();
+          showToast('📂 Đã nạp thành công cấu hình từ file JSON!');
+        } catch (err) {
+          alert('File JSON không hợp lệ!');
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    // COPY CONFIG BUTTON
+    document.getElementById('btn-copy-config').onclick = () => {
+      const saveObj = getStudioSaveData();
+      let modDetails = '';
+      if (saveObj.modifiedParts.length > 0) {
+        modDetails = '\n\nChi tiết chỉnh sửa:\n' + saveObj.modifiedParts.map(p => 
+          `• ${p.name}: Scale(${p.scale.x.toFixed(2)}, ${p.scale.y.toFixed(2)}, ${p.scale.z.toFixed(2)}) | Dời(${p.position.x.toFixed(1)}, ${p.position.y.toFixed(1)}, ${p.position.z.toFixed(1)})`
+        ).join('\n');
+      }
+      if (saveObj.deletedParts.length > 0) {
+        modDetails += '\n\nChi tiết đã xóa:\n' + saveObj.deletedParts.map(n => `• Đã xóa: ${n}`).join('\n');
+      }
+
+      let togglesSummary = '';
+      if (saveObj.toggles) {
+        const schema = BUILDING_TOGGLES_SCHEMA[currentBuildingType] || [];
+        togglesSummary = '\n' + schema.map(it => `- ${it.label}: ${saveObj.toggles[it.key] !== false ? 'BẬT' : 'TẮT'}`).join('\n');
+      }
+
+      const text = `[BÁO CÁO CẤU HÌNH KIẾN TRÚC TÒA ${currentBuildingType.toUpperCase()} - AN PHIM]:
+- Thời gian lưu: ${saveObj.savedAt}
+- Màu kính: ${state.glassColor}
+- Màu cam điểm nhấn: ${state.accentColor}${togglesSummary}${modDetails}`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('📋 Đã sao chép báo cáo thông số vào clipboard!');
+      });
+    };
+
+    // RESET DEFAULT
+    document.getElementById('btn-reset-default').onclick = () => {
+      if (confirm('Sếp có chắc chắn muốn khôi phục toàn bộ tòa nhà về nguyên bản gốc không?')) {
+        try { localStorage.removeItem('anphim_studio_config_' + currentBuildingType); } catch (_) {}
+        currentDeletedPartIds.clear();
+        deletedHistory.length = 0;
+        const schema = BUILDING_TOGGLES_SCHEMA[currentBuildingType] || BUILDING_TOGGLES_SCHEMA.hq;
+        const defaultToggles = {};
+        schema.forEach(item => { defaultToggles[item.key] = item.default; });
+
+        staticBuildingConfigs[currentBuildingType] = {
+          buildingType: currentBuildingType,
+          version: 3,
+          savedAt: new Date().toISOString(),
+          colors: { glassColor: '#2D8781', accentColor: '#ED8038' },
+          toggles: defaultToggles,
+          scales: { towerScale: 1.0, podiumScale: 1.0 },
+          modifiedParts: [],
+          deletedPartIds: [],
+          deletedParts: []
+        };
+        saveStudioConfig();
+        state.towerScale = 1.0;
+        state.podiumScale = 1.0;
+        state.toggles = { ...defaultToggles };
+        renderComponentToggles(currentBuildingType);
+        state.glassColor = '#2D8781';
+        state.accentColor = '#ED8038';
+
+        rngTower.value = 100;
+        document.getElementById('lbl-tower-scale').textContent = '100 %';
+        rngPodium.value = 100;
+        document.getElementById('lbl-podium-scale').textContent = '100 %';
+
+        updateSceneBuilding();
+        showToast('🔄 Đã khôi phục toàn bộ tòa nhà về nguyên bản gốc');
+      }
+    };
+
+    
+    // 10. CLICK ON 3D PART TO SELECT, INSPECT & ATTACH GIZMO
+    const studioRaycaster = new THREE.Raycaster();
+    const studioMouse = new THREE.Vector2();
+    let studioPointerDown = null;
+
+    renderer.domElement.addEventListener('pointerdown', e => {
+      studioPointerDown = [e.clientX, e.clientY];
+      // Nếu giữ Shift và bấm chuột trái, tạm thời khóa OrbitControls để tránh camera dịch chuyển làm hỏng thao tác chọn
+      if (e.shiftKey && e.button === 0) {
+        controls.enabled = false;
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (!isGizmoDragging) {
+        controls.enabled = true;
+      }
+    });
+
+    renderer.domElement.addEventListener('pointerup', e => {
+      if (!isGizmoDragging) {
+        controls.enabled = true;
+      }
+      if (isGizmoDragging) return;
+      if (!studioPointerDown) return;
+
+      const dist = Math.hypot(e.clientX - studioPointerDown[0], e.clientY - studioPointerDown[1]);
+      if (dist > 8) return; // Nếu kéo chuột để xoay camera thì bỏ qua
+
+      // Nếu con trỏ chuột đang nằm trên các trục Gizmo (X, Y, Z, XY, ...) thì không chuyển đổi selection
+      if (transformControls.axis !== null && transformControls.axis !== undefined && transformControls.axis !== '') {
+        return;
+      }
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      studioMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      studioMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      studioRaycaster.setFromCamera(studioMouse, camera);
+
+      if (!currentBuildingGroup) return;
+      const hits = studioRaycaster.intersectObjects(currentBuildingGroup.children, true);
+      if (hits && hits.length > 0) {
+        let hitObj = hits[0].object;
+        if (e.shiftKey) {
+          toggleMultiSelectPart(hitObj);
+        } else {
+          selectSinglePart(hitObj);
+        }
+      } else if (!e.shiftKey) {
+        deselectPart();
+      }
+    });
+
+    function getFriendlyPartName(mesh) {
+      if (!mesh) return 'Chi Tiết';
+      const u = mesh.userData || {};
+      if (u.isShrubHedge) return '🌿 Dải Hàng Rào Cây Bụi (Shrub Hedge)';
+      if (u.isCanopy) return '🟧 Mái Đón Sảnh Chữ U (Canopy)';
+      if (u.isSolar) return '☀️ Tấm Pin Mặt Trời (Solar Panel)';
+      if (u.isFins) return '🪵 Lam Đứng Cam (Orange Fin)';
+      if (u.isShoulder) return '📐 Khối Vai Dốc (Shoulder)';
+      if (u.isLantern) return '🏮 Lầu Vọng Cảnh Mái';
+      if (mesh.geometry && mesh.geometry.type === 'LatheGeometry') return '📡 Chảo Parabol Vệ Tinh Khổng Lồ';
+      if (mesh.geometry && mesh.geometry.type === 'TorusGeometry') return '⭕ Vành Thép Mép Chảo / Ăng-ten Vòng';
+      if (mesh.geometry && mesh.geometry.type === 'ConeGeometry') return '🎯 Củ Thu Sóng Tâm Chảo (Feed Horn)';
+      if (mesh.geometry && mesh.geometry.type === 'ExtrudeGeometry') return '🏢 Tháp Kính Nghiêng Biểu Tượng';
+      if (mesh.geometry && mesh.geometry.type === 'CylinderGeometry') {
+        if (mesh.position.y >= 7.0) return '📡 Cột Phát Sóng Cao Tần / Chảo Vi Ba';
+        if (mesh.position.y >= 2.0) return '🏛️ Bệ Tháp Trụ Đài Xoay (Pedestal)';
+        return '🌿 Bồn Cây Xanh / Trụ Đỡ Bê Tông';
+      }
+      if (mesh.position.y <= 0.6) return '🏛️ Bậc Đá Tam Cấp & Bệ Apron';
+      if (mesh.material && mesh.material.transparent) return '🪟 Cửa Sổ Kính Teal Lùi Sâu';
+      return '🧱 Khối Nhà Điều Hành Kỹ Thuật';
+    }
+
+    function selectSinglePart(mesh) {
+      if (!mesh || !mesh.isMesh) return;
+      selectedMeshes = [mesh];
+      selectedMesh = mesh;
+      lastScale.copy(mesh.scale);
+      lastGizmoPos.copy(mesh.position);
+      lastGizmoScale.copy(mesh.scale);
+
+      initMeshOrig(mesh);
+
+      transformControls.attach(mesh);
+      tHelper.visible = true;
+      updateBoxHelpers();
+
+      document.getElementById('gizmo-empty-msg').style.display = 'none';
+      const activeCard = document.getElementById('gizmo-active-content');
+      activeCard.style.display = 'flex';
+      document.getElementById('gizmo-selected-title').textContent = getFriendlyPartName(mesh);
+      document.getElementById('btn-delete-part').innerHTML = '🗑️ Xóa Chi Tiết [Del]';
+
+      syncInspectorFromMesh(mesh);
+      showToast('Đã chọn: ' + getFriendlyPartName(mesh));
+    }
+
+    function toggleMultiSelectPart(mesh) {
+      if (!mesh || !mesh.isMesh) return;
+      const idx = selectedMeshes.indexOf(mesh);
+      if (idx >= 0) {
+        selectedMeshes.splice(idx, 1);
+        if (selectedMeshes.length === 0) {
+          deselectPart();
+          return;
+        }
+        selectedMesh = selectedMeshes[selectedMeshes.length - 1];
+        transformControls.attach(selectedMesh);
+      } else {
+        selectedMeshes.push(mesh);
+        selectedMesh = mesh;
+        initMeshOrig(mesh);
+        transformControls.attach(mesh);
+      }
+
+      lastScale.copy(selectedMesh.scale);
+      lastGizmoPos.copy(selectedMesh.position);
+      lastGizmoScale.copy(selectedMesh.scale);
+
+      tHelper.visible = true;
+      updateBoxHelpers();
+
+      document.getElementById('gizmo-empty-msg').style.display = 'none';
+      const activeCard = document.getElementById('gizmo-active-content');
+      activeCard.style.display = 'flex';
+
+      if (selectedMeshes.length > 1) {
+        document.getElementById('gizmo-selected-title').textContent = `🎯 Đang chọn ${selectedMeshes.length} chi tiết (Giữ Shift để chọn thêm)`;
+        document.getElementById('btn-delete-part').innerHTML = `🗑️ Xóa ${selectedMeshes.length} Chi Tiết [Del]`;
+        showToast(`Đã chọn thêm: ${getFriendlyPartName(mesh)} (Tổng: ${selectedMeshes.length})`);
+      } else {
+        document.getElementById('gizmo-selected-title').textContent = getFriendlyPartName(selectedMesh);
+        document.getElementById('btn-delete-part').innerHTML = '🗑️ Xóa Chi Tiết [Del]';
+        showToast('Đã chọn: ' + getFriendlyPartName(selectedMesh));
+      }
+
+      syncInspectorFromMesh(selectedMesh);
+    }
+
+    function selectPart(mesh) {
+      selectSinglePart(mesh);
+    }
+
+    function deselectPart() {
+      selectedMeshes = [];
+      selectedMesh = null;
+      transformControls.detach();
+      tHelper.visible = false;
+      clearBoxHelpers();
+      document.getElementById('gizmo-empty-msg').style.display = 'block';
+      document.getElementById('gizmo-active-content').style.display = 'none';
+    }
+
+    document.getElementById('btn-gizmo-deselect').onclick = deselectPart;
+
+    function syncPositionToInspector(mesh) {
+      if (!mesh) return;
+      ['x', 'y', 'z'].forEach(axis => {
+        const rng = document.getElementById('rng-part-p' + axis);
+        const num = document.getElementById('num-part-p' + axis);
+        const val = mesh.position[axis];
+        if (rng) rng.value = val;
+        if (num && document.activeElement !== num) num.value = val.toFixed(1);
+      });
+    }
+
+    function syncInspectorFromMesh(mesh) {
+      if (!mesh) return;
+      ['x', 'y', 'z'].forEach(axis => {
+        const rng = document.getElementById('rng-part-s' + axis);
+        const num = document.getElementById('num-part-s' + axis);
+        const val = mesh.scale[axis];
+        if (rng) rng.value = val;
+        if (num && document.activeElement !== num) num.value = val.toFixed(2);
+      });
+      syncPositionToInspector(mesh);
+    }
+
+    // Anchor Mode Buttons
+    const anchorBtns = document.querySelectorAll('.anchor-btn');
+    const anchorBadge = document.getElementById('anchor-badge');
+    const anchorNames = {
+      bottom: 'Neo Đáy Sàn',
+      center: 'Tâm (Center)',
+      left: 'Neo Mép Trái',
+      right: 'Neo Mép Phải',
+      front: 'Neo Mặt Trước',
+      back: 'Neo Mặt Sau'
+    };
+
+    anchorBtns.forEach(btn => {
+      btn.onclick = () => {
+        anchorBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentAnchor = btn.dataset.anchor;
+        if (anchorBadge) anchorBadge.textContent = anchorNames[currentAnchor] || currentAnchor;
+        showToast('Điểm neo: ' + (anchorNames[currentAnchor] || currentAnchor));
+      };
+    });
+
+    // Hàm thay đổi Scale (hỗ trợ cả thanh trượt và gõ số trực tiếp, đồng bộ đa chọn)
+    function applyScale(axis, newS) {
+      if (!selectedMesh || isNaN(newS) || newS <= 0) return;
+      const oldS = selectedMesh.scale[axis];
+      if (oldS === 0) return;
+      const ratio = newS / oldS;
+
+      const oldScale = selectedMesh.scale.clone();
+      const newScale = oldScale.clone();
+      newScale[axis] = newS;
+      adjustPositionForAnchor(selectedMesh, oldScale, newScale, currentAnchor);
+      selectedMesh.scale[axis] = newS;
+      lastScale.copy(selectedMesh.scale);
+      lastGizmoScale.copy(selectedMesh.scale);
+
+      if (selectedMeshes.length > 1) {
+        selectedMeshes.forEach(m => {
+          if (m !== selectedMesh) {
+            const mOld = m.scale.clone();
+            const mNew = mOld.clone();
+            mNew[axis] *= ratio;
+            adjustPositionForAnchor(m, mOld, mNew, currentAnchor);
+            m.scale[axis] = mNew[axis];
+          }
+        });
+      }
+
+      const rng = document.getElementById('rng-part-s' + axis);
+      const num = document.getElementById('num-part-s' + axis);
+      if (rng) rng.value = newS;
+      if (num && document.activeElement !== num) num.value = newS.toFixed(2);
+
+      syncPositionToInspector(selectedMesh);
+      boxHelpers.forEach(h => h.update());
+      measureDimensions();
+    }
+
+    // Hàm thay đổi Vị trí (hỗ trợ cả thanh trượt và gõ số trực tiếp, đồng bộ đa chọn)
+    function applyPosition(axis, newP) {
+      if (!selectedMesh || isNaN(newP)) return;
+      const delta = newP - selectedMesh.position[axis];
+      selectedMesh.position[axis] = newP;
+      lastGizmoPos.copy(selectedMesh.position);
+
+      if (selectedMeshes.length > 1) {
+        selectedMeshes.forEach(m => {
+          if (m !== selectedMesh) {
+            m.position[axis] += delta;
+          }
+        });
+      }
+
+      const rng = document.getElementById('rng-part-p' + axis);
+      const num = document.getElementById('num-part-p' + axis);
+      if (rng) rng.value = newP;
+      if (num && document.activeElement !== num) num.value = newP.toFixed(1);
+
+      boxHelpers.forEach(h => h.update());
+      measureDimensions();
+    }
+
+    // Gán sự kiện cho cả Range Sliders và Number Inputs
+    ['x', 'y', 'z'].forEach(axis => {
+      const rngS = document.getElementById('rng-part-s' + axis);
+      const numS = document.getElementById('num-part-s' + axis);
+      if (rngS) {
+        rngS.oninput = (e) => applyScale(axis, parseFloat(e.target.value));
+      }
+      if (numS) {
+        numS.oninput = (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val > 0) applyScale(axis, val);
+        };
+        numS.onchange = (e) => {
+          let val = parseFloat(e.target.value);
+          if (isNaN(val) || val <= 0) val = 1.0;
+          applyScale(axis, val);
+          numS.value = val.toFixed(2);
+        };
+      }
+
+      const rngP = document.getElementById('rng-part-p' + axis);
+      const numP = document.getElementById('num-part-p' + axis);
+      if (rngP) {
+        rngP.oninput = (e) => applyPosition(axis, parseFloat(e.target.value));
+      }
+      if (numP) {
+        numP.oninput = (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val)) applyPosition(axis, val);
+        };
+        numP.onchange = (e) => {
+          let val = parseFloat(e.target.value);
+          if (isNaN(val)) val = 0.0;
+          applyPosition(axis, val);
+          numP.value = val.toFixed(1);
+        };
+      }
+    });
+
+    // Xóa & Hoàn tác Chi tiết (Hỗ trợ Xóa hàng loạt Multi-Select)
+    function deleteSelectedPart() {
+      if (selectedMeshes.length === 0) return;
+      const batch = [];
+      const names = [];
+
+      selectedMeshes.forEach(mesh => {
+        const parent = mesh.parent;
+        if (!parent) return;
+        const partName = getFriendlyPartName(mesh);
+        names.push(partName);
+        batch.push({
+          mesh: mesh,
+          parent: parent,
+          partId: mesh.userData.partId,
+          position: mesh.position.clone(),
+          scale: mesh.scale.clone(),
+          rotation: mesh.rotation.clone(),
+          name: partName
+        });
+        if (mesh.userData.partId) {
+          currentDeletedPartIds.add(mesh.userData.partId);
+        }
+        parent.remove(mesh);
+      });
+
+      if (batch.length > 0) {
+        deletedHistory.push(batch);
+        deselectPart();
+        const msg = batch.length > 1 
+          ? `Đã xóa ${batch.length} chi tiết [Nhấn Ctrl+Z để hoàn tác]`
+          : `Đã xóa "${batch[0].name}" [Nhấn Ctrl+Z để hoàn tác]`;
+        showToast(msg);
+      }
+    }
+
+    function undoDeletePart() {
+      if (deletedHistory.length === 0) {
+        showToast('Không có chi tiết nào để hoàn tác');
+        return;
+      }
+      const itemOrBatch = deletedHistory.pop();
+      const items = Array.isArray(itemOrBatch) ? itemOrBatch : [itemOrBatch];
+      const restoredMeshes = [];
+
+      items.forEach(item => {
+        item.parent.add(item.mesh);
+        item.mesh.position.copy(item.position);
+        item.mesh.scale.copy(item.scale);
+        item.mesh.rotation.copy(item.rotation);
+        item.mesh.visible = true;
+        if (item.partId) {
+          currentDeletedPartIds.delete(item.partId);
+        }
+        restoredMeshes.push(item.mesh);
+      });
+
+      if (restoredMeshes.length > 1) {
+        selectedMeshes = [...restoredMeshes];
+        selectedMesh = selectedMeshes[selectedMeshes.length - 1];
+        transformControls.attach(selectedMesh);
+        tHelper.visible = true;
+        updateBoxHelpers();
+        document.getElementById('gizmo-empty-msg').style.display = 'none';
+        document.getElementById('gizmo-active-content').style.display = 'flex';
+        document.getElementById('gizmo-selected-title').textContent = `🎯 Đang chọn ${selectedMeshes.length} chi tiết`;
+        document.getElementById('btn-delete-part').innerHTML = `🗑️ Xóa ${selectedMeshes.length} Chi Tiết [Del]`;
+        syncInspectorFromMesh(selectedMesh);
+        showToast(`Đã khôi phục ${restoredMeshes.length} chi tiết`);
+      } else if (restoredMeshes.length === 1) {
+        selectPart(restoredMeshes[0]);
+        showToast(`Đã khôi phục: "${items[0].name}"`);
+      }
+    }
+
+    document.getElementById('btn-delete-part').onclick = deleteSelectedPart;
+    document.getElementById('btn-undo-delete').onclick = undoDeletePart;
+
+    // Reset Part (Khôi phục toàn bộ nhóm đang chọn về gốc)
+    document.getElementById('btn-reset-part-transform').onclick = () => {
+      if (selectedMeshes.length === 0) return;
+      selectedMeshes.forEach(mesh => {
+        if (!mesh || !mesh.userData.origScale) return;
+        mesh.scale.copy(mesh.userData.origScale);
+        mesh.position.copy(mesh.userData.origPos);
+        mesh.rotation.copy(mesh.userData.origRot);
+      });
+      if (selectedMesh) {
+        lastScale.copy(selectedMesh.scale);
+        syncInspectorFromMesh(selectedMesh);
+      }
+      updateBoxHelpers();
+      showToast(selectedMeshes.length > 1 ? `Đã khôi phục ${selectedMeshes.length} chi tiết về gốc` : 'Đã khôi phục chi tiết về kích thước ban đầu');
+    };
+
+    // Gizmo Mode Buttons
+    const btnScale = document.getElementById('btn-mode-scale');
+    const btnTranslate = document.getElementById('btn-mode-translate');
+    const btnRotate = document.getElementById('btn-mode-rotate');
+
+    function setGizmoMode(mode) {
+      transformControls.setMode(mode);
+      [btnScale, btnTranslate, btnRotate].forEach(b => b.classList.remove('active'));
+      if (mode === 'scale') btnScale.classList.add('active');
+      else if (mode === 'translate') btnTranslate.classList.add('active');
+      else if (mode === 'rotate') btnRotate.classList.add('active');
+    }
+
+    btnScale.onclick = () => setGizmoMode('scale');
+    btnTranslate.onclick = () => setGizmoMode('translate');
+    btnRotate.onclick = () => setGizmoMode('rotate');
+
+    // Phím tắt W, E, R, Escape, Delete, Backspace, Ctrl+Z, Ctrl+S
+    window.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'r' || e.key === 'R') setGizmoMode('scale');
+      else if (e.key === 'w' || e.key === 'W') setGizmoMode('translate');
+      else if (e.key === 'e' || e.key === 'E') setGizmoMode('rotate');
+      else if (e.key === 'Escape') deselectPart();
+      else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelectedPart();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        undoDeletePart();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        saveStudioConfig();
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // 9. ANIMATION LOOP
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ĐỌC URL QUERY PARAMS (ví dụ: ?type=oracle hoặc ?bld=bank)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initType = urlParams.get('type') || urlParams.get('bld');
+    if (initType && buildingTitles[initType]) {
+      currentBuildingType = initType;
+      tabs.forEach(b => {
+        b.classList.toggle('active', b.dataset.bld === initType);
+      });
+      document.getElementById('current-bld-title').textContent = buildingTitles[currentBuildingType] || currentBuildingType;
+      const fileBadge = document.getElementById('current-bld-file');
+      if (fileBadge) fileBadge.textContent = `buildings_config/${currentBuildingType}.json`;
+    }
+
+    // INITIAL RENDER
+    updateSceneBuilding();
+  </script>
+</body>
+</html>

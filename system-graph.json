@@ -1,0 +1,214 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "system-proposal-graph",
+  "liveTelemetry": false,
+  "productionConnections": 0,
+  "evidencePolicy": "Entity existence is confirmed by facility bindings and AN PHIM system architecture. Dashed links represent system network dependencies.",
+  "nodes": [
+    {
+      "id": "bld:facility:hq",
+      "department": "campus",
+      "name": "AN PHIM HQ",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:schedule",
+      "department": "campus",
+      "name": "Lịch làm việc",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:ai",
+      "department": "internal",
+      "name": "AI Team",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:supabase",
+      "department": "it",
+      "name": "Database",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:telegram",
+      "department": "it",
+      "name": "Telegram Bot",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:oracle",
+      "department": "it",
+      "name": "Oracle Cloud",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:google",
+      "department": "it",
+      "name": "Google Cloud",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:bank",
+      "department": "finance",
+      "name": "Ngân hàng",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:documents",
+      "department": "administration",
+      "name": "Giấy tờ",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:facility:hermes",
+      "department": "internal",
+      "name": "Hermes",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    },
+    {
+      "id": "bld:project:proj_24",
+      "department": "internal",
+      "name": "AN PHIM Website 2027",
+      "runtimeStatus": "active",
+      "deploymentConfirmed": true
+    }
+  ],
+  "edges": [
+    {
+      "id": "sys:schedule:supabase",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Bảng schedule PostgreSQL (Cloud DB)",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:schedule:telegram",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:telegram",
+      "type": "data",
+      "label": "Telegram Bot notification triggers",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:schedule:ai",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:ai",
+      "type": "execution",
+      "label": "Trâm Anh PM Task & Schedule Management",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:schedule:hq",
+      "source": "bld:facility:schedule",
+      "target": "bld:facility:hq",
+      "type": "reporting",
+      "label": "HQ Dashboard Daily Schedule View",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:google:supabase",
+      "source": "bld:facility:google",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Cloud Hosting & Database Storage",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:supabase:telegram",
+      "source": "bld:facility:supabase",
+      "target": "bld:facility:telegram",
+      "type": "data",
+      "label": "Database Webhook & Bot Alerts",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:supabase:ai",
+      "source": "bld:facility:supabase",
+      "target": "bld:facility:ai",
+      "type": "data",
+      "label": "Python SDK & psycopg2 Database Access",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:telegram:hq",
+      "source": "bld:facility:telegram",
+      "target": "bld:facility:hq",
+      "type": "data",
+      "label": "Executive Bot Channel to Director",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:supabase:bank",
+      "source": "bld:facility:supabase",
+      "target": "bld:facility:bank",
+      "type": "data",
+      "label": "Bank Statement Reconciliation Data",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:supabase:documents",
+      "source": "bld:facility:supabase",
+      "target": "bld:facility:documents",
+      "type": "data",
+      "label": "Legal Documents & Contract Tracking",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:oracle:supabase",
+      "source": "bld:facility:oracle",
+      "target": "bld:facility:supabase",
+      "type": "data",
+      "label": "Backend Cronjobs & Cloud DB Sync",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:oracle:telegram",
+      "source": "bld:facility:oracle",
+      "target": "bld:facility:telegram",
+      "type": "data",
+      "label": "Host Telegram Bot Service 24/7",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:oracle:hermes",
+      "source": "bld:facility:oracle",
+      "target": "bld:facility:hermes",
+      "type": "execution",
+      "label": "Host Hermes Automation Service",
+      "bidirectional": true,
+      "status": "system-dependency"
+    },
+    {
+      "id": "sys:oracle:proj_24",
+      "source": "bld:facility:oracle",
+      "target": "bld:project:proj_24",
+      "type": "data",
+      "label": "Host Public Rolling Video Website",
+      "bidirectional": true,
+      "status": "system-dependency"
+    }
+  ]
+}

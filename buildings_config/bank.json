@@ -1,0 +1,336 @@
+{
+  "buildingType": "bank",
+  "version": 3,
+  "savedAt": "12:44:19 17/11/2026",
+  "colors": {
+    "glassColor": "#2D8781",
+    "accentColor": "#ED8038"
+  },
+  "toggles": {
+    "portico": true,
+    "sign": true,
+    "atm": true,
+    "patio": true,
+    "bushes": true,
+    "roofEquipment": true,
+    "executiveWing": true
+  },
+  "scales": {
+    "towerScale": 1,
+    "podiumScale": 1
+  },
+  "modifiedParts": [
+    {
+      "partId": "bank_part_0",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": 0,
+        "y": 0.088,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_3",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": 7.21,
+        "y": 0.112,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1.04
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_4",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": -4.6,
+        "y": 0.109,
+        "z": 6.11
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_5",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": 4.6,
+        "y": 0.114,
+        "z": 6.11
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_6",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": 0,
+        "y": 0.141,
+        "z": 5.939
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_7",
+      "name": "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+      "position": {
+        "x": 0,
+        "y": 0.229,
+        "z": 5.237
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1.35
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_46",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": 0,
+        "y": 4.822,
+        "z": 4.45
+      },
+      "scale": {
+        "x": 1,
+        "y": 0.985,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_48",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": 0,
+        "y": 3.355,
+        "z": 4.75
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_49",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": 0,
+        "y": 3.346,
+        "z": 5.58
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_77",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": -4.82,
+        "y": 1.981,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_78",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": -4.82,
+        "y": 1.974,
+        "z": -0.967
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_79",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": -4.82,
+        "y": 1.973,
+        "z": 0.967
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_80",
+      "name": "🧱 Khối Nhà Điều Hành Kỹ Thuật",
+      "position": {
+        "x": -4.82,
+        "y": 1.023,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_135",
+      "name": "📡 Cột Phát Sóng Cao Tần / Chảo Vi Ba",
+      "position": {
+        "x": 1.7,
+        "y": 7.842,
+        "z": -1.6
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    },
+    {
+      "partId": "bank_part_136",
+      "name": "📡 Cột Phát Sóng Cao Tần / Chảo Vi Ba",
+      "position": {
+        "x": 2.7,
+        "y": 7.886,
+        "z": -1.6
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "visible": true
+    }
+  ],
+  "deletedPartIds": [
+    "bank_part_52",
+    "bank_part_57",
+    "bank_part_54",
+    "bank_part_56"
+  ],
+  "deletedParts": [
+    "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+    "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+    "🏛️ Bậc Đá Tam Cấp & Bệ Apron",
+    "🏛️ Bậc Đá Tam Cấp & Bệ Apron"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-11-15T16:30:11.112Z",
+  "checks": [
+    {
+      "name": "Universal Junction Boundary Integrity",
+      "description": "Quét toàn bộ Scene: Không có bất kỳ gờ đá (curb), vạch kẻ đường, vỉa hè hay dị vật nào được lấn vào ngã ba (z > 31.80m, x in [-10.5, 10.5])",
+      "status": "PASS",
+      "details": {
+        "maxProtrudingZ": null,
+        "violationsCount": 0,
+        "violationsSample": []
+      }
+    },
+    {
+      "name": "Stair Footprint Cleanliness",
+      "description": "Vùng cầu thang HQ sảnh chính không được chứa landing cam thừa hoặc mesh màu cam lấn chiếm",
+      "status": "PASS",
+      "details": {
+        "violationsCount": 0,
+        "foreignObjects": []
+      }
+    },
+    {
+      "name": "Island-to-Road Clearance",
+      "description": "Bồn cây đảo chữ U phải nằm lọt trong đảo (width <= 3.65m, northZ >= 20.8m), cách mép đường một khoảng đệm an toàn",
+      "status": "PASS",
+      "details": {
+        "maxIslandWidth": 0,
+        "minIslandNorthZ": null,
+        "maxIslandSouthZ": null
+      }
+    },
+    {
+      "name": "Terrace Slab Flushness",
+      "description": "Sân bê tông đón khách sảnh HQ phải phẳng lì ngang bằng mặt đất (chênh cao <= 0.03m), không có gờ nhô cao",
+      "status": "PASS",
+      "details": {
+        "hasHighRaisedBorders": false,
+        "elevationsSample": []
+      }
+    },
+    {
+      "name": "Removal of Flanking U-turn Walkways & Schedule Isolation",
+      "description": "Đã gỡ bỏ hoàn toàn 2 đường đi bộ ôm hai bên đường chữ U và không tạo đường đi bộ tới Lịch làm việc theo yêu cầu của Sếp",
+      "status": "PASS",
+      "details": {
+        "hasFlankingScheduleWalkway": false,
+        "hasFlankingReserveWalkway": false,
+        "hasScheduleDoorWalkway": false
+      }
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "status": "ALL_TESTS_PASSED"
+  }
+}

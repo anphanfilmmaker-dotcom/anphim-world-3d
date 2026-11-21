@@ -1,0 +1,23 @@
+{
+  "buildingType": "database",
+  "version": 3,
+  "savedAt": "2026-11-16T16:39:13.381Z",
+  "colors": {
+    "glassColor": "#2D8781",
+    "accentColor": "#ED8038"
+  },
+  "toggles": {
+    "supabaseLogo": true,
+    "curtainWall": true,
+    "portal": true,
+    "bollards": true,
+    "roofEquipment": true
+  },
+  "scales": {
+    "towerScale": 1,
+    "podiumScale": 1
+  },
+  "modifiedParts": [],
+  "deletedPartIds": [],
+  "deletedParts": []
+}
