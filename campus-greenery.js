@@ -47,7 +47,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     const along = (s.start + s.end) / 2, halfAlong = Math.abs(s.end - s.start) / 2 + 1.6, halfAcross = s.width / 2 + 1;
     rects.push(s.axis === 'x' ? {x: along, z: s.cross, hx: halfAlong, hz: halfAcross, cos: 1, sin: 0} : {x: s.cross, z: along, hx: halfAcross, hz: halfAlong, cos: 1, sin: 0});
   }
-  for (const t of landscape?.trees || []) disks.push({x: t.x, z: t.z, r: 1.6});
+  for (const t of landscape?.trees || []) disks.push({x: t.x, z: t.z, r: 1.6, soft: true});
 
   // Vật thể cảnh quan đã dựng sẵn trong scene (bồn cây, ghế, kiosk, khu VistaX...): lấy theo bounding box thật.
   scene.updateMatrixWorld(true);
@@ -61,14 +61,16 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
         for (let i = 0; i < o.count; i++) {
           o.getMatrixAt(i, m4);
           v3.setFromMatrixPosition(m4).applyMatrix4(o.matrixWorld);
-          disks.push({x: v3.x, z: v3.z, r: 1.3});
+          disks.push({x: v3.x, z: v3.z, r: 1.3, soft: true, mesh: o, index: i});
         }
         return;
       }
       box.setFromObject(o);
       const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
       if (!isFinite(sx) || sx > 14 || sz > 14) return;
-      rects.push({x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, hx: sx / 2 + .5, hz: sz / 2 + .5, cos: 1, sin: 0});
+      let loose = false;
+      for (let a = o.parent; a && a !== scene; a = a.parent) if (a.name === 'organic-bush-clusters') loose = true;
+      rects.push({x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, hx: sx / 2 + .5, hz: sz / 2 + .5, cos: 1, sin: 0, soft: loose && sx < 4 && sz < 4, obj: o});
     });
   }
   const vistax = scene.getObjectByName('district-vistax-partner-campus');
@@ -97,14 +99,17 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     }
     return inside;
   }
-  function free(x, z, r) {
+  // ignoreSoft: bỏ qua cây/bụi rời có sẵn (vườn rào được ưu tiên và sẽ dọn chúng khỏi lòng vườn)
+  function free(x, z, r, ignoreSoft = false) {
     for (let gx = Math.floor((x - r) / CELL); gx <= Math.floor((x + r) / CELL); gx++)
       for (let gz = Math.floor((z - r) / CELL); gz <= Math.floor((z + r) / CELL); gz++)
         for (const d of bins.get(gx + ',' + gz) || []) {
+          if (d.gone || (ignoreSoft && d.soft)) continue;
           const dx = x - d.x, dz = z - d.z, rr = d.r + r;
           if (dx * dx + dz * dz < rr * rr) return false;
         }
     for (const q of rects) {
+      if (q.gone || (ignoreSoft && q.soft)) continue;
       const dx = x - q.x, dz = z - q.z, lx = dx * q.cos - dz * q.sin, lz = dx * q.sin + dz * q.cos;
       if (Math.abs(lx) < q.hx + r && Math.abs(lz) < q.hz + r) return false;
     }
@@ -164,7 +169,26 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       part(new T.SphereGeometry(.13, 10, 8).translate(0, 1.62, 0), '#fff3cf', 1.5)
     ])
   };
-  const GROUP_OF = {round: canopyGroup, pine: canopyGroup, bloom: canopyGroup, hedge: shrubGroup, bush: shrubGroup, rock: root, lamp: root};
+  const WOOD = '#b9793f', STONE = '#e6dccb';
+  G.bench = mergeGeometries([
+    part(new T.BoxGeometry(1.5, .09, .5).translate(0, .42, 0), WOOD),
+    part(new T.BoxGeometry(1.5, .38, .08).translate(0, .68, -.23), WOOD),
+    part(new T.BoxGeometry(.1, .42, .46).translate(-.6, .21, 0), '#5b6470'),
+    part(new T.BoxGeometry(.1, .42, .46).translate(.6, .21, 0), '#5b6470')
+  ]);
+  G.planter = mergeGeometries([
+    part(new T.BoxGeometry(1.5, .5, .9).translate(0, .25, 0), STONE),
+    part(jitter(new T.IcosahedronGeometry(.42, 1), .15).scale(1.25, .8, .8).translate(-.3, .62, 0), '#4f9a41'),
+    part(jitter(new T.IcosahedronGeometry(.36, 1), .15).translate(.38, .6, 0), '#69b04a')
+  ]);
+  G.gate = mergeGeometries([
+    part(new T.BoxGeometry(1.15, .3, 1.15).translate(0, .15, 0), '#cfc6b4'),
+    part(new T.BoxGeometry(.85, 2.1, .85).translate(0, 1.35, 0), STONE),
+    part(new T.BoxGeometry(.87, .28, .87).translate(0, 1.15, 0), '#e8833a'),
+    part(new T.BoxGeometry(1.1, .2, 1.1).translate(0, 2.5, 0), '#cfc6b4'),
+    part(new T.BoxGeometry(.42, .42, .42).translate(0, 2.81, 0), '#fff3cf', 1.5)
+  ]);
+  const GROUP_OF = {bench: root, planter: root, gate: root, round: canopyGroup, pine: canopyGroup, bloom: canopyGroup, hedge: shrubGroup, bush: shrubGroup, rock: root, lamp: root};
 
   const batches = new Map();
   function put(kind, x, y, z, sx, sy, sz, yaw = 0, color = null, shadow = true) {
@@ -177,12 +201,12 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
   const tint = spread => new T.Color(1 + (rand() - .5) * spread, 1 + (rand() - .5) * spread * .6, 1 + (rand() - .5) * spread);
 
   function roundTree(x, z, s) {
-    const r = (.95 + rand() * .2) * s;
+    const r = (1.2 + rand() * .25) * s;
     put('round', x, ground(x, z), z, r, r * (.94 + rand() * .12), r, rand() * 6.28, tint(.22));
     occupy(x, z, 1.5 * s);
   }
   function pineTree(x, z, s) {
-    put('pine', x, ground(x, z), z, s * .95, s * 1.12, s * .95, rand() * 6.28, tint(.16));
+    put('pine', x, ground(x, z), z, s * 1.15, s * 1.35, s * 1.15, rand() * 6.28, tint(.16));
     occupy(x, z, 1.25 * s);
   }
   function rock(x, z, s) {
@@ -190,9 +214,65 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     occupy(x, z, .9 * s);
   }
 
+  const surface = terrain.surfaceHeight || terrain.height;
+  // Dọn cây/bụi rời có sẵn nằm trong một ô chữ nhật (lòng vườn rào, chỗ đặt bảng tên)
+  const zero = new T.Matrix4().makeScale(0, 0, 0), touched = new Set();
+  function clearSoft(cx, cz, hx, hz) {
+    const inside = q => Math.abs(q.x - cx) < hx && Math.abs(q.z - cz) < hz;
+    for (const d of disks) if (d.soft && !d.gone && inside(d)) { d.gone = true; if (d.mesh) { d.mesh.setMatrixAt(d.index, zero); touched.add(d.mesh); } }
+    for (const q of rects) if (q.soft && !q.gone && inside(q)) { q.gone = true; q.obj.visible = false; }
+  }
+  // ---- 0. Trụ cổng ở hai đầu đường vòng đón khách (U-turn) ------------------------------------------
+  const arrival = roads.paths.find(p => p.id === 'road:HQ-arrival' && p.curve && !p.hidden);
+  let gateCount = 0;
+  if (arrival) {
+    const len = arrival.curve.getLength(), setback = Math.min(.2, 5.5 / len), off = (arrival.width || 4) / 2 + 1.3;
+    for (const [t, side] of [[setback, 1], [1 - setback, 1]]) {
+      const q = arrival.curve.getPointAt(t), tan = arrival.curve.getTangentAt(t);
+      // Trụ nằm phía ngoài vòng U (xa tâm đảo), sát mép vỉa
+      const centre = arrival.curve.getPointAt(.5), nx = -tan.z, nz = tan.x, out = Math.sign((q.x - centre.x) * nx + (q.z - centre.z) * nz) || side;
+      const x = q.x + nx * out * off, z = q.z + nz * out * off;
+      put('gate', x, surface(x, z), z, 1.25, 1.25, 1.25, Math.atan2(tan.x, tan.z));
+      gateCount++;
+    }
+    // Bảng tên campus đặt trên bãi cỏ cạnh cổng, quay ra đường chính
+    const a = arrival.curve.getPointAt(0), b = arrival.curve.getPointAt(1), left = a.x < b.x ? a : b;
+    let spot = null;
+    for (let dz = 4; dz <= 12 && !spot; dz += .75) for (let dx = 8; dx <= 34 && !spot; dx += 1) {
+      const x = left.x - dx, z = left.z - dz;
+      let ok = true;
+      for (let i = -2; i <= 2 && ok; i++) if (!free(x + i * 1.5, z, .7, true) || !free(x + i * 1.5, z + 1, .5, true)) ok = false;
+      if (ok) spot = {x, z};
+    }
+    if (spot) {
+      clearSoft(spot.x, spot.z, 4.4, 2.2);
+      const signGroup = new T.Group();
+      signGroup.name = 'campus-entrance-sign';
+      const y = ground(spot.x, spot.z), std = hex => new T.MeshStandardMaterial({color: hex, roughness: .8});
+      const add = (geo, mat, px, py, pz) => { const m = new T.Mesh(geo, mat); m.position.set(px, py, pz); m.castShadow = m.receiveShadow = true; signGroup.add(m); return m; };
+      add(new T.BoxGeometry(6.4, .35, 1.3), std(STONE), 0, .175, 0);
+      add(new T.BoxGeometry(5.6, 1.5, .34), std('#27323d'), 0, 1.15, 0);
+      add(new T.BoxGeometry(5.9, .2, .6), std('#e8833a'), 0, 2, 0);
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024; canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#27323d'; ctx.fillRect(0, 0, 1024, 256);
+      ctx.fillStyle = '#fff3cf'; ctx.font = 'bold 132px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('AN PHIM WORLD', 512, 134, 960);
+      const tex = new T.CanvasTexture(canvas);
+      tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 8;
+      const face = add(new T.PlaneGeometry(5.4, 1.35), new T.MeshBasicMaterial({map: tex, toneMapped: false}), 0, 1.15, .175);
+      face.castShadow = false;
+      signGroup.position.set(spot.x, y, spot.z);
+      root.add(signGroup);
+      for (let i = -3; i <= 3; i++) { const bs = .5 + rand() * .15; put('bush', spot.x + i * .95, y + bs * .55, spot.z + .95, bs, bs * .8, bs, rand() * 6.28); }
+      occupy(spot.x - 2, spot.z, 2.2); occupy(spot.x + 2, spot.z, 2.2);
+    }
+  }
+
   // ---- 1. Vườn rào cây cắt tỉa + cây tán tròn nở hoa -------------------------------------------
   const parterres = [];
-  const sizes = [[6.4, 4.8], [5.2, 5.2], [4.6, 4.6], [4.2, 3.8]];
+  const sizes = [[9, 6.4], [6.4, 8.4], [7.4, 5.6], [6.4, 4.8], [5.2, 5.2], [4.6, 4.6], [4.2, 3.8]];
   const candidates = [];
   for (let x = -58; x <= 62; x += 1.5) for (let z = -46; z <= 42; z += 1.5) {
     if (!insideRing(x, z)) continue;
@@ -200,20 +280,20 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     if (d < 14) candidates.push({x, z, d});
   }
   candidates.sort((a, b) => a.d - b.d);
-  for (const c of candidates) {
-    if (parterres.length >= 16) break;
-    if (parterres.some(p => Math.hypot(p.x - c.x, p.z - c.z) < 9)) continue;
-    for (const [w, d] of sizes) {
-      const hw = w / 2, hd = d / 2;
+  const open = candidates.filter(c => free(c.x, c.z, 1.6, true));
+  // Vườn lớn được xếp trước (ảnh tham chiếu dùng các ô vườn rào lớn), cỡ nhỏ lấp các khoảng còn lại
+  for (const [w, d] of sizes) {
+    const hw = w / 2, hd = d / 2;
+    for (const c of open) {
+      if (parterres.length >= 10) break;
+      if (parterres.some(p => Math.abs(p.x - c.x) < (p.w + w) / 2 + 2.5 && Math.abs(p.z - c.z) < (p.d + d) / 2 + 2.5)) continue;
       let ok = true, lo = Infinity, hi = -Infinity;
-      for (let i = -2; i <= 2 && ok; i++) for (let j = -2; j <= 2 && ok; j++) {
-        const px = c.x + i * hw / 2, pz = c.z + j * hd / 2, h = ground(px, pz);
+      for (let i = -3; i <= 3 && ok; i++) for (let j = -3; j <= 3 && ok; j++) {
+        const px = c.x + i * hw / 3, pz = c.z + j * hd / 3, h = ground(px, pz);
         lo = Math.min(lo, h); hi = Math.max(hi, h);
-        if (!free(px, pz, .45) || !insideRing(px, pz)) ok = false;
+        if (!free(px, pz, .45, true) || !insideRing(px, pz)) ok = false;
       }
-      if (!ok || hi - lo > 1.1) continue;
-      parterres.push({x: c.x, z: c.z, w, d});
-      break;
+      if (ok && hi - lo <= 1.1) parterres.push({x: c.x, z: c.z, w, d});
     }
   }
   // Hàng rào ghép từ các đoạn ngắn bám theo cao độ địa hình (campus có dốc nhẹ).
@@ -226,6 +306,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
   }
   for (const p of parterres) {
     const hw = p.w / 2, hd = p.d / 2, th = .55, hh = .6, gap = 1.3, in_ = th / 2;
+    clearSoft(p.x, p.z, hw + .9, hd + .9);
     hedgeRun(p.x - hw, p.z - hd + in_, p.x + hw, p.z - hd + in_, th, hh);
     hedgeRun(p.x - hw + in_, p.z - hd + th, p.x - hw + in_, p.z + hd - th, th, hh);
     hedgeRun(p.x + hw - in_, p.z - hd + th, p.x + hw - in_, p.z + hd - th, th, hh);
@@ -240,6 +321,8 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     }
     occupy(p.x, p.z, Math.hypot(hw, hd) + .8);
   }
+
+  for (const mesh of touched) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
 
   // ---- 2. Cây đa tầng: thông sẫm + cây tán đa diện sáng (trong campus và vành ngoài) ---------------
   let roundCount = 0, pineCount = 0, rockCount = 0;
@@ -290,6 +373,31 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     }
   }
 
+  // ---- 5. Ghế và bồn cây trên các sân lát gạch ---------------------------------------------------
+  const onWalk = (x, z, m) => disks.some(d => d.walk && Math.hypot(x - d.x, z - d.z) < d.r + m);
+  const inPad = (x, z, m) => terrain.pads.some(q => Math.abs(x - q.x) < q.hx + m && Math.abs(z - q.z) < q.hz + m);
+  let benchCount = 0, planterCount = 0;
+  for (const c of terrain.courts) {
+    if (c.hidden || c.kind === 5 || /Forecourt|Apron/i.test(c.id || '')) continue;
+    const rot = c.rotY || 0, cos = Math.cos(rot), sin = Math.sin(rot), hw = c.w / 2, hd = c.d / 2;
+    const world = (lx, lz) => [c.x + lx * cos - lz * sin, c.z + lx * sin + lz * cos];
+    const spots = [];
+    for (const side of [-1, 1]) {
+      const n = Math.max(1, Math.floor(c.w / 7));
+      for (let i = 0; i < n; i++) spots.push({kind: 'bench', lx: (i + .5) / n * c.w - hw, lz: side * (hd - .55), yaw: side > 0 ? Math.PI : 0});
+      for (const cx of [-1, 1]) spots.push({kind: 'planter', lx: cx * (hw - 1.3), lz: side * (hd - .75), yaw: 0});
+    }
+    for (const sp of spots) {
+      if (Math.abs(sp.lx) > hw - .9 || hd < 1.4) continue;
+      const [x, z] = world(sp.lx, sp.lz);
+      if (onWalk(x, z, .9) || inPad(x, z, 1) || urban.isInsideUTurnCorridor(x, z, 1) || urban.isInsideHQForecourt(x, z, 1)) continue;
+      if (rects.some(q => q.obj && !q.gone && Math.abs(x - q.x) < q.hx + .6 && Math.abs(z - q.z) < q.hz + .6)) continue;
+      if (disks.some(d => !d.walk && !d.gone && d.soft && Math.hypot(x - d.x, z - d.z) < 1.5)) continue;
+      put(sp.kind, x, surface(x, z), z, 1, 1, 1, sp.yaw - rot);
+      sp.kind === 'bench' ? benchCount++ : planterCount++;
+    }
+  }
+
   // ---- Dựng InstancedMesh ---------------------------------------------------------------------
   const o = new T.Object3D();
   for (const [key, b] of batches) {
@@ -306,10 +414,11 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     mesh.castShadow = b.shadow;
     mesh.receiveShadow = true;
     mesh.userData.campusGreenery = true;
+    if (b.kind === 'gate') mesh.userData.keepInArrivalZone = true;
     mesh.computeBoundingSphere();
     GROUP_OF[b.kind].add(mesh);
   }
 
-  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
+  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, benches: benchCount, planters: planterCount, gatePillars: gateCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
   return {root, parterres, free};
 }
