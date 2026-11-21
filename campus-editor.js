@@ -2238,18 +2238,9 @@ export function createCampusEditor({
     return false;
   }
 
-    // Seamless rounded end cap for walkway ribbon
-    // =========================================================================
-  // ULTRA-CLEAN SINGLE-MESH ROAD & WALKWAY GENERATOR (ZERO-Z-FIGHTING)
-  // - 1 single BufferGeometry with vertex colors
-  // - 100% CCW upward normals: Tri 1 (p00, p01, p10), Tri 2 (p01, p11, p10)
-  // - Crisp borders with shared edge coordinates (zero gap, zero tearing)
-  // - Zero brown spots / zero overlapping disks or rings
-  // =========================================================================
-  function generateRoadMesh(points, width, type = 'road_yellow', options = {}) {
+  // Lọc điểm trùng và tách polyline tại các khúc quay đầu gấp: dùng chung cho mesh mặt đường và vạch kẻ đường
+  function splitRoadChains(points) {
     if (!points || points.length < 2) return null;
-    const isYellowWalk = type === 'road_yellow' || type === 'road_walk';
-
     // 1. Deduplicate consecutive points
     const cleanPts = [points[0]];
     for (let i = 1; i < points.length; i++) {
@@ -2282,6 +2273,25 @@ export function createCampusEditor({
     }
     if (currentChain.length >= 2) rawChains.push(currentChain);
     if (rawChains.length === 0) return null;
+    return { cleanPts, rawChains };
+
+  }
+
+    // Seamless rounded end cap for walkway ribbon
+    // =========================================================================
+  // ULTRA-CLEAN SINGLE-MESH ROAD & WALKWAY GENERATOR (ZERO-Z-FIGHTING)
+  // - 1 single BufferGeometry with vertex colors
+  // - 100% CCW upward normals: Tri 1 (p00, p01, p10), Tri 2 (p01, p11, p10)
+  // - Crisp borders with shared edge coordinates (zero gap, zero tearing)
+  // - Zero brown spots / zero overlapping disks or rings
+  // =========================================================================
+  function generateRoadMesh(points, width, type = 'road_yellow', options = {}) {
+    if (!points || points.length < 2) return null;
+    const isYellowWalk = type === 'road_yellow' || type === 'road_walk';
+
+    const chains = splitRoadChains(points);
+    if (!chains) return null;
+    const { cleanPts, rawChains } = chains;
 
     // 3. Setup styling and dimensions
     const roadW = Math.max(0.6, width || 2.0);
@@ -2546,6 +2556,7 @@ export function createCampusEditor({
       }
     }
     rebuildNativeWalkwaysAndCourtsMeshes();
+    syncRoadMarkings(true);
   }
 
   function deleteCustomRoad(roadId) {
@@ -3374,6 +3385,7 @@ export function createCampusEditor({
   }
 
   function updateHierarchyUI() {
+    syncRoadMarkings(); // mọi thay đổi danh sách đường đều đi qua đây
     const listEl = document.querySelector('#hierarchy-list');
     if (!listEl) return;
 
@@ -3579,20 +3591,23 @@ export function createCampusEditor({
   let saveDebounceTimer = null;
   // Đưa các đường xe chạy do Studio vẽ vào cơ chế vạch kẻ chung (road-markings.js): chỗ chúng chạm / cắt nhau
   // hoặc chạm vành đai sẽ tự có vạch dừng và vạch qua đường; vạch tim liền cũ của mesh được ẩn đi.
-  function syncRoadMarkings() {
+  function syncRoadMarkings(force = false) {
     if (!roads?.syncRoadNetwork) return;
     const defs = [];
     for (const r of customRoadsList) {
       const drivable = r.type === 'road_asphalt' || r.type === 'road_car';
-      if (!drivable || !r.mesh?.parent || r.mesh.visible === false || !r.points || r.points.length < 2 || (r.width || 6) < 3) continue;
+      if (!drivable || !r.mesh?.parent || r.mesh.visible === false || (r.width || 6) < 3) continue;
+      const chains = splitRoadChains(r.points);
+      if (!chains) continue;
       const stripe = r.mesh.getObjectByName('road_lane_stripes');
       if (stripe) stripe.visible = false;
-      defs.push({
-        id: r.id, halfW: (r.width || 6) / 2, signature: JSON.stringify(r.points),
-        curve: new T.CatmullRomCurve3(r.points.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal')
-      });
+      // Cùng cách tách khúc với generateRoadMesh để vạch nằm đúng trên mặt nhựa ở khúc quay đầu gấp
+      chains.rawChains.forEach((chain, i) => defs.push({
+        id: `${r.id}#${i}`, halfW: (r.width || 6) / 2, signature: JSON.stringify(chain),
+        curve: new T.CatmullRomCurve3(chain.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal')
+      }));
     }
-    roads.syncRoadNetwork(defs);
+    roads.syncRoadNetwork(defs, force);
   }
 
   function saveStudioState(force = false) {
@@ -5491,6 +5506,7 @@ export function createCampusEditor({
       }
       if (hiddenAncestor) continue;
       if (isProtectedBuildingObject(o)) continue;
+      if (o.userData?.isRoadMarking) continue; // vạch sơn: nhìn xuyên qua để chọn đúng con đường bên dưới
 
       // Case A0: mặt sân cam dựng mesh riêng -> ủi qua trạng thái court.hidden (được lưu và dựng lại), không chỉ ẩn mesh
       if (o.userData?.isSmoothCourtMesh) {

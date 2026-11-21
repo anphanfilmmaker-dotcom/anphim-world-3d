@@ -53,11 +53,11 @@ export function analyseRoadNetwork(defs) {
     const e = at(a, sA);
     for (const b of roads) if (b !== a) {
       const q = nearest(b, e.x, e.z);
-      if (q.d > b.halfW + 1) continue;
+      if (q.d > b.halfW + 0.3) continue; // đầu đường phải thật sự chạm mặt nhựa của tuyến kia
       if (!b.closed && (q.s < 1.5 || b.len - q.s < 1.5)) continue; // hai đầu nối nhau = cùng một con đường đi tiếp
       const c = at(b, q.s);
       add(c.x, c.z, [{road: a, s: sA, dir: sA === 0 ? 1 : -1, off: q.d}, ...armsOf(b, q.s)]);
-      ends.push([c.x, c.z]);
+      ends.push({x: c.x, z: c.z, a, b});
     }
   }
   // Ngã tư: hai tim đường cắt nhau
@@ -74,8 +74,12 @@ export function analyseRoadNetwork(defs) {
         const v = ((b0.x - a0.x) * (a1.z - a0.z) - (b0.z - a0.z) * (a1.x - a0.x)) / d;
         if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
         const x = a0.x + (a1.x - a0.x) * u, z = a0.z + (a1.z - a0.z) * u;
-        if (ends.some(e => Math.hypot(e[0] - x, e[1] - z) < 6)) continue;
-        add(x, z, [...armsOf(a, (p + u) * a.ds), ...armsOf(b, (q + v) * b.ds)]);
+        // Chính cặp tuyến này đã tạo ngã ba ở đây (đầu tuyến chạm tuyến kia): không tính thêm một giao cắt nữa
+        if (ends.some(e => ((e.a === a && e.b === b) || (e.a === b && e.b === a)) && Math.hypot(e.x - x, e.z - z) < 6)) continue;
+        // Hai đoạn nối đuôi nhau (vd. hai nửa của một khúc cua gấp) không phải giao lộ
+        const sa = (p + u) * a.ds, sb = (q + v) * b.ds;
+        if (!a.closed && !b.closed && Math.min(sa, a.len - sa) < 1.5 && Math.min(sb, b.len - sb) < 1.5) continue;
+        add(x, z, [...armsOf(a, sa), ...armsOf(b, sb)]);
       }
     }
   }
@@ -221,6 +225,7 @@ export function createMarkingMesh(boxes, material, name = 'road-markings-instanc
   mesh.count = boxes.length;
   mesh.castShadow = false;
   mesh.receiveShadow = true;
+  mesh.userData.isRoadMarking = true; // Studio bỏ qua khi chọn / ủi: vạch sơn không phải cây hay đồ vật
   mesh.userData.keepInArrivalZone = true; // vạch kẻ ở cổng không phải cảnh quan cần dọn khỏi vùng đón khách
   const dummy = new T.Object3D(), H = 0.012;
   dummy.rotation.order = 'YXZ';

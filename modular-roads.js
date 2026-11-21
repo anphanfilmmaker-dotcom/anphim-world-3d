@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
-import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=1';
+import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=2';
 
 /**
  * AN PHIM HIGH-FIDELITY UNIFIED ROAD NETWORK
@@ -140,10 +140,10 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   }
 
   // Dựng lại mặt đường + vạch khi danh sách đường thay đổi (Studio vẽ / xóa / undo một con đường xe chạy)
-  function syncRoadNetwork(extra = []) {
+  function syncRoadNetwork(extra = [], force = false) {
     const defs = collectRoadDefs(extra);
     const signature = JSON.stringify(defs.map(d => [d.id, d.halfW, d.signature ?? null]));
-    if (signature === lastSignature) return dynamicGroup;
+    if (signature === lastSignature && !force) return dynamicGroup; // force: địa hình vừa đổi cao độ, vạch phải đo lại
     lastSignature = signature;
     if (dynamicGroup) {
       roadRoot.remove(dynamicGroup);
