@@ -890,7 +890,7 @@ export function createArchitecture(P) {
 
     // 4. Chunky Parapet & Cornice
     box(g, 8.8, 0.45, 8.8, 0, 5.25, -0.2, M.stone);
-    box(g, 9.0, 0.10, 9.0, 0, 5.70, -0.2, M.orange);
+    box(g, 9.0, 0.30, 9.0, 0, 5.50, -0.2, M.orange); // dày 0.3: tấm 0.1 quá mỏng nên mặt mái tự đổ bóng lốm đốm
 
     // 5. Massive Circular Vault Portal Structure
     const blastDoorG = new T.Group();

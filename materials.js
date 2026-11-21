@@ -8,6 +8,8 @@ export function createAdapter(P) {
     if (m.map) m.color.set(0xffffff);
     m.roughness = kind === 'building' ? P.materialTargets.plaster.roughness : P.materialTargets.road.roughness;
     m.metalness = kind === 'building' ? 0.05 : 0.0;
+    // Model glTF là hai mặt: mặt được chiếu sáng tự đổ bóng lên chính nó (vân caro xám trên tường). Chỉ để mặt sau đổ bóng.
+    if (kind === 'building') m.shadowSide = THREE.BackSide;
 
     m.onBeforeCompile = shader => {
       shader.uniforms.palGlassRoughness = { value: P.materialTargets.glass.roughness };
@@ -42,7 +44,7 @@ export function createAdapter(P) {
           metalnessFactor = 0.40;
         } else {
           // Smooth architectural plaster & limestone
-          diffuseColor.rgb = mix(pal_stone, pal_plaster, smoothstep(.12, .65, lum));
+          diffuseColor.rgb = mix(pal_stone, pal_plaster, smoothstep(.06, .30, lum));
           roughnessFactor = 0.68;
           metalnessFactor = 0.0;
         }
@@ -84,7 +86,7 @@ export function createAdapter(P) {
       );
     };
 
-    m.customProgramCacheKey = () => kind + '-world-palette-v3-pbr';
+    m.customProgramCacheKey = () => kind + '-world-palette-v4-pbr';
     return m;
   }
 

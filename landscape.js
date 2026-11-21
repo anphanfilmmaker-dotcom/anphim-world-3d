@@ -15,7 +15,9 @@ export async function createLandscape(scene,P,L,terrain,paths,adapter,layers,rep
    }
 
    // 2. Chặn tuyệt đối quanh khu vực Sân IT Tech Plaza
-   if (Math.abs(x - 32.5) < 9.0 && Math.abs(z - 15) < 5.0) return false;
+   if (Math.abs(x - 32.5) < 11.5 && Math.abs(z - 15) < 5.0) return false;
+   // Quảng trường Finance (tây kho quỹ)
+   if (Math.abs(x + 30.2) < 6.4 + margin && Math.abs(z - 20.9) < 4.2 + margin) return false;
 
    // 3. Chặn tuyệt đối quanh sảnh HQ và đảo U-turn
    if (urbanEngine.isInsideUTurnCorridor(x, z, margin)) return false;
