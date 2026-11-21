@@ -37,9 +37,9 @@ const STYLE = `
 .bp-sec small{font-size:10.5px;letter-spacing:0;text-transform:none;color:var(--cf-mute);font-weight:700}
 .bp-tiles{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .bp-tiles.bp-3{grid-template-columns:1fr 1fr 1fr}
-.bp-tile{padding:7px 9px;border-radius:10px;background:var(--cf-bg2);border:1px solid var(--cf-line);min-width:0}
+.bp-tile{padding:7px 9px;border-radius:10px;background:var(--cf-bg2);border:1px solid var(--cf-line);min-width:0;container-type:inline-size}
 .bp-tile small{display:block;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--cf-mute)}
-.bp-tile b{display:block;font-size:15px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.bp-tile b{display:block;font-size:min(15px,calc(100cqw / var(--bp-len,1)));font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .bp-tile[data-tone=warn] small,.bp-tile[data-tone=warn] b{color:var(--cf-warn)}
 .bp-tile[data-tone=alert] small,.bp-tile[data-tone=alert] b{color:var(--cf-alert)}
 .bp-none{color:var(--cf-mute);font-weight:700;font-size:11px}
@@ -178,7 +178,8 @@ export class BuildingPanels {
 
   tiles(items, cols = 2) {
     return `<div class="bp-tiles${cols === 3 ? ' bp-3' : ''}" data-focus="kpi">${items.map(t =>
-      `<div class="bp-tile" data-tone="${t.tone || ''}"><small>${esc(t.label)}</small><b>${t.value == null ? NONE : t.money ? esc(this.frame.money(t.value)) : esc(t.value)}</b></div>`).join('')}</div>`;
+      // --bp-len: text length in ems (bold digits are about 0.7em wide), so a long amount shrinks to fit instead of being cut off
+      `<div class="bp-tile" data-tone="${t.tone || ''}"><small>${esc(t.label)}</small><b style="--bp-len:${(String(t.value ?? '').length * 0.7).toFixed(1)}">${t.value == null ? NONE : t.money ? esc(this.frame.money(t.value)) : esc(t.value)}</b></div>`).join('')}</div>`;
   }
 
   open(page, text, primary) {
@@ -302,7 +303,7 @@ export class BuildingPanels {
       `<button class="bp-rowbtn" ${docs ? `data-enter="${esc(docs.id)}"` : 'disabled'}><span class="cf-row"><span class="cf-fill">${v.papers?.missing.length ? 'Thiếu: ' + esc(v.papers.missing.join(', ')) : 'Báo giá · Hợp đồng · VAT R1–R3 · BBTL'}</span><span class="cf-go">→ Giấy tờ</span></span></button>` +
       this.sec('Ghi chú') + `<div class="bp-subtitle">${p.note ? this.frame.text(p.note) : 'Chưa có ghi chú.'}</div>`;
     const right = this.sec('Thanh toán', `đã nhận ${this.frame.money(p.receivedFormatted ?? '—')} / ${this.frame.money(p.budgetFormatted ?? '—')}`, 'payments') +
-      this.tiles(v.payments.map((x, i) => ({label: 'Đợt ' + (i + 1), value: x, money: true})), 3) +
+      `<div class="bp-box">${v.payments.map((x, i) => `<span class="cf-row"><span class="cf-fill">Đợt ${i + 1}</span><b class="bp-amt">${x == null ? NONE : esc(this.frame.money(x))}</b></span>`).join('')}</div>` +
       this.sec('Production milestones', ms.length ? `${v.doneCount}/${ms.length} mốc · ${v.progress}%` : 'chưa có mốc') +
       (ms.length ? `<div class="cf-bar" data-tone="ok" style="margin:0 0 6px"><i style="width:${v.progress}%"></i></div>` : '') +
       ms.map((m, i) => `<div class="bp-ms" data-state="${m.state}" data-focus="milestone:${i}"><i></i><span class="cf-fill">${esc(m.name)}</span><span class="cf-time">${esc(m.date || '')}</span></div>`).join('') +
