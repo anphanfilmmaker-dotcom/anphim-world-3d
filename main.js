@@ -4,8 +4,8 @@ import {createHQGardens} from './hq-gardens.js?rev=62';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
 import {createCampusEditor} from './campus-editor.js?rev=109';
-import {createLandscapePolish} from './landscape-polish.js?rev=117';
-import {createCampusGreenery} from './campus-greenery.js?rev=9';
+import {createLandscapePolish} from './landscape-polish.js?rev=118';
+import {createCampusGreenery} from './campus-greenery.js?rev=10';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -17,7 +17,7 @@ import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v31';
+import {createArchitecture} from './architecture.js?rev=v32';
 import {createAdapter} from './materials.js?rev=8';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq17';
@@ -89,7 +89,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v9'), fetchJSON('./campus-palette.json?rev=finalPaletteV3')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV4')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
