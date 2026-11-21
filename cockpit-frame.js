@@ -151,7 +151,7 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-toast button.cf-go{display:inline}
 .cf-toast .cf-x{color:var(--cf-mute);display:grid;place-items:center;width:20px;height:20px;border-radius:6px;flex:none}
 .cf-toast .cf-x:hover{background:var(--cf-bg2);color:var(--cf-text)}
-.cf-bottom{position:absolute;left:50%;bottom:var(--cf-pad);transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:7px 8px 7px 16px;max-width:calc(100vw - 28px)}
+.cf-bottom{position:absolute;left:50%;bottom:var(--cf-pad);transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:7px 8px 7px 16px;width:max-content;max-width:calc(100vw - 28px)}
 .cf-bottom>small{font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--cf-mute);margin-right:4px;white-space:nowrap}
 .cf-bottom .cf-btn{height:34px;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid var(--cf-line)}
 .cf-bottom .cf-btn[aria-pressed=true]{background:var(--cf-accent);color:#1b2428}
@@ -170,7 +170,7 @@ button.cf-note:hover{background:var(--cf-bg2)}
 &.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-bottom *{pointer-events:none}
 @media (max-width:1480px){--cf-side:272px;.cf-res strong{font-size:15px}.cf-res-ico{display:none}.cf-res{padding:0 12px}.cf-brand span{display:none}}
 @media (max-width:1180px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 10px}.cf-res small{font-size:8.5px;letter-spacing:.04em}}
-@media (max-width:980px){.cf-right{display:none}.cf-toast{right:var(--cf-pad)}.cf-res small{display:none}}
+@media (max-width:980px){.cf-right{display:none}.cf-toast{right:var(--cf-pad)}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
