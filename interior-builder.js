@@ -485,7 +485,8 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
     }
   };
 
-  if (rooms[view.type]) rooms[view.type]();
+  if (view.type === 'project' && !view.project) label(0, 1.6, 0, view.title || 'Tòa dự án', 'Chưa kết nối dữ liệu của dự án này', {muted: true});
+  else if (rooms[view.type]) rooms[view.type]();
   else label(0, 1.6, 0, view.title || 'Tòa nhà', 'Bên trong tòa này chưa có bản phác được duyệt', {muted: true});
   g.userData.update = t => { for (const fn of anim) fn(t); };
   return g;
