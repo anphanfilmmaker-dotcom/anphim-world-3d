@@ -140,6 +140,19 @@ export function createCampusEditor({
     showToast('Đã ghi nhận thao tác', '#047857');
   }
 
+  // Sau Undo/Redo, đưa gizmo về đúng vị trí dữ liệu của sân/điểm đường đang chọn; nếu không, syncUI() sẽ ghi vị trí cũ của gizmo đè lên dữ liệu vừa khôi phục.
+  function syncNativeProxyToTarget() {
+    if (selectedObject !== nativeProxyObj) return;
+    if (selectedNativeCourt) {
+      nativeProxyObj.position.x = selectedNativeCourt.x;
+      nativeProxyObj.position.z = selectedNativeCourt.z;
+      nativeProxyObj.rotation.y = selectedNativeCourt.rotY || 0;
+    } else if (selectedNativeWalk) {
+      const pt = selectedNativeWalk.path.points[selectedNativeWalk.pointIndex];
+      if (pt) { nativeProxyObj.position.x = pt[0]; nativeProxyObj.position.z = pt[1]; }
+    }
+  }
+
   function executeUndo() {
     if (undoStack.length === 0) {
       showToast('Không còn thao tác để Undo', '#64748b');
@@ -150,6 +163,7 @@ export function createCampusEditor({
       action.undo();
       redoStack.push(action);
       showToast('↩️ Đã Undo', '#0284c7');
+      syncNativeProxyToTarget();
       syncUI();
       return { ok: true, action: action.type };
     }
@@ -166,6 +180,7 @@ export function createCampusEditor({
       action.redo();
       undoStack.push(action);
       showToast('↪️ Đã Redo', '#0284c7');
+      syncNativeProxyToTarget();
       syncUI();
       return { ok: true, action: action.type };
     }
