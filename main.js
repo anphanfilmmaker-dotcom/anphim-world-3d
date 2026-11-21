@@ -5,7 +5,7 @@ import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
 import {createCampusEditor} from './campus-editor.js?rev=104';
 import {createLandscapePolish} from './landscape-polish.js?rev=112';
-import {createCampusGreenery} from './campus-greenery.js?rev=1';
+import {createCampusGreenery} from './campus-greenery.js?rev=2';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -929,7 +929,7 @@ async function main() {
   await createHQGardens(scene,terrain,roads,L,report);
   await createVistaXDistrict(scene, terrain, roads, registry, P);
   await createModularRoadSystem(scene, terrain, roads);
-  createCampusGreenery(scene, L, terrain, roads, landscape, report);
+  createCampusGreenery(scene, L, terrain, roads, landscape, layers, report);
   console.log('[STEP 6.5] HQ gardens created');
   scene.traverse(o => {
     if (o.name === 'hq-arrival-stair-terrace' || o.parent?.name === 'hq-arrival-stair-terrace') {

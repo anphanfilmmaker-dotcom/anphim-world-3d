@@ -6,10 +6,16 @@ import {createUrbanPlanningEngine} from './urban-planning-engine.js';
 // vườn có hàng rào cây cắt tỉa + cây tán tròn nở hoa, thông sẫm, cây tán đa diện sáng, đá cảnh, đèn lối đi.
 // Mọi vị trí được tính tự động từ khoảng trống thật của campus (không đè nhà, đường, sân, cầu thang, cây có sẵn)
 // và dùng seed cố định nên bố cục giống nhau ở mỗi lần tải.
-export function createCampusGreenery(scene, L, terrain, roads, landscape, report) {
+export function createCampusGreenery(scene, L, terrain, roads, landscape, layers, report) {
   const root = new T.Group();
   root.name = 'campus-greenery-layers';
   scene.add(root);
+  // Cây và hàng rào nằm trong layer canopy/shrubs có sẵn để các nút ẩn/hiện layer và Massing Review áp dụng luôn cho chúng.
+  const canopyGroup = new T.Group(), shrubGroup = new T.Group();
+  canopyGroup.name = 'campus-greenery-canopy-layer';
+  shrubGroup.name = 'campus-greenery-shrub-layer';
+  (layers?.canopy || root).add(canopyGroup);
+  (layers?.shrubs || root).add(shrubGroup);
 
   let seed = 90210;
   const rand = () => ((seed = (1664525 * seed + 1013904223) >>> 0) / 4294967296);
@@ -114,62 +120,73 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
   }
 
   // ---- Hình khối & vật liệu ----------------------------------------------------------------
-  const mat = (color, roughness = .9) => new T.MeshStandardMaterial({color, roughness, flatShading: true});
-  const M = {
-    hedge: mat('#3f8a3d'), trunk: mat('#8a5a38'), canopy: mat('#ffffff'),
-    pine: mat('#ffffff'), bloom: mat('#4c9a3f'), petal: mat('#fff8ec', .7), rock: mat('#a3a9ae', .95),
-    pole: mat('#46515e', .6), lamp: new T.MeshStandardMaterial({color: '#fff3cf', emissive: '#ffd98a', emissiveIntensity: .9, roughness: .4})
-  };
+  // Mỗi cây / đèn là MỘT instance (thân + tán gộp chung geometry, màu theo vertex color),
+  // nên công cụ ủi trong editor xoá trọn cả cây chứ không để lại tán lơ lửng.
+  const material = new T.MeshStandardMaterial({vertexColors: true, roughness: .9, flatShading: true});
   function jitter(geo, amount) {
     const p = geo.attributes.position, seen = new Map();
     for (let i = 0; i < p.count; i++) {
       const k = p.getX(i).toFixed(3) + ',' + p.getY(i).toFixed(3) + ',' + p.getZ(i).toFixed(3);
       if (!seen.has(k)) seen.set(k, 1 + (rand() - .5) * amount);
-      const s = seen.get(k);
-      p.setXYZ(i, p.getX(i) * s, p.getY(i) * s, p.getZ(i) * s);
+      const f = seen.get(k);
+      p.setXYZ(i, p.getX(i) * f, p.getY(i) * f, p.getZ(i) * f);
     }
-    geo.computeVertexNormals();
     return geo;
   }
+  function part(geo, hex, boost = 1) {
+    const g = geo.index ? geo.toNonIndexed() : geo, c = new T.Color(hex).multiplyScalar(boost), n = g.attributes.position.count, a = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+    g.setAttribute('color', new T.BufferAttribute(a, 3));
+    g.deleteAttribute('uv');
+    g.computeVertexNormals();
+    return g;
+  }
+  const TRUNK = '#8a5a38', trunk = (h, top = .12, bottom = .18) => part(new T.CylinderGeometry(top, bottom, h, 6).translate(0, h / 2, 0), TRUNK);
+  const petals = [];
+  for (let i = 0; i < 14; i++) {
+    const a = rand() * 6.28, e = .15 + rand() * 1.2;
+    petals.push(part(new T.IcosahedronGeometry(.07, 0).translate(Math.cos(a) * Math.sin(e), 1.75 + Math.cos(e) * .96, Math.sin(a) * Math.sin(e)), '#fff8ec'));
+  }
   const G = {
-    box: new T.BoxGeometry(1, 1, 1).translate(0, .5, 0),
-    trunk: new T.CylinderGeometry(.11, .17, 1, 6).translate(0, .5, 0),
-    canopy: jitter(new T.IcosahedronGeometry(1, 1), .22),
-    bloom: jitter(new T.IcosahedronGeometry(1, 2), .08),
-    petal: new T.IcosahedronGeometry(1, 0),
-    rock: jitter(new T.IcosahedronGeometry(1, 0), .5).translate(0, .45, 0),
+    hedge: part(new T.BoxGeometry(1, 1, 1).translate(0, .5, 0), '#3f8a3d'),
+    bush: part(jitter(new T.IcosahedronGeometry(1, 1), .1), '#3f8a3d'),
+    round: mergeGeometries([trunk(1.3), part(jitter(new T.IcosahedronGeometry(1, 1), .22).translate(0, 1.75, 0), '#84c14c')]),
     pine: mergeGeometries([
-      new T.ConeGeometry(1, 1.5, 7).translate(0, .75, 0),
-      new T.ConeGeometry(.78, 1.3, 7).translate(0, 1.6, 0),
-      new T.ConeGeometry(.52, 1.15, 7).translate(0, 2.4, 0)
+      trunk(.6, .1, .15),
+      part(new T.ConeGeometry(1, 1.5, 7).translate(0, 1.15, 0), '#2f7a48'),
+      part(new T.ConeGeometry(.78, 1.3, 7).translate(0, 2, 0), '#2f7a48'),
+      part(new T.ConeGeometry(.52, 1.15, 7).translate(0, 2.8, 0), '#2f7a48')
     ]),
-    pole: new T.CylinderGeometry(.045, .06, 1, 6).translate(0, .5, 0),
-    lamp: new T.SphereGeometry(1, 10, 8)
+    bloom: mergeGeometries([trunk(1.3), part(jitter(new T.IcosahedronGeometry(1, 2), .08).translate(0, 1.75, 0), '#4c9a3f'), ...petals]),
+    rock: part(jitter(new T.IcosahedronGeometry(1, 0), .5).translate(0, .45, 0), '#a3a9ae'),
+    lamp: mergeGeometries([
+      part(new T.CylinderGeometry(.045, .06, 1.55, 6).translate(0, .775, 0), '#46515e'),
+      part(new T.SphereGeometry(.13, 10, 8).translate(0, 1.62, 0), '#fff3cf', 1.5)
+    ])
   };
+  const GROUP_OF = {round: canopyGroup, pine: canopyGroup, bloom: canopyGroup, hedge: shrubGroup, bush: shrubGroup, rock: root, lamp: root};
 
   const batches = new Map();
-  function put(geoKey, matKey, x, y, z, sx, sy, sz, yaw = 0, color = null, shadow = true) {
-    const k = geoKey + '|' + matKey + '|' + shadow;
-    if (!batches.has(k)) batches.set(k, {geo: G[geoKey], mat: M[matKey], shadow, items: []});
+  function put(kind, x, y, z, sx, sy, sz, yaw = 0, color = null, shadow = true) {
+    const k = kind + '|' + shadow;
+    if (!batches.has(k)) batches.set(k, {kind, shadow, items: []});
     batches.get(k).items.push({x, y, z, sx, sy, sz, yaw, color});
   }
   const ground = (x, z) => terrain.height(x, z);
-  const tint = (base, spread) => new T.Color(base).offsetHSL((rand() - .5) * .03, (rand() - .5) * .08, (rand() - .5) * spread);
+  // Biến thiên màu nhẹ từng cây: hệ số nhân quanh 1 (nhân với vertex color)
+  const tint = spread => new T.Color(1 + (rand() - .5) * spread, 1 + (rand() - .5) * spread * .6, 1 + (rand() - .5) * spread);
 
   function roundTree(x, z, s) {
-    const y = ground(x, z), trunkH = .95 * s, r = (.95 + rand() * .2) * s;
-    put('trunk', 'trunk', x, y, z, s, trunkH + r * .3, s);
-    put('canopy', 'canopy', x, y + trunkH + r * .72, z, r, r * (.92 + rand() * .16), r, rand() * 6.28, tint('#84c14c', .08));
+    const r = (.95 + rand() * .2) * s;
+    put('round', x, ground(x, z), z, r, r * (.94 + rand() * .12), r, rand() * 6.28, tint(.22));
     occupy(x, z, 1.5 * s);
   }
   function pineTree(x, z, s) {
-    const y = ground(x, z);
-    put('trunk', 'trunk', x, y, z, s * .9, .55 * s, s * .9);
-    put('pine', 'pine', x, y + .4 * s, z, s * .95, s * 1.12, s * .95, rand() * 6.28, tint('#2f7a48', .06));
+    put('pine', x, ground(x, z), z, s * .95, s * 1.12, s * .95, rand() * 6.28, tint(.16));
     occupy(x, z, 1.25 * s);
   }
   function rock(x, z, s) {
-    put('rock', 'rock', x, ground(x, z) - .08 * s, z, s * (.8 + rand() * .5), s * (.55 + rand() * .3), s * (.7 + rand() * .4), rand() * 6.28);
+    put('rock', x, ground(x, z) - .08 * s, z, s * (.8 + rand() * .5), s * (.55 + rand() * .3), s * (.7 + rand() * .4), rand() * 6.28);
     occupy(x, z, .9 * s);
   }
 
@@ -204,7 +221,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
     const len = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(len / 1.1)), alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
     for (let i = 0; i < n; i++) {
       const t = (i + .5) / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t, seg = len / n + .04;
-      put('box', 'hedge', x, ground(x, z) - .12, z, alongX ? seg : th, hh + .12, alongX ? th : seg);
+      put('hedge', x, ground(x, z) - .12, z, alongX ? seg : th, hh + .12, alongX ? th : seg);
     }
   }
   for (const p of parterres) {
@@ -214,17 +231,12 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
     hedgeRun(p.x + hw - in_, p.z - hd + th, p.x + hw - in_, p.z + hd - th, th, hh);
     hedgeRun(p.x - hw, p.z + hd - in_, p.x - gap / 2, p.z + hd - in_, th, hh);
     hedgeRun(p.x + gap / 2, p.z + hd - in_, p.x + hw, p.z + hd - in_, th, hh);
-    const r = Math.min(hw, hd) * .52, trunkH = .9, y = ground(p.x, p.z);
-    put('trunk', 'trunk', p.x, y, p.z, 1.15, trunkH + r * .4, 1.15);
-    put('bloom', 'bloom', p.x, y + trunkH + r * .75, p.z, r, r * .95, r, rand() * 6.28);
-    for (let i = 0; i < 14; i++) {
-      const a = rand() * 6.28, e = .15 + rand() * 1.2;
-      put('petal', 'petal', p.x + Math.cos(a) * Math.sin(e) * r, y + trunkH + r * .75 + Math.cos(e) * r * .95, p.z + Math.sin(a) * Math.sin(e) * r, .075, .075, .075, 0, null, false);
-    }
+    const r = Math.min(hw, hd) * .52;
+    put('bloom', p.x, ground(p.x, p.z), p.z, r, r, r, rand() * 6.28);
     for (const [ox, oz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
       if (rand() < .35) continue;
       const bx = p.x + ox * (hw - th - .55), bz = p.z + oz * (hd - th - .55), bs = .32 + rand() * .14;
-      put('bloom', 'hedge', bx, ground(bx, bz) + bs * .6, bz, bs, bs * .8, bs, rand() * 6.28, null, false);
+      put('bush', bx, ground(bx, bz) + bs * .6, bz, bs, bs * .8, bs, rand() * 6.28, null, false);
     }
     occupy(p.x, p.z, Math.hypot(hw, hd) + .8);
   }
@@ -273,9 +285,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
       for (const r of rects) { const dx = x - r.x, dz = z - r.z, lx = dx * r.cos - dz * r.sin, lz = dx * r.sin + dz * r.cos; if (Math.abs(lx) < r.hx && Math.abs(lz) < r.hz) { clear = false; break; } }
       for (const d of disks) if (clear && d.walk && Math.hypot(x - d.x, z - d.z) < d.r - .35) clear = false;
       if (!clear) continue;
-      const y = ground(x, z);
-      put('pole', 'pole', x, y, z, 1, 1.55, 1);
-      put('lamp', 'lamp', x, y + 1.62, z, .13, .13, .13, 0, null, false);
+      put('lamp', x, ground(x, z), z, 1, 1, 1);
       lampCount++;
     }
   }
@@ -283,7 +293,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
   // ---- Dựng InstancedMesh ---------------------------------------------------------------------
   const o = new T.Object3D();
   for (const [key, b] of batches) {
-    const mesh = new T.InstancedMesh(b.geo, b.mat, b.items.length);
+    const mesh = new T.InstancedMesh(G[b.kind], material, b.items.length);
     mesh.name = 'greenery:' + key;
     b.items.forEach((it, i) => {
       o.position.set(it.x, it.y, it.z);
@@ -297,7 +307,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, report
     mesh.receiveShadow = true;
     mesh.userData.campusGreenery = true;
     mesh.computeBoundingSphere();
-    root.add(mesh);
+    GROUP_OF[b.kind].add(mesh);
   }
 
   if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
