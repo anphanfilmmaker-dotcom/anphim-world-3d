@@ -1106,18 +1106,15 @@ async function main() {
     mouse.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
     ray.setFromCamera(mouse, camera);
     // Inside a building: an object in the room opens its section in the panels; the room itself never exits.
+    // The campus is hidden meanwhile and takes no clicks; a click on the backdrop goes back out.
     if (cutawayAnimator && cutawayAnimator.isInspecting) {
+      if (!cutawayAnimator.staged) return;
       const focus = cutawayAnimator.pick(ray);
-      if (focus !== undefined) {
-        if (focus && buildingPanels) buildingPanels.focus(focus);
-        return;
-      }
-    }
-    const hit = ray.intersectObjects(clickable, true)[0];
-    if (!hit && cutawayAnimator && cutawayAnimator.isInspecting) {
-      exitInspect();
+      if (focus === undefined) exitInspect();
+      else if (focus && buildingPanels) buildingPanels.focus(focus);
       return;
     }
+    const hit = ray.intersectObjects(clickable, true)[0];
     if (hit) {
       let o = hit.object;
       let cur = o;
