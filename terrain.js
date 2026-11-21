@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {applyCampusPaving} from './paving-pattern.js';
 export function createTerrain(scene,P,L){
  const smooth=t=>{t=T.MathUtils.clamp(t,0,1);return t*t*(3-2*t);};
  const riverZ=x=>67+5.2*Math.sin(x*.027)+1.5*Math.sin(x*.072),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
@@ -56,6 +57,7 @@ export function createTerrain(scene,P,L){
     '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
+ applyCampusPaving(P,materials[3],materials[2]);
  geo.computeVertexNormals();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);
  const stairs=[],surfaceHeight=(x,z)=>{for(const s of stairs){const along=s.axis==='x'?x:z,across=s.axis==='x'?z:x;if(Math.abs(across-s.cross)<=s.width/2&&along>=s.start-1.2&&along<=s.end+1.2){const t=T.MathUtils.clamp((along-s.start)/(s.end-s.start),0,1);return s.high-Math.min(s.count,Math.floor(t*s.count))*s.rise;}}return height(x,z);};
  const courts=[],surfaces=[],bins=new Map(),midpointList=[];let pathList=[];

@@ -72,6 +72,12 @@
       "opacity": 0.93
     }
   },
+  "paving": {
+    "tiles": true,
+    "tileSize": 2,
+    "courtStrength": 0.24,
+    "walkStrength": 0.12
+  },
   "lighting": {
     "mode": "fixed-daylight",
     "sunColor": "sun",

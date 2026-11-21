@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { TransformControls } from './vendor/TransformControls.js';
+import { applyCampusPaving } from './paving-pattern.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { getStudioModelById, loadStudioCatalog } from './asset-pack-extractor.js?rev=146';
 import {
@@ -1279,6 +1280,8 @@ export function createCampusEditor({
   };
 
   // (Đã gỡ texture gạch lát theo yêu cầu sếp - giữ màu phẳng gốc)
+  // Lưới gạch thủ tục theo ảnh tham chiếu Campus Builder; tắt bằng campus-palette.json → paving.tiles = false để về màu phẳng.
+  applyCampusPaving(P, roadMaterials.campusOrange, roadMaterials.campusYellow);
     // Set fine polygon offset to avoid any micro-flickering against terrain
     roadMaterials.campusYellow.polygonOffset = true;
     roadMaterials.campusYellow.polygonOffsetFactor = -5;
