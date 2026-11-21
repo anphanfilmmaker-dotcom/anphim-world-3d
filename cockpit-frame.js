@@ -96,7 +96,7 @@ button:disabled{cursor:not-allowed;opacity:.5}
 [data-tone=info]>.cf-dot,.cf-dot[data-tone=info]{background:var(--cf-info)}
 .cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - var(--cf-bh,49px) - 55px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
 .cf-left{left:var(--cf-pad)}
-.cf-right{right:var(--cf-pad);width:auto;align-items:flex-end}
+.cf-right{right:calc(var(--cf-pad) + var(--cf-aside,0px));width:auto;align-items:flex-end}
 .cf-right .cf-panel{width:var(--cf-side)}
 .cf-right [data-slot=building]{flex:none}
 .cf-right .cf-panel:not(.cf-open){display:none}
@@ -158,7 +158,7 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-agent b{font-size:12.5px;font-weight:800}
 .cf-agent p{margin:1px 0 0;font-size:11px;color:var(--cf-mute)}
 .cf-agent .cf-bar{height:4px;margin-top:5px}
-.cf-toast{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);right:calc(var(--cf-pad) + var(--cf-rw) + 12px);max-width:340px;display:flex;align-items:flex-start;gap:8px;padding:8px 8px 8px 12px;border-color:rgba(255,196,64,.55);font-size:11.5px}
+.cf-toast{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);right:calc(var(--cf-pad) + var(--cf-aside,0px) + var(--cf-rw) + 12px);max-width:340px;display:flex;align-items:flex-start;gap:8px;padding:8px 8px 8px 12px;border-color:rgba(255,196,64,.55);font-size:11.5px}
 .cf-toast button.cf-go{display:inline}
 .cf-toast .cf-x{color:var(--cf-mute);display:grid;place-items:center;width:20px;height:20px;border-radius:6px;flex:none}
 .cf-toast .cf-x:hover{background:var(--cf-bg2);color:var(--cf-text)}
@@ -183,12 +183,16 @@ button.cf-note:hover{background:var(--cf-bg2)}
 &.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-bottom *{pointer-events:none}
 @media (max-width:1480px){--cf-side:272px;.cf-res strong{font-size:15px}.cf-res-ico{display:none}.cf-res{padding:0 12px}.cf-brand span{display:none}}
 @media (max-width:1180px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 10px}.cf-res small{font-size:8.5px;letter-spacing:.04em}}
+@media (max-width:1250px){&.cf-details.cf-pane-open .cf-toast{display:none}}
 @media (max-width:980px){&.cf-pane-open .cf-toast{display:none}.cf-top .cf-lbl{display:none}.cf-top .cf-btn{padding:0 11px}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
 body.cf-frame:not(.cf-tools) #clean-top-nav,body.cf-frame:not(.cf-tools) #game-shader-dock,body.cf-frame:not(.cf-tools) #live-coord-badge{display:none!important}
 body.cf-frame.cf-tools #clean-top-nav{top:80px!important}
+/* The old Details panel (opened from the builder toolbar) sits below the bars, beside the right column. */
+body.cf-frame #main-aside-panel{top:var(--cf-tools-top,166px);right:14px;z-index:46;max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
+body.cf-frame:not(.cf-tools) #main-aside-panel{visibility:hidden}
 body.cf-frame.cf-tools #game-shader-dock{top:var(--cf-dock-top,126px)!important}
 body.cf-frame.cf-tools #cockpit-frame-root .cf-side,body.cf-frame.cf-tools #cockpit-frame-root .cf-toast{top:var(--cf-tools-top,166px);max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
 /* Inside a building the existing detail wing takes the right side; its KPI header and left wing are replaced by this frame. */
@@ -270,7 +274,9 @@ export class CockpitFrame {
       if (!e.target.closest?.('.cf-menu')) this.closeMenus();
       if (!e.target.closest?.('.cf-search') && this.query) { input.value = this.query = ''; this.renderResults(); }
     });
-    new ResizeObserver(() => root.style.setProperty('--cf-bh', this.slot.jump.offsetHeight + 'px')).observe(this.slot.jump);
+    new ResizeObserver(() => document.body.style.setProperty('--cf-bh', this.slot.jump.offsetHeight + 'px')).observe(this.slot.jump);
+    const details = document.getElementById('main-aside-panel');
+    if (details) new MutationObserver(() => this.layoutTools()).observe(details, {attributes: true, attributeFilter: ['style']});
     addEventListener('resize', () => { this.layoutTools(); this.fitPanes(); });
     addEventListener('pointermove', e => {
       const tip = this.slot.tip;
@@ -310,7 +316,12 @@ export class CockpitFrame {
 
   /** In tools mode the old builder toolbar and shader dock stack under the resource bar; the panels start below them. */
   layoutTools() {
-    if (!document.body.classList.contains('cf-tools')) return;
+    const tools = document.body.classList.contains('cf-tools');
+    const details = document.getElementById('main-aside-panel');
+    const detailsWidth = tools && details ? details.offsetWidth : 0;
+    document.body.style.setProperty('--cf-aside', (detailsWidth ? detailsWidth + 10 : 0) + 'px');
+    this.root.classList.toggle('cf-details', detailsWidth > 0);
+    if (!tools) return;
     const nav = document.getElementById('clean-top-nav');
     const dock = document.getElementById('game-shader-dock');
     const dockTop = 80 + (nav?.offsetHeight || 0) + 6;
