@@ -20,6 +20,29 @@ const SYSTEM_STATUS = {
   down: {label: 'Ngừng chạy', tone: 'alert'}
 };
 
+/** Project status text -> the exterior state drawn on its building. */
+const PROJECT_MODE = {
+  'dang lam': 'building',
+  'cho feedback': 'feedback',
+  'can revise': 'revise',
+  'tam dung': 'paused',
+  'hoan thanh': 'done'
+};
+
+const plain = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').trim().toLowerCase();
+
+/** "dd/mm/yyyy" or ISO -> Date at local midnight, or null. */
+const parseDay = s => {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const iso = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // Date-only ISO strings parse as UTC, which is the day before in zones west of it.
+  const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(s);
+  return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+const DOC_OK = /^(signed|approved|done|ok|da ky|da duyet|hoan thanh|du)$/;
+
 const PROJECT_TONE = {
   'Đang làm': 'ok',
   'Chờ feedback': 'warn',
@@ -126,6 +149,30 @@ export class DataConnector {
     const ms = project?.milestones || [];
     if (!ms.length) return null;
     return Math.round(ms.filter(m => m.completed).length / ms.length * 100);
+  }
+
+  /**
+   * What the outside of a project's building shows.
+   * mode: 'building' | 'feedback' | 'revise' | 'paused' | 'done' | null (unknown status);
+   * progress: milestone percentage or null; overdueDays: days past the deadline (0 when on time or done).
+   */
+  getProjectState(project, now = new Date()) {
+    if (!project) return null;
+    const ms = project.milestones || [];
+    const mode = PROJECT_MODE[plain(project.status)] || null;
+    const due = parseDay(project.duedate || project.dueDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const late = due && mode !== 'done' ? Math.round((today - due) / 86400000) : 0;
+    return {
+      projectId: project.id,
+      status: project.status || '',
+      mode,
+      progress: this.getProjectProgress(project),
+      milestonesDone: ms.filter(m => m.completed).length,
+      milestonesTotal: ms.length,
+      overdueDays: Math.max(0, late),
+      missingDocs: (project.documents || []).filter(d => !DOC_OK.test(plain(d.status))).length
+    };
   }
 
   /** Actions the owner must take: {open, done}, open sorted by priority then time. */
