@@ -180,7 +180,10 @@ export class DataConnector {
     const known = c => out.some(x => [x.id, x.name, ...x.aliases].some(n => plain(n) === plain(c)));
     for (const p of this.getProjects()) {
       if (p.client && !known(p.client)) {
-        out.push({id: plain(p.client).replace(/[^a-z0-9]+/g, '-'), name: p.client, aliases: [], kind: 'client'});
+        const base = plain(p.client).replace(/[^a-z0-9]+/g, '-');
+        let id = base;
+        for (let n = 2; out.some(x => x.id === id); n++) id = base + '-' + n;
+        out.push({id, name: p.client, aliases: [], kind: 'client'});
       }
     }
     return out;
