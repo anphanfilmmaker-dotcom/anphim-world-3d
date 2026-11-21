@@ -16,12 +16,12 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
   scene.add(root);
 
   // --- 1. VẬT LIỆU CHUẨN MỸ THUẬT AN PHIM ---
-  const asphaltRoadMat = new T.MeshStandardMaterial({ color: 0x222a33, roughness: 0.82 }); // Mặt đường nhựa asphalt sẫm mịn đồng bộ
+  const asphaltRoadMat = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86 }); // Mặt đường nhựa asphalt sẫm mịn đồng bộ
   const roadStripeMat  = new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });  // Vạch kẻ đường trắng
   const stonePavingMat = new T.MeshStandardMaterial({ color: 0xdfd9c7, roughness: 0.88 }); // Đá lát sân ấm áp
   const stoneBorderMat = new T.MeshStandardMaterial({ color: 0xc8c0af, roughness: 0.8 });  // Viền đá kem
   const stoneWalkMat   = new T.MeshStandardMaterial({ color: 0xc9c1b0, roughness: 0.85 }); // Vỉa hè đá kem uốn cong
-  const curbBevelMat   = new T.MeshStandardMaterial({ color: 0x8a96a3, roughness: 0.78 }); // Bó vỉa bê tông đô thị đồng bộ
+  const curbBevelMat   = new T.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.78 }); // Bó vỉa bê tông đô thị đồng bộ
   const poolBorderMat  = new T.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.65 }); // Thành hồ đá kem
   const waterMat       = new T.MeshStandardMaterial({
     color: 0x22b2c4,
@@ -31,8 +31,8 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
     opacity: 0.94
   }); // Nước ngọc teal trong suốt lấp lánh
   const soilMat        = new T.MeshStandardMaterial({ color: 0x3d3529, roughness: 1.0 });
-  const hedgeDarkMat   = new T.MeshStandardMaterial({ color: 0x204822, roughness: 0.92 }); // Rào cây xanh đậm
-  const hedgeMidMat    = new T.MeshStandardMaterial({ color: 0x386932, roughness: 0.88 }); // Cây xanh mướt
+  const hedgeDarkMat   = new T.MeshStandardMaterial({ color: 0x2f6e35, roughness: 0.92 }); // Rào cây xanh đậm
+  const hedgeMidMat    = new T.MeshStandardMaterial({ color: 0x4f9140, roughness: 0.88 }); // Cây xanh mướt
   const woodOrangeMat  = new T.MeshStandardMaterial({ color: 0xed8038, roughness: 0.72 });
   const metalBenchMat  = new T.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
   const trunkWoodMat   = new T.MeshStandardMaterial({ color: 0x544738, roughness: 0.95 });
@@ -104,7 +104,7 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
   smoothRoadGroup.name = 'hq-smooth-road-and-curbs';
   root.add(smoothRoadGroup);
 
-  const turfMat = new T.MeshStandardMaterial({ color: 0x3a6948, roughness: 0.92 }); // Màu cỏ mượt AN PHIM đồng nhất 100% với terrain
+  const turfMat = new T.MeshStandardMaterial({ color: 0x6fa659, roughness: 0.92 }); // Màu cỏ mượt AN PHIM đồng nhất 100% với terrain
 
   const uRoadPath = roads.paths.find(p => p.id === 'road:HQ-arrival' || (p.class === 2 && p.curve));
   if (uRoadPath && uRoadPath.curve) {

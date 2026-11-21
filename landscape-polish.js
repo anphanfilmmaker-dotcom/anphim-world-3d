@@ -56,13 +56,13 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
 
   // 1. MATERIALS
   const bushMat1 = new T.MeshStandardMaterial({
-    color: 0x3b7538, // Rich organic foliage green
+    color: 0x5c9a3e, // Rich organic foliage green
     roughness: 0.86,
     metalness: 0.02
   });
 
   const bushMat2 = new T.MeshStandardMaterial({
-    color: 0x2b5c2a, // Deep forest green
+    color: 0x3f7f3a, // Deep forest green
     roughness: 0.88,
     metalness: 0.02
   });

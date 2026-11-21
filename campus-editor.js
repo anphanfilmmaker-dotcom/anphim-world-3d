@@ -861,7 +861,7 @@ export function createCampusEditor({
 
   // Base terrain material[0] is #4f805a. Compensating vertexColor = desiredColor / baseGrassColor
   // guarantees that in Three.js fragment shader (diffuseColor.rgb *= vColor), the ground renders the exact target color!
-  const baseGrassCol = new T.Color('#4f805a');
+  const baseGrassCol = terrain?.materials?.[0]?.color?.clone() || new T.Color('#6fa659');
   function makeCompensatedVertexColor(hexStr) {
     const c = new T.Color(hexStr);
     return {
@@ -1274,8 +1274,8 @@ export function createCampusEditor({
 
     // 6. Đường đi bộ màu vàng (#dca658) kèm 2 mép vàng nhạt (#f6dfa4) & Hộp sân màu cam (#b76e4b)
     campusYellow:       makeRoadMaterial(0xdca658, 0.90, -3),
-    campusYellowBorder: makeRoadMaterial(0x808d59, 0.86, -2),
-    campusOrange:       makeRoadMaterial(0xb76e4b, 0.90, -4)
+    campusYellowBorder: makeRoadMaterial(0xf2d99b, 0.86, -2),
+    campusOrange:       makeRoadMaterial(0xe09468, 0.90, -4)
   };
 
   // (Đã gỡ texture gạch lát theo yêu cầu sếp - giữ màu phẳng gốc)
@@ -1663,19 +1663,23 @@ export function createCampusEditor({
     const cr = Math.min(c.r ?? 1.5, Math.max(0.05, hw - 0.05), Math.max(0.05, hd - 0.05));
 
     // Construct clean 2D rounded rectangle shape (zero degenerate corner clamping)
-    const shape = new T.Shape();
-    shape.moveTo(-hw + cr, -hd);
-    shape.lineTo(hw - cr, -hd);
-    shape.absarc(hw - cr, -hd + cr, cr, -Math.PI / 2, 0, false);
-    shape.lineTo(hw, hd - cr);
-    shape.absarc(hw - cr, hd - cr, cr, 0, Math.PI / 2, false);
-    shape.lineTo(-hw + cr, hd);
-    shape.absarc(-hw + cr, hd - cr, cr, Math.PI / 2, Math.PI, false);
-    shape.lineTo(-hw, -hd + cr);
-    shape.absarc(-hw + cr, -hd + cr, cr, Math.PI, Math.PI * 1.5, false);
-
-    const geo = new T.ShapeGeometry(shape, 12);
-    geo.rotateX(-Math.PI / 2);
+    const roundedRect = grow => {
+      const w = hw + grow, d = hd + grow, r = cr + grow;
+      const shape = new T.Shape();
+      shape.moveTo(-w + r, -d);
+      shape.lineTo(w - r, -d);
+      shape.absarc(w - r, -d + r, r, -Math.PI / 2, 0, false);
+      shape.lineTo(w, d - r);
+      shape.absarc(w - r, d - r, r, 0, Math.PI / 2, false);
+      shape.lineTo(-w + r, d);
+      shape.absarc(-w + r, d - r, r, Math.PI / 2, Math.PI, false);
+      shape.lineTo(-w, -d + r);
+      shape.absarc(-w + r, -d + r, r, Math.PI, Math.PI * 1.5, false);
+      const g = new T.ShapeGeometry(shape, 12);
+      g.rotateX(-Math.PI / 2);
+      return g;
+    };
+    const geo = roundedRect(0);
 
     const rot = c.rotY || 0;
     const cos = rot ? Math.cos(rot) : 1;
@@ -1701,6 +1705,20 @@ export function createCampusEditor({
     const mesh = new T.Mesh(geo, roadMaterials.campusOrange);
     mesh.receiveShadow = true;
     mesh.renderOrder = 4; // Render above yellow walkways (2) & yellow borders (3)
+
+    // Bó vỉa sáng bao quanh sân (theo ảnh tham chiếu): cùng hình bo góc, nới rộng 0.3, nằm ngay dưới mặt sân
+    const curbGeo = roundedRect(0.3);
+    const curbPos = curbGeo.attributes.position;
+    for (let i = 0; i < curbPos.count; i++) {
+      const lx = curbPos.getX(i), lz = curbPos.getZ(i);
+      curbPos.setXYZ(i, c.x + lx * cos - lz * sin, courtLevelY - 0.02, c.z + lx * sin + lz * cos);
+    }
+    curbGeo.computeVertexNormals();
+    const curb = new T.Mesh(curbGeo, roadMaterials.campusYellowBorder);
+    curb.receiveShadow = true;
+    curb.renderOrder = 3;
+    curb.name = `smooth_court_curb_${c.id}`;
+    mesh.add(curb);
     mesh.name = `smooth_court_${c.id}`;
     mesh.userData.isSmoothCourtMesh = true;
     mesh.userData.courtId = c.id;

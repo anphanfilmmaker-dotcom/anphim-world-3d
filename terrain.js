@@ -22,6 +22,7 @@ export function createTerrain(scene,P,L){
  const basePosArray=new Float32Array(baseCount*3);
  const origHeights=new Float32Array(baseCount);
  const baseColorArray=new Float32Array(baseCount*3);
+ const AO_REACH=2.6,AO_STRENGTH=.4;
  for(let i=0;i<baseCount;i++){
   const x=pos.getX(i),z=pos.getZ(i),y=designHeight(x,z);
   pos.setY(i,y);
@@ -34,18 +35,25 @@ export function createTerrain(scene,P,L){
   const n1 = Math.sin(x * 0.08) * Math.cos(z * 0.06);
   const n2 = Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5;
   const variation = n1 * 0.04 + n2 * 0.035;
-  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.92, 1.08);
-  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.92, 1.08);
-  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.92, 1.08);
+  // Contact AO nướng vào vertex color: tối dần mềm quanh chân mỗi công trình (bóng tiếp địa, không tốn GPU).
+  let ao = 1;
+  for (const p of pads) {
+    if (p.feather) continue;
+    const d = Math.hypot(Math.max(0, Math.abs(x - p.x) - (p.hx - .4)), Math.max(0, Math.abs(z - p.z) - (p.hz - .4)));
+    if (d < AO_REACH) ao = Math.min(ao, 1 - AO_STRENGTH * (1 - smooth(d / AO_REACH)));
+  }
+  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.92, 1.08) * ao * ao;
+  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.92, 1.08) * ao;
+  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.92, 1.08) * ao;
  }
  geo.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(baseColorArray),3));
  // Sample the actual triangle plane from basePosArray using exact PlaneGeometry stepX/stepZ so height(x,z) matches rendered triangles 100%.
  function height(x,z){const u=T.MathUtils.clamp((x+190)/stepX,0,nx-.00001),v=T.MathUtils.clamp((z+170)/stepZ,0,nz-.00001),i=Math.floor(u),j=Math.floor(v),a=u-i,b=v-j,k=j*(nx+1)+i;const h00=basePosArray[k*3+1],h10=basePosArray[(k+1)*3+1],h01=basePosArray[(k+nx+1)*3+1],h11=basePosArray[(k+nx+2)*3+1];return a+b<=1?h00+(h10-h00)*a+(h01-h00)*b:h11+(h01-h11)*(1-a)+(h10-h11)*(1-b);}
  const materials = [
-    '#3a6948',  // 0: Nền cỏ xanh rừng đậm (Deep Forest Moss)
-    '#383f44',  // 1: Đường chính màu xám asphalt sẫm
+    '#6fa659',  // 0: Nền cỏ xanh tươi sáng theo ảnh tham chiếu (Campus Builder)
+    '#4f6078',  // 1: Đường chính màu xám xanh slate
     '#dca658',  // 2: Lối đi bộ màu vàng nung ấm (màu gốc sếp chọn)
-    '#b76e4b',  // 3: Vùng sinh hoạt chung màu gạch nung cam đất (màu gốc sếp chọn)
+    '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
  geo.computeVertexNormals();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);

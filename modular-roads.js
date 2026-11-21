@@ -19,11 +19,11 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   scene.add(roadRoot);
 
   // --- VẬT LIỆU CHUẨN ĐÔ THỊ ---
-  const asphaltMat   = new T.MeshStandardMaterial({ color: 0x222a33, roughness: 0.82 }); // Mặt đường nhựa asphalt sẫm mịn
-  const yellowLineMat = new T.MeshBasicMaterial({ color: 0xf6be2c });                    // Vạch sơn vàng tim đường
+  const asphaltMat   = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86 }); // Mặt đường nhựa xám xanh slate
+  const yellowLineMat = new T.MeshBasicMaterial({ color: 0xf3ead2 });                    // Vạch sơn vàng tim đường
   const whiteLineMat  = new T.MeshBasicMaterial({ color: 0xf8fafc });                    // Vạch sơn trắng mép đường & zebra
-  const curbMat       = new T.MeshStandardMaterial({ color: 0x8a96a3, roughness: 0.78 }); // Bó vỉa bê tông đô thị
-  const sidewalkMat   = new T.MeshStandardMaterial({ color: 0xc8c0af, roughness: 0.85 }); // Vỉa hè đá kem ấm áp
+  const curbMat       = new T.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.78 }); // Bó vỉa bê tông đô thị
+  const sidewalkMat   = new T.MeshStandardMaterial({ color: 0xd9d4c8, roughness: 0.85 }); // Vỉa hè đá kem ấm áp
 
   function addBox(parent, w, h, d, x, y, z, mat, rotY = 0) {
     const geo = new T.BoxGeometry(w, h, d);
@@ -342,7 +342,7 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   const postMat = new T.MeshStandardMaterial({ color: 0xdfd9cb, roughness: 0.8 }); // Cọc rào đá kem kiến trúc
   const railMat = new T.MeshStandardMaterial({ color: 0xb5ad98, roughness: 0.75 }); // Thanh rào ngang
   const treeTrunkMat = new T.MeshStandardMaterial({ color: 0x4a3b2c, roughness: 0.9 }); // Thân cây
-  const treeFoliageMat = new T.MeshStandardMaterial({ color: 0x3b7538, roughness: 0.85 }); // Tán cây xanh mát
+  const treeFoliageMat = new T.MeshStandardMaterial({ color: 0x5c9a3e, roughness: 0.85 }); // Tán cây xanh mát
 
   const fenceX = 52.1;
   const zStart = -34.0, zEnd = 10.0, postStep = 2.4;

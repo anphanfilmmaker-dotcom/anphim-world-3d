@@ -5,6 +5,7 @@ import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
 import {createCampusEditor} from './campus-editor.js?rev=104';
 import {createLandscapePolish} from './landscape-polish.js?rev=112';
+import {createCampusGreenery} from './campus-greenery.js?rev=1';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -100,15 +101,18 @@ async function main() {
   const renderer = new T.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  // Bóng đổ mềm kiểu diorama: PCF + shadow.radius (PCFSoft bỏ qua radius). ?shadow=soft|vsm để so sánh A/B.
+  const urlShadow = new URLSearchParams(window.location.search).get('shadow') || 'pcf';
+  renderer.shadowMap.type = urlShadow === 'vsm' ? T.VSMShadowMap : (urlShadow === 'soft' ? T.PCFSoftShadowMap : T.PCFShadowMap);
   renderer.outputColorSpace = T.SRGBColorSpace;
   document.querySelector('#scene').append(renderer.domElement);
 
-  // P3: Ánh sáng chuẩn mỹ thuật: hemisphere hai màu (trời xanh nhạt, đất ấm), sun ấm ~#fff2d6
-  // Calibrated so unshadowed grass pixel reaches hex #3a6948 [58, 105, 72] with NeutralToneMapping exposure 1.0
-  const hemi = new T.HemisphereLight(0xe9f0ff, 0xd6c496, 1.62);
+  // Ánh sáng lấy từ campus-palette.json (lighting): hemisphere trời xanh nhạt / đất ấm + sun ấm.
+  // Cân chỉnh để cỏ ngoài nắng ra ~#74ab47 và cỏ trong bóng ~#3c6944 (ảnh tham chiếu) với NeutralToneMapping exposure 1.0
+  const LR = P.lighting, lightColor = k => new T.Color(P.colors[k] || k);
+  const hemi = new T.HemisphereLight(lightColor(LR.skyColor), lightColor(LR.groundColor), LR.hemisphereIntensity);
   scene.add(hemi);
-  const sun = new T.DirectionalLight(0xffe9bf, 3.65);
+  const sun = new T.DirectionalLight(lightColor(LR.sunColor), LR.sunIntensity);
 
   // P3: Hệ thống Tone Mapping A/B/C debug flag
   function setToneMappingMode(mode) {
@@ -130,15 +134,16 @@ async function main() {
   window.__setToneMappingMode = setToneMappingMode;
   const urlTone = new URLSearchParams(window.location.search).get('tone') || 'B';
   setToneMappingMode(urlTone);
-  sun.position.set(-80, 130, 70);
+  sun.position.set(...LR.sunPosition);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.mapSize.set(LR.shadowMapSize, LR.shadowMapSize);
   sun.shadow.camera.left = sun.shadow.camera.bottom = -130;
   sun.shadow.camera.right = sun.shadow.camera.top = 130;
   sun.shadow.camera.far = 380;
   sun.shadow.normalBias = 0.035;
   sun.shadow.bias = -0.0001;
-  sun.shadow.radius = 1.6;
+  sun.shadow.radius = LR.shadowRadius;
+  sun.shadow.blurSamples = LR.shadowBlurSamples;
   scene.add(sun);
 
   const camera = new T.OrthographicCamera(-100, 100, 50, -50, 0.1, 800);
@@ -924,6 +929,7 @@ async function main() {
   await createHQGardens(scene,terrain,roads,L,report);
   await createVistaXDistrict(scene, terrain, roads, registry, P);
   await createModularRoadSystem(scene, terrain, roads);
+  createCampusGreenery(scene, L, terrain, roads, landscape, report);
   console.log('[STEP 6.5] HQ gardens created');
   scene.traverse(o => {
     if (o.name === 'hq-arrival-stair-terrace' || o.parent?.name === 'hq-arrival-stair-terrace') {

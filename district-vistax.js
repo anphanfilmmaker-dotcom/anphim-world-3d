@@ -16,7 +16,7 @@ export async function createVistaXDistrict(scene, terrain, roads, registry, P) {
   scene.add(root);
 
   // --- 1. HỆ THỐNG VẬT LIỆU CHUẨN ĐÔ THỊ ---
-  const asphaltRoadMat  = new T.MeshStandardMaterial({ color: 0x1e2530, roughness: 0.82, metalness: 0.1 });
+  const asphaltRoadMat  = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86, metalness: 0.0 });
   const curbMat         = new T.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.85 });
   const stoneWalkMat    = new T.MeshStandardMaterial({ color: 0xdfd9c7, roughness: 0.88 });
   const creamPlinthMat  = new T.MeshStandardMaterial({ color: 0xede8db, roughness: 0.90 });
