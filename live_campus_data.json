@@ -5,7 +5,7 @@
     "cashAvailableFormatted": "348.520.000 đ",
     "receivable": 182400000.0,
     "receivableFormatted": "182.400.000 đ",
-    "activeProjectsCount": 8,
+    "activeProjectsCount": 15,
     "missingDocumentsCount": 3,
     "pendingActionsCount": 1,
     "estimatedProfit": 86200000.0,
@@ -1590,7 +1590,7 @@
   ],
   "dailyBriefing": {
     "tramanh": {
-      "activeProjectsSummary": "Đang có 8 dự án đang chạy tiến độ.",
+      "activeProjectsSummary": "Đang có 15 dự án đang chạy tiến độ.",
       "pendingActionsSummary": "1 việc cần Sếp ra quyết định.",
       "highlights": [
         "Brand Identity 3D: Đang làm (Hạn: 15/12/2026)",

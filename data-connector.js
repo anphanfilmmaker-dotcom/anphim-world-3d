@@ -222,9 +222,9 @@ export class DataConnector {
     return this.getAgents().filter(a => (a.buildingIds || [a.buildingId]).includes(buildingId));
   }
 
-  /** Projects still in production: not finished and not paused. */
+  /** Running projects, by the dashboard's rule: "Dự án đang chạy" counts status "Đang làm" only. */
   getRunningProjects() {
-    return this.getProjects().filter(p => p.status !== 'Hoàn thành' && p.status !== 'Tạm dừng');
+    return this.getProjects().filter(p => p.status === 'Đang làm');
   }
 
   /**
