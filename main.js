@@ -1037,6 +1037,12 @@ async function main() {
     buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings],
     onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
+    getDistricts: () => clientDistricts.districts,
+    onEnterDistrict: d => {
+      if (cutawayAnimator.isInspecting) exitInspect();
+      const [x, y, z] = d.center;
+      director.flyTo({target: [x, y + 1, z], position: [x + 70, y + 86, z + 94], span: Math.max(d.depth, 60) * 1.05});
+    },
     onOverview: () => {
       if (cutawayAnimator.isInspecting) exitInspect();
       else view('overview');

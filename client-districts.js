@@ -621,7 +621,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     }
     api.districts = [...districts.values()].map(d => {
       const f = slotFrame(d.slot, tpl);
-      return {id: d.slot.id, label: d.slot.label, client: d.client, landscape: d.client ? (LANDSCAPES[d.slot.landscape] || LANDSCAPES.meadow).label : null, lots: d.slot.lots, open: d.open, projects: d.projects, center: [f.center[0], f.y, f.center[1]], gate: [d.slot.gateXZ[0], f.y, d.slot.gateXZ[1]]};
+      return {id: d.slot.id, label: d.slot.label, client: d.client, landscape: d.client ? (LANDSCAPES[d.slot.landscape] || LANDSCAPES.meadow).label : null, lots: d.slot.lots, depth: d.slot.depth, open: d.open, projects: d.projects, center: [f.center[0], f.y, f.center[1]], gate: [d.slot.gateXZ[0], f.y, d.slot.gateXZ[1]]};
     });
   }
 
@@ -638,8 +638,64 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     for (const s of [-1, 1]) access.add(drapedRibbon([f.toWorld(-len + 4.2, s * (tpl.roadWidth / 2 + 1)), f.toWorld(1, s * (tpl.roadWidth / 2 + 1))], tpl.sidewalkWidth, M.walk, 0.09));
   }
 
-  api.refresh = refresh;
+  /**
+   * The campus scatters trees and props over the whole map. Whatever stands on a district that
+   * is in use, on its backdrop or on an access road is taken away; empty slots keep their trees.
+   */
+  function clearLand() {
+    const zones = [...districts.values()].filter(d => d.client).map(d => {
+      const f = slotFrame(d.slot, tpl), cos = Math.cos(f.rotY), sin = Math.sin(f.rotY), [gx, gz] = d.slot.gateXZ;
+      return (x, z) => {
+        const u = (x - gx) * cos - (z - gz) * sin, v = (x - gx) * sin + (z - gz) * cos;
+        return (u >= -4 && u <= f.depth + 4 && Math.abs(v) <= f.half + 4) || (u > f.depth && u <= f.depth + 36 && Math.abs(v) <= f.half + 14);
+      };
+    });
+    const lines = [...(plan.accessRoads || []).map(r => [r.points, r.width / 2 + 2])];
+    for (const d of districts.values()) if (d.client && d.slot.ringXZ) lines.push([[d.slot.ringXZ, d.slot.gateXZ], tpl.roadWidth / 2 + tpl.sidewalkWidth + 1.5]);
+    const onRoad = (x, z) => lines.some(([pts, r]) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, az] = pts[i], [bx, bz] = pts[i + 1], dx = bx - ax, dz = bz - az;
+        const t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+        if (Math.hypot(x - ax - t * dx, z - az - t * dz) <= r) return true;
+      }
+      return false;
+    });
+    const taken = (x, z) => zones.some(inside => inside(x, z)) || onRoad(x, z);
+    const m = new T.Matrix4(), w = new T.Matrix4(), p = new T.Vector3(), gone = new T.Matrix4().makeScale(0, 0, 0);
+    const mine = o => {
+      for (let q = o; q; q = q.parent) if (q === root || q.name === 'state-visuals' || q.userData.binding) return true;
+      return false;
+    };
+    scene.updateMatrixWorld(true);
+    scene.traverse(o => {
+      if (!o.isMesh || mine(o)) return;
+      if (o.isInstancedMesh) {
+        let changed = false;
+        for (let i = 0; i < o.count; i++) {
+          o.getMatrixAt(i, m);
+          w.multiplyMatrices(o.matrixWorld, m);
+          if (!taken(w.elements[12], w.elements[14])) continue;
+          o.setMatrixAt(i, gone);
+          changed = true;
+        }
+        if (changed) o.instanceMatrix.needsUpdate = true;
+        return;
+      }
+      if (!o.visible) return;
+      if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+      if (o.geometry.boundingSphere.radius * o.getWorldScale(p).x > 12) return;
+      o.getWorldPosition(p);
+      if (taken(p.x, p.z)) o.visible = false;
+    });
+  }
+
+  api.refresh = () => {
+    const before = [...districts.values()].map(d => d.key).join();
+    refresh();
+    if (before !== [...districts.values()].map(d => d.key).join()) clearLand();
+  };
   refresh();
-  dataConnector.subscribe?.(refresh);
+  clearLand();
+  dataConnector.subscribe?.(api.refresh);
   return api;
 }
