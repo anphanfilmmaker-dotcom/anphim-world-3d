@@ -42,11 +42,15 @@ const ICONS = {
   tools: '<path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3 18l3 3 6.2-6.2a4 4 0 0 0 5.3-5.3L15 12l-3-3z"/>',
   external: '<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
-  close: '<path d="M6 6l12 12M18 6L6 18"/>'
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  building: '<path d="M4 21V6l8-3v18M12 9l8 2v10M2 21h20M7.5 9h1M7.5 13h1M7.5 17h1M15.5 14h1M15.5 17.5h1"/>',
+  robot: '<rect x="4.5" y="8" width="15" height="11" rx="3.5"/><path d="M12 8V4.5M9 13v1.5M15 13v1.5M2 12.5v3M22 12.5v3"/><circle cx="12" cy="3.5" r="1"/>'
 };
 
 const icon = (name, size = 16) =>
   `<svg class="cf-ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+
+const paneClose = pane => `<button data-pane="${pane}" aria-label="Thu gọn">${icon('close', 13)}</button>`;
 
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
@@ -92,7 +96,13 @@ button:disabled{cursor:not-allowed;opacity:.5}
 [data-tone=info]>.cf-dot,.cf-dot[data-tone=info]{background:var(--cf-info)}
 .cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - 104px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
 .cf-left{left:var(--cf-pad)}
-.cf-right{right:var(--cf-pad)}
+.cf-right{right:var(--cf-pad);width:auto;align-items:flex-end}
+.cf-right .cf-panel{width:var(--cf-side)}
+.cf-right .cf-panel:not(.cf-open){display:none}
+.cf-rail{display:flex;gap:4px;padding:5px;border-radius:14px}
+.cf-rail button{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--cf-mute);transition:background .15s ease,color .15s ease}
+.cf-rail button:hover{background:var(--cf-bg2);color:var(--cf-text)}
+.cf-rail button[aria-pressed=true]{background:var(--cf-accent);color:#1b2428}
 .cf-panel{padding:12px;min-height:0;display:flex;flex-direction:column}
 .cf-panel.cf-grow{flex:0 1 auto;overflow:hidden}
 .cf-scroll{overflow-y:auto;min-height:0;margin-right:-6px;padding-right:6px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
@@ -147,7 +157,7 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-agent b{font-size:12.5px;font-weight:800}
 .cf-agent p{margin:1px 0 0;font-size:11px;color:var(--cf-mute)}
 .cf-agent .cf-bar{height:4px;margin-top:5px}
-.cf-toast{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);right:calc(var(--cf-pad) + var(--cf-side) + 12px);max-width:340px;display:flex;align-items:flex-start;gap:8px;padding:8px 8px 8px 12px;border-color:rgba(255,196,64,.55);font-size:11.5px}
+.cf-toast{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);right:calc(var(--cf-pad) + var(--cf-rw) + 12px);max-width:340px;display:flex;align-items:flex-start;gap:8px;padding:8px 8px 8px 12px;border-color:rgba(255,196,64,.55);font-size:11.5px}
 .cf-toast button.cf-go{display:inline}
 .cf-toast .cf-x{color:var(--cf-mute);display:grid;place-items:center;width:20px;height:20px;border-radius:6px;flex:none}
 .cf-toast .cf-x:hover{background:var(--cf-bg2);color:var(--cf-text)}
@@ -164,13 +174,15 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-menu-list span{color:var(--cf-mute);font-size:10.5px;white-space:nowrap}
 .cf-tip{position:fixed;z-index:46;pointer-events:none;padding:5px 10px;border-radius:10px;font-size:12px;font-weight:800;white-space:nowrap;opacity:0;transition:opacity .12s ease}
 .cf-tip.cf-show{opacity:1}
+--cf-rw:86px;
+&.cf-pane-open{--cf-rw:var(--cf-side)}
 &.cf-inside .cf-right,&.cf-inside .cf-toast,&.cf-building .cf-side,&.cf-building .cf-toast,&.cf-building .cf-bottom,&.cf-building .cf-tip{opacity:0;pointer-events:none}
 &.cf-inside .cf-right,&.cf-building .cf-right{transform:translateX(24px)}
 &.cf-building .cf-left{transform:translateX(-24px)}
 &.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-bottom *{pointer-events:none}
 @media (max-width:1480px){--cf-side:272px;.cf-res strong{font-size:15px}.cf-res-ico{display:none}.cf-res{padding:0 12px}.cf-brand span{display:none}}
 @media (max-width:1180px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 10px}.cf-res small{font-size:8.5px;letter-spacing:.04em}}
-@media (max-width:980px){.cf-right{display:none}.cf-toast{right:var(--cf-pad)}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
+@media (max-width:980px){&.cf-pane-open .cf-toast{display:none}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
@@ -234,6 +246,7 @@ export class CockpitFrame {
       </div>
       <div class="cf-side cf-left" role="complementary" aria-label="Mission và thông báo"><div class="cf-panel cf-grow" data-slot="missions"></div></div>
       <div class="cf-side cf-right" role="complementary" aria-label="Tòa đang trỏ và đội AI">
+        <div class="cf-chip cf-rail" role="toolbar" aria-label="Mở bảng bên phải" data-slot="rail"></div>
         <div class="cf-panel" data-slot="building"></div>
         <div class="cf-panel cf-grow" data-slot="agents"></div>
       </div>
@@ -330,6 +343,7 @@ export class CockpitFrame {
     this.renderMissions();
     this.renderBuilding();
     this.renderAgents();
+    this.renderRail();
     this.renderToast();
     this.renderJump();
     this.renderResults();
@@ -399,9 +413,19 @@ export class CockpitFrame {
       </div>`;
   }
 
+  /** The right side stays a row of small icons; a panel opens only when its icon is pressed. */
+  renderRail() {
+    const btn = (pane, name, label) => {
+      const open = this.slot[pane].classList.contains('cf-open');
+      return `<button data-pane="${pane}" aria-pressed="${open}" title="${label}" aria-label="${label}">${icon(name, 18)}</button>`;
+    };
+    this.slot.rail.innerHTML = btn('building', 'building', 'Tòa đang trỏ') + btn('agents', 'robot', 'AI Workforce Trace');
+    this.root.classList.toggle('cf-pane-open', !!this.root.querySelector('.cf-right .cf-panel.cf-open'));
+  }
+
   renderBuilding() {
     const b = this.hovered;
-    const head = `<div class="cf-h"><span>Tòa đang trỏ</span><small>rê chuột</small></div>`;
+    const head = `<div class="cf-h"><span>Tòa đang trỏ</span><small>rê chuột</small>${paneClose('building')}</div>`;
     if (!b) {
       this.slot.building.innerHTML = head + `<div class="cf-empty">Rê chuột lên một tòa nhà để xem tóm tắt. Bấm vào tòa để vào bên trong.</div>`;
       return;
@@ -429,7 +453,7 @@ export class CockpitFrame {
   renderAgents() {
     const agents = this.data.getAgents();
     this.slot.agents.innerHTML = `
-      <div class="cf-h"><span>AI Workforce Trace</span><small>${agents.filter(a => a.status === 'active').length}/${agents.length} đang chạy</small></div>
+      <div class="cf-h"><span>AI Workforce Trace</span><small>${agents.filter(a => a.status === 'active').length}/${agents.length} đang chạy</small>${paneClose('agents')}</div>
       <div class="cf-body cf-scroll">${agents.map(a => {
         const active = a.status === 'active';
         return `<div class="cf-agent">
@@ -504,6 +528,12 @@ export class CockpitFrame {
     if (dismiss) {
       this.dismissed.add(dismiss.dataset.dismiss);
       this.renderToast();
+      return;
+    }
+    const pane = e.target.closest('[data-pane]')?.dataset.pane;
+    if (pane) {
+      this.slot[pane].classList.toggle('cf-open');
+      this.renderRail();
       return;
     }
     const act = e.target.closest('[data-act]')?.dataset.act;
