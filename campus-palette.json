@@ -91,6 +91,7 @@
     ],
     "sunIntensity": 4.3,
     "hemisphereIntensity": 1.3,
+    "faceGradient": 0.24,
     "toneMapping": "Neutral",
     "exposure": 1.0,
     "shadowType": "PCF",

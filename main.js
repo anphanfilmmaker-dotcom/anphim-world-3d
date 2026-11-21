@@ -16,7 +16,7 @@ import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v38';
+import {createArchitecture} from './architecture.js?rev=v39';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq18';
@@ -276,8 +276,33 @@ async function main() {
   const clickable = [], allDoors = [], buildingObjects = new Map();
   let network = null;
 
+  // Chuyển sắc kiểu vẽ tay trên mặt nhà: chân tường sẫm và ấm hơn, lên cao sáng dần (vertex color theo cao độ trong tòa).
+  // Cường độ lấy từ campus-palette.json (lighting.faceGradient, 0 = tắt). Vật liệu có texture (biển chữ) giữ nguyên.
+  const FACE_GRADIENT = P.lighting.faceGradient ?? 0.24;
+  const gradientMaterials = new WeakMap();
+  function gradientMaterial(mat) {
+    if (!FACE_GRADIENT || mat.map || !mat.isMeshStandardMaterial) return null;
+    if (!gradientMaterials.has(mat)) {
+      const m = mat.clone();
+      m.vertexColors = true;
+      gradientMaterials.set(mat, m);
+    }
+    return gradientMaterials.get(mat);
+  }
+  function paintFaceGradient(geo, y0, height) {
+    const p = geo.attributes.position, c = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) {
+      const t = Math.min(1, Math.max(0, (p.getY(i) - y0) / height)), k = FACE_GRADIENT * (1 - t) ** 1.4;
+      c[i * 3] = 1 - k * 0.85;
+      c[i * 3 + 1] = 1 - k;
+      c[i * 3 + 2] = 1 - k * 1.3;
+    }
+    geo.setAttribute('color', new T.BufferAttribute(c, 3));
+  }
+
   function mergeBuilding(group) {
     group.updateMatrixWorld(true);
+    const bounds = new T.Box3().setFromObject(group), boundsH = Math.max(0.01, bounds.max.y - bounds.min.y);
     const buckets = new Map();
     for (const o of [...group.children]) {
       if (!o.isMesh || Array.isArray(o.material)) continue;
@@ -295,7 +320,9 @@ async function main() {
         geom.dispose();
       }
       if (!g) throw Error('Không merge được building');
-      const m = new T.Mesh(g, mat);
+      const shaded = gradientMaterial(mat);
+      if (shaded) paintFaceGradient(g, bounds.min.y, boundsH);
+      const m = new T.Mesh(g, shaded || mat);
       m.castShadow = m.receiveShadow = true;
       group.add(m);
     }

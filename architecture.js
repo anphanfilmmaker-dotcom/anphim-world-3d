@@ -2031,97 +2031,128 @@ export function createArchitecture(P) {
 
   // Tòa nhỏ dựng bằng code theo ảnh tham chiếu (thay các model GLB mặt phẳng): khối kem bo cạnh, băng kính ngọc,
   // mái hiên cam, gờ mái + lan can, mái có thiết bị / pin mặt trời / vườn. Chỉ là hình khối; không chứa dữ liệu vận hành.
+  // Mỗi tòa = một khối đế (podium, có cửa chính) + tùy chọn một khối tháp (tower) hẹp hơn đặt lệch trên đế, để dáng nhà khác nhau:
+  //   tower.span / depth = tỉ lệ bề rộng / chiều sâu so với đế; tower.side = -1 trái, 1 phải, 0 giữa; phần mái đế còn hở là sân thượng (terrace).
+  //   roof = thiết bị trên mái: units | ac | solar | garden | lounge | crown; deck = tấm mái cam nhô ra thay cho lan can.
   // plot = [rộng, sâu] mặt bằng tối đa trên campus (m), bằng đúng mặt bằng của model cũ để giữ nguyên khe hở 5 m giữa các tòa.
   const SMALL_BUILDINGS = {
-    documents: {w: 5.4, d: 5.6, floors: 3, cols: 3, roof: 'units', stripe: true, plot: [4.78, 6.13]},
-    drive: {w: 7.0, d: 3.6, floors: 1, fh: 2.7, cols: 4, roof: 'solar', garage: true, plot: [5.0, 3.32]},
-    google: {w: 4.4, d: 5.2, floors: 2, cols: 3, roof: 'solar', stripe: true, sign: 'GOOGLE CLOUD', plot: [3.64, 5.0]},
-    proj_24: {w: 5.4, d: 5.4, floors: 3, cols: 3, roof: 'garden', step: 0.6, plot: [4.78, 5.77]},
-    proj_25: {w: 6.4, d: 4.6, floors: 2, cols: 4, roof: 'solar', stripe: true, plot: [5.0, 4.4]},
-    proj_05: {w: 4.4, d: 4.0, floors: 3, fh: 1.8, cols: 2, roof: 'units', plot: [3.0, 3.29]},
-    other: {w: 4.8, d: 4.6, floors: 2, cols: 3, roof: 'garden', plot: [4.4, 4.4]}
+    documents: {w: 5.4, d: 5.6, fh: 1.75, cols: 3, stripe: true, podium: 2, tower: {floors: 2, span: 0.62, side: -1, roof: 'units'}, plot: [4.78, 6.13]},
+    drive: {w: 7.0, d: 3.6, fh: 2.7, cols: 4, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 1.8, span: 0.42, side: 1, roof: 'ac'}, plot: [5.0, 3.32]},
+    google: {w: 4.4, d: 5.2, cols: 3, stripe: true, podium: 2, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD', plot: [3.64, 5.0]},
+    proj_24: {w: 5.4, d: 5.4, cols: 3, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [4.78, 5.77]},
+    proj_25: {w: 6.4, d: 4.6, cols: 4, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4]},
+    proj_05: {w: 4.4, d: 4.0, fh: 1.6, cols: 2, podium: 3, roof: 'crown', plot: [3.0, 3.29]},
+    other: {w: 4.8, d: 4.6, cols: 3, podium: 2, roof: 'garden', plot: [4.4, 4.4]}
   };
   const smallBuildingSpec = kind => SMALL_BUILDINGS[kind] || SMALL_BUILDINGS.other;
   const smallBuildingPlot = kind => smallBuildingSpec(kind).plot;
 
-  function smallCampusBuilding(kind) {
-    const K = smallBuildingSpec(kind);
-    const {w, d, floors, cols} = K, fh = K.fh || 1.9, base = 0.3, zf = d / 2 + 0.03;
-    const g = new T.Group();
-    g.name = `small-building-${kind}`;
-    const sideBand = (x, len, h, y, n) => { // băng kính trên mặt bên (pháp tuyến ±x)
-      box(g, 0.1, h, len, x, y, 0, M.glass);
-      for (let i = 0; i <= n; i++) box(g, 0.14, h + 0.1, 0.07, x, y - 0.04, -len / 2 + i * len / n, M.cream);
-    };
-    box(g, w + 0.7, base, d + 0.7, 0, 0, 0, M.stone);
-    let top = base, cw = w, cx = 0; // cw / cx: bề rộng và tâm của tầng đang dựng
+  // Chồng các tầng của một khối: thân kem, băng kính bốn mặt, bệ cửa sổ chạy quanh. entry = 'door' | 'garage' cho mặt trước tầng trệt.
+  function smallFloors(g, {x, w, d, y, floors, fh, cols, stripe, entry}) {
+    const zf = d / 2 + 0.03;
+    let top = y;
     for (let f = 0; f < floors; f++) {
-      const stepped = K.step && f > 0 && f === floors - 1;
-      cw = stepped ? w * K.step : w;
-      cx = stepped ? -(w - cw) / 2 : 0;
-      box(g, cw, fh, d, cx, top, 0, M.cream);
-      const by = top + 0.5, bh = fh - 0.9, bandCols = Math.max(2, Math.round(cols * cw / w));
-      if (f === 0) {
-        if (K.garage) {
-          const gw = w / 2 - 1.2, gh = fh - 0.8;
-          for (const x of [-w / 4 - 0.2, w / 4 + 0.2]) {
-            box(g, gw, gh, 0.1, x, top, zf, M.metal);
-            for (let r = 1; r < 6; r++) box(g, gw, 0.04, 0.14, x, top + r * gh / 6, zf, M.dark);
-          }
-        } else {
-          const sw = (w - 2.6) / 2 - 0.35;
-          for (const sgn of [-1, 1]) windows(g, sw, bh, 0.1, sgn * (1.3 + sw / 2 + 0.05), by, zf, 1, Math.max(1, Math.round(sw / 0.9)));
+      box(g, w, fh, d, x, top, 0, M.cream);
+      const by = top + 0.5, bh = fh - 0.9;
+      if (f === 0 && entry === 'garage') {
+        const gw = w / 2 - 1.2, gh = fh - 0.8;
+        for (const gx of [-w / 4 - 0.2, w / 4 + 0.2]) {
+          box(g, gw, gh, 0.1, x + gx, top, zf, M.metal);
+          for (let r = 1; r < 6; r++) box(g, gw, 0.04, 0.14, x + gx, top + r * gh / 6, zf, M.dark);
         }
-        windows(g, 1.3, 1.6, 0.12, 0, top + 0.02, zf + 0.01, 1, 2); // cửa chính
-      } else {
-        windows(g, cw - 0.9, bh, 0.1, cx, by, zf, 1, bandCols);
+      } else if (f === 0 && entry === 'door') {
+        const sw = (w - 2.6) / 2 - 0.35;
+        for (const sgn of [-1, 1]) windows(g, sw, bh, 0.1, x + sgn * (1.3 + sw / 2 + 0.05), by, zf, 1, Math.max(1, Math.round(sw / 0.9)));
+      } else windows(g, w - 0.9, bh, 0.1, x, by, zf, 1, cols);
+      if (f === 0 && entry) windows(g, 1.3, 1.6, 0.12, x, top + 0.02, zf + 0.01, 1, 2); // cửa chính
+      windows(g, w - 0.9, bh, 0.1, x, by, -zf, 1, cols);
+      for (const sgn of [-1, 1]) { // băng kính trên mặt bên (pháp tuyến ±x)
+        const sx = x + sgn * (w / 2 + 0.03), len = d - 1.0;
+        box(g, 0.1, bh, len, sx, by, 0, M.glass);
+        for (let i = 0; i <= 3; i++) box(g, 0.14, bh + 0.1, 0.07, sx, by - 0.04, -len / 2 + i * len / 3, M.cream);
       }
-      windows(g, cw - 0.9, bh, 0.1, cx, by, -zf, 1, bandCols);
-      for (const sgn of [-1, 1]) sideBand(cx + sgn * (cw / 2 + 0.03), d - 1.0, bh, by, 3);
-      box(g, cw + 0.12, 0.07, d + 0.12, cx, by - 0.1, 0, M.cream); // bệ cửa sổ chạy quanh
-      if (stepped) { // sân thượng trên phần mái tầng dưới
-        const tw = w - cw, tx = w / 2 - tw / 2;
-        box(g, tw - 0.1, 0.1, d - 0.3, tx, top, 0, M.walk);
-        box(g, tw, 0.42, 0.12, tx, top, d / 2 - 0.06, M.cream);
-        box(g, tw, 0.42, 0.12, tx, top, -d / 2 + 0.06, M.cream);
-        box(g, 0.12, 0.42, d, w / 2 - 0.06, top, 0, M.cream);
-        box(g, tw - 0.7, 0.34, 0.7, tx, top + 0.1, -d / 2 + 0.65, M.stone);
-        box(g, tw - 0.9, 0.3, 0.5, tx, top + 0.44, -d / 2 + 0.65, M.moss);
-        box(g, 0.9, 0.06, 0.9, tx, top + 0.75, d / 2 - 1.0, M.orange); // dù che
-        cylinder(g, 0.04, 0.65, tx, top + 0.1, d / 2 - 1.0, M.metal, 8);
-      }
+      box(g, w + 0.12, 0.07, d + 0.12, x, by - 0.1, 0, M.cream); // bệ cửa sổ chạy quanh
       top += fh;
-      if (K.stripe && f < floors - 1) box(g, w + 0.14, 0.12, d + 0.14, 0, top - 0.06, 0, M.orange);
+      if (stripe && f < floors - 1) box(g, w + 0.14, 0.12, d + 0.14, x, top - 0.06, 0, M.orange);
     }
-    // Gờ mái, lan can và mặt mái
-    box(g, cw + 0.4, 0.22, d + 0.4, cx, top, 0, M.cream);
+    return top;
+  }
+
+  // Thiết bị / cây trên một ô mái chữ nhật (tâm x, rộng w, sâu d, cao độ mặt mái ry)
+  function smallRoofProps(g, kind, x, w, d, ry) {
+    const acUnit = (ax, az) => { box(g, 1.0, 0.5, 0.75, ax, ry + 0.08, az, M.metal); cylinder(g, 0.26, 0.08, ax, ry + 0.58, az, M.dark, 12); };
+    if (kind === 'units' || kind === 'ac') {
+      acUnit(x - w / 4, -d / 4);
+      acUnit(x - w / 4, d / 5);
+      if (kind === 'units') { // buồng thang ra mái
+        box(g, 1.3, 1.0, 1.3, x + w / 4, ry + 0.08, -d / 4, M.cream);
+        box(g, 1.5, 0.12, 1.5, x + w / 4, ry + 1.08, -d / 4, M.orange);
+      }
+    } else if (kind === 'solar') {
+      const n = w > 6 ? 3 : 2, pw = (w - 1.6) / n, pd = Math.min(1.25, (d - 1.9) / 2 - 0.15);
+      const z1 = -d / 2 + 0.45 + pd / 2, z2 = z1 + pd + 0.2;
+      for (let i = 0; i < n; i++) for (const z of [z1, z2]) {
+        const px = x - w / 2 + 0.8 + pw * (i + 0.5);
+        box(g, pw - 0.2, 0.06, pd, px, ry + 0.2, z, M.solarFrame);
+        box(g, pw - 0.32, 0.03, pd - 0.12, px, ry + 0.26, z, M.solarCell);
+      }
+      if (d / 2 - 1.2 > z2 + pd / 2 + 0.1) acUnit(x + w / 2 - 0.9, d / 2 - 0.8);
+    } else if (kind === 'garden') {
+      box(g, w - 1.6, 0.3, 0.6, x, ry + 0.08, -d / 2 + 0.65, M.stone);
+      box(g, w - 1.8, 0.28, 0.42, x, ry + 0.38, -d / 2 + 0.65, M.moss);
+      box(g, 1.5, 0.22, 1.0, x - w / 5, ry + 0.08, d / 6, M.glass);
+      box(g, 1.62, 0.1, 1.12, x - w / 5, ry + 0.06, d / 6, M.cream);
+      cylinder(g, 0.42, 0.75, x + w / 2 - 0.85, ry + 0.08, d / 4, M.white, 12);
+    } else if (kind === 'lounge') { // sân thượng: bồn cây dài và dù che
+      box(g, w - 0.7, 0.34, 0.7, x, ry + 0.08, -d / 2 + 0.65, M.stone);
+      box(g, w - 0.9, 0.3, 0.5, x, ry + 0.42, -d / 2 + 0.65, M.moss);
+      box(g, 0.9, 0.06, 0.9, x, ry + 0.75, d / 2 - 1.0, M.orange);
+      cylinder(g, 0.04, 0.67, x, ry + 0.08, d / 2 - 1.0, M.metal, 8);
+    } else if (kind === 'crown') { // tum mái lùi vào, mũ cam và cột ăng-ten
+      const cw = w * 0.56, cd = d * 0.56;
+      box(g, cw, 0.9, cd, x, ry, 0, M.cream);
+      box(g, cw - 0.5, 0.42, 0.08, x, ry + 0.26, cd / 2 + 0.02, M.glass);
+      box(g, cw + 0.3, 0.12, cd + 0.3, x, ry + 0.9, 0, M.orange);
+      cylinder(g, 0.05, 0.7, x + cw / 4, ry + 1.02, -cd / 4, M.metal, 8);
+      acUnit(x - w / 2 + 0.75, d / 2 - 0.7);
+    }
+  }
+
+  // Gờ mái + lan can + mặt mái (hoặc tấm mái cam nhô ra khi deck); trả về cao độ mặt mái
+  function smallRoof(g, x, w, d, top, {deck = false, surface = M.roofDark} = {}) {
+    if (deck) {
+      box(g, w + 0.7, 0.3, d + 0.7, x, top, 0, M.orange);
+      box(g, w + 0.1, 0.06, d + 0.1, x, top + 0.3, 0, M.terracotta);
+      return top + 0.3;
+    }
+    box(g, w + 0.4, 0.22, d + 0.4, x, top, 0, M.cream);
     const ry = top + 0.22;
     for (const sgn of [-1, 1]) {
-      box(g, cw + 0.3, 0.4, 0.14, cx, ry, sgn * (d / 2 + 0.08), M.cream);
-      box(g, 0.14, 0.4, d + 0.3, cx + sgn * (cw / 2 + 0.08), ry, 0, M.cream);
+      box(g, w + 0.3, 0.4, 0.14, x, ry, sgn * (d / 2 + 0.08), M.cream);
+      box(g, 0.14, 0.4, d + 0.3, x + sgn * (w / 2 + 0.08), ry, 0, M.cream);
     }
-    box(g, cw - 0.1, 0.08, d - 0.1, cx, ry, 0, K.roof === 'garden' ? M.moss : M.roofDark);
-    const acUnit = (x, z) => { box(g, 1.0, 0.5, 0.75, x, ry + 0.08, z, M.metal); cylinder(g, 0.26, 0.08, x, ry + 0.58, z, M.dark, 12); };
-    if (K.roof === 'units') {
-      acUnit(cx - cw / 4, -d / 4);
-      acUnit(cx - cw / 4, d / 5);
-      box(g, 1.3, 1.0, 1.3, cx + cw / 4, ry + 0.08, -d / 4, M.cream);
-      box(g, 1.5, 0.12, 1.5, cx + cw / 4, ry + 1.08, -d / 4, M.orange);
-    } else if (K.roof === 'solar') {
-      const cols2 = cw > 6 ? 3 : 2, pw = (cw - 1.6) / cols2, pd = Math.min(1.25, (d - 1.9) / 2 - 0.15);
-      const z1 = -d / 2 + 0.45 + pd / 2, z2 = z1 + pd + 0.2;
-      for (let i = 0; i < cols2; i++) for (const z of [z1, z2]) {
-        const x = cx - cw / 2 + 0.8 + pw * (i + 0.5);
-        box(g, pw - 0.2, 0.06, pd, x, ry + 0.2, z, M.solarFrame);
-        box(g, pw - 0.32, 0.03, pd - 0.12, x, ry + 0.26, z, M.solarCell);
-      }
-      if (d / 2 - 1.2 > z2 + pd / 2 + 0.1) acUnit(cx + cw / 2 - 0.9, d / 2 - 0.8);
+    box(g, w - 0.1, 0.08, d - 0.1, x, ry, 0, surface);
+    return ry;
+  }
+
+  function smallCampusBuilding(kind) {
+    const K = smallBuildingSpec(kind);
+    const {w, d, cols, tower} = K, fh = K.fh || 1.9, base = 0.3;
+    const g = new T.Group();
+    g.name = `small-building-${kind}`;
+    box(g, w + 0.7, base, d + 0.7, 0, 0, 0, M.stone);
+    const top = smallFloors(g, {x: 0, w, d, y: base, floors: K.podium, fh, cols, stripe: K.stripe, entry: K.garage ? 'garage' : 'door'});
+    if (!tower) {
+      const ry = smallRoof(g, 0, w, d, top, {deck: K.deck, surface: K.roof === 'garden' ? M.moss : M.roofDark});
+      smallRoofProps(g, K.roof, 0, w, d, ry);
     } else {
-      box(g, cw - 1.6, 0.3, 0.6, cx, ry + 0.08, -d / 2 + 0.65, M.stone);
-      box(g, cw - 1.8, 0.28, 0.42, cx, ry + 0.38, -d / 2 + 0.65, M.moss);
-      box(g, 1.5, 0.22, 1.0, cx - cw / 5, ry + 0.08, d / 6, M.glass);
-      box(g, 1.62, 0.1, 1.12, cx - cw / 5, ry + 0.06, d / 6, M.cream);
-      cylinder(g, 0.42, 0.75, cx + cw / 2 - 0.85, ry + 0.08, d / 4, M.white, 12);
+      // Mái đế là sân thượng; tháp đứng trên gờ mái của đế
+      const ry = smallRoof(g, 0, w, d, top, {surface: M.walk});
+      const tw = w * tower.span, td = d * (tower.depth || 1), tx = tower.side * (w - tw) / 2;
+      if (tower.side) smallRoofProps(g, K.terrace || 'lounge', -tower.side * tw / 2, w - tw, d, ry);
+      const ttop = smallFloors(g, {x: tx, w: tw, d: td, y: ry, floors: tower.floors, fh: tower.fh || fh, cols: Math.max(2, Math.round(cols * tower.span))});
+      const try_ = smallRoof(g, tx, tw, td, ttop, {deck: tower.deck, surface: tower.roof === 'garden' ? M.moss : M.roofDark});
+      smallRoofProps(g, tower.roof, tx, tw, td, try_);
     }
     // Lối vào: bậc thềm, mái hiên cam trên hai cột, hai bồn cây (nhô ra tối đa 0.9 so với mặt tường)
     box(g, 2.3, 0.15, 0.6, 0, 0, d / 2 + 0.55, M.stone);
