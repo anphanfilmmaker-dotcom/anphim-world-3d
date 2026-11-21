@@ -23,7 +23,7 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up3';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median1';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
@@ -1395,6 +1395,7 @@ async function main() {
 
   const frameTimes = [];
   let previous = performance.now();
+  const drawCampus = () => postPipeline ? postPipeline.render() : renderer.render(scene, camera);
   function frame(now) {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
@@ -1406,11 +1407,8 @@ async function main() {
     const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
-      if (postPipeline) {
-        postPipeline.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+      // While a building is open the animator draws the frame: the campus as a sketch, the room on top
+      if (!cutawayAnimator?.render(renderer, drawCampus)) drawCampus();
     }
     frameTimes.push(now - previous);
     previous = now;
