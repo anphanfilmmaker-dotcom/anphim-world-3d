@@ -5440,6 +5440,20 @@ export function createCampusEditor({
       if (hiddenAncestor) continue;
       if (isProtectedBuildingObject(o)) continue;
 
+      // Case A0: mặt sân cam dựng mesh riêng -> ủi qua trạng thái court.hidden (được lưu và dựng lại), không chỉ ẩn mesh
+      if (o.userData?.isSmoothCourtMesh) {
+        const court = terrain?.courts?.find(c => c.id === o.userData.courtId);
+        if (court) {
+          return {
+            kind: 'nativeCourt',
+            court,
+            object: o,
+            label: `🟧 Hộp sân màu cam (${court.id})`,
+            point: h.point
+          };
+        }
+      }
+
       // Case A1: SimCity Grid Road Tile Mesh
       let cur = o;
       while (cur && cur !== scene) {
