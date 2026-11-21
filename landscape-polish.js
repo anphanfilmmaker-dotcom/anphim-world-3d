@@ -435,9 +435,10 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
   for (const [x,z,s,yaw] of [[-1.05,30,.36,.4],[.75,29.95,.3,1.7],[1.25,26.9,.32,2.6],[-1.5,27.1,.26,.9],[-.2,23.4,.34,2.1],[.9,23.1,.24,.2]])
     medianPiece(rockUnit, medianRock, x, z, s * 1.2, s * .8, s, yaw);
   // Lớp bụi thấp phủ kín lòng đảo và một cây thông nhỏ: đảo trong ảnh tham chiếu trồng dày, không lộ nền cỏ
+  // Mỗi bụi cách tâm đá, cây và đoạn rào bên cạnh hơn 0.65: công cụ ủi lưu vết xoá theo bán kính (tối thiểu 0.6) quanh tâm vật bị xoá
   const medianShrub = new T.MeshStandardMaterial({color:0x4d9a3f,roughness:.9,flatShading:true});
   const medianPine = new T.MeshStandardMaterial({color:0x2f7a46,roughness:.9,flatShading:true});
-  for (const [x,z,s,dark] of [[-1.9,24.7,.5,1],[1.9,24.5,.48,0],[0,22.7,.5,1],[-1.25,23.5,.42,0],[1.3,23.7,.4,1],[-2.1,26.6,.44,0],[2.15,27.5,.44,1],[-2.05,30,.4,1],[2.05,30.05,.4,0],[.5,28.2,.38,1],[-.65,24.4,.38,0],[.55,30.15,.34,0]])
+  for (const [x,z,s,dark] of [[-1.9,24.7,.5,1],[1.9,24.5,.48,0],[0,22.7,.5,1],[-1.25,23.5,.42,0],[1.3,23.7,.4,1],[-2.1,26.6,.44,0],[2.15,27.5,.44,1],[-2.1,29.85,.4,1],[2.1,29.85,.4,0],[.45,28.45,.38,1],[-.65,24.4,.38,0]])
     medianPiece(medianCrown, dark ? medianHedge : medianShrub, x, z, s, s * .8, s, x * 3 + z);
   medianPiece(new T.ConeGeometry(1,1,7), medianPine, -2.05, 25.6, .55, 2.1, .55, 0);
   medianPiece(new T.ConeGeometry(1,1,7), medianPine, 2.1, 26.1, .45, 1.6, .45, 0);
