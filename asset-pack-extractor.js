@@ -104,18 +104,6 @@ export async function loadPackByKey(packKey) {
   return p;
 }
 
-export async function preloadAllStudioPacks() {
-  await loadStudioCatalog();
-  await Promise.all([
-    loadPackByKey('bakery'),
-    loadPackByKey('p1'),
-    loadPackByKey('p3'),
-    loadPackByKey('p4'),
-    loadPackByKey('p5'),
-    loadPackByKey('p6')
-  ]);
-}
-
 function normNodeName(s) {
   return (s || '').replace(/[\.\:\s_-]+/g, '').toLowerCase();
 }
@@ -376,44 +364,4 @@ export async function getStudioModelById(modelId, options = {}) {
   instance.userData.bbox = [sz.x, sz.y, sz.z];
 
   return instance;
-}
-
-export async function loadPack1() {
-  return loadPackByKey('p1');
-}
-
-export async function loadPack2() {
-  return loadPackByKey('p2');
-}
-
-/**
- * Tương thích ngược với các lệnh gọi getBuildingFromPack1 cũ nhưng dùng bộ chuẩn hóa mới
- */
-export async function getBuildingFromPack1(meshName = '#003', targetHeight = 8.5) {
-  if (String(meshName).startsWith('#')) {
-    return getStudioModelById(meshName, { targetHeight });
-  }
-  const legacyMap = {
-    'Cube046_batiment1007_0': '#003',
-    'Cube.046': '#003',
-    'Cube.045': '#002',
-    'Cube.047': '#004',
-    'Cube.044': '#007',
-    'Cube.002': '#009',
-    'Cube.003': '#010',
-    'Cube.100': '#011',
-    'Cube.096': '#012',
-    'Cube.094': '#013',
-    'Sphere.002': '#014',
-    'Cube.043': '#015',
-    'Cube.095': '#016',
-    'Cube.097': '#017',
-    'Cube.098': '#018'
-  };
-  const mappedId = legacyMap[meshName] || '#003';
-  return getStudioModelById(mappedId, { targetHeight });
-}
-
-export async function getBuildingFromPack2(targetHeight = 15.0) {
-  return getStudioModelById('#013', { targetHeight });
 }
