@@ -170,17 +170,6 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     ])
   };
   const WOOD = '#b9793f', STONE = '#e6dccb';
-  G.bench = mergeGeometries([
-    part(new T.BoxGeometry(1.5, .09, .5).translate(0, .42, 0), WOOD),
-    part(new T.BoxGeometry(1.5, .38, .08).translate(0, .68, -.23), WOOD),
-    part(new T.BoxGeometry(.1, .42, .46).translate(-.6, .21, 0), '#5b6470'),
-    part(new T.BoxGeometry(.1, .42, .46).translate(.6, .21, 0), '#5b6470')
-  ]);
-  G.planter = mergeGeometries([
-    part(new T.BoxGeometry(1.5, .5, .9).translate(0, .25, 0), STONE),
-    part(jitter(new T.IcosahedronGeometry(.42, 1), .15).scale(1.25, .8, .8).translate(-.3, .62, 0), '#4f9a41'),
-    part(jitter(new T.IcosahedronGeometry(.36, 1), .15).translate(.38, .6, 0), '#69b04a')
-  ]);
   G.gate = mergeGeometries([
     part(new T.BoxGeometry(1.15, .3, 1.15).translate(0, .15, 0), '#cfc6b4'),
     part(new T.BoxGeometry(.85, 2.1, .85).translate(0, 1.35, 0), STONE),
@@ -188,7 +177,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     part(new T.BoxGeometry(1.1, .2, 1.1).translate(0, 2.5, 0), '#cfc6b4'),
     part(new T.BoxGeometry(.42, .42, .42).translate(0, 2.81, 0), '#fff3cf', 1.5)
   ]);
-  const GROUP_OF = {bench: root, planter: root, gate: root, round: canopyGroup, pine: canopyGroup, bloom: canopyGroup, hedge: shrubGroup, bush: shrubGroup, rock: root, lamp: root};
+  const GROUP_OF = {gate: root, round: canopyGroup, pine: canopyGroup, bloom: canopyGroup, hedge: shrubGroup, bush: shrubGroup, rock: root, lamp: root};
 
   const batches = new Map();
   function put(kind, x, y, z, sx, sy, sz, yaw = 0, color = null, shadow = true) {
@@ -373,31 +362,6 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     }
   }
 
-  // ---- 5. Ghế và bồn cây trên các sân lát gạch ---------------------------------------------------
-  const onWalk = (x, z, m) => disks.some(d => d.walk && Math.hypot(x - d.x, z - d.z) < d.r + m);
-  const inPad = (x, z, m) => terrain.pads.some(q => Math.abs(x - q.x) < q.hx + m && Math.abs(z - q.z) < q.hz + m);
-  let benchCount = 0, planterCount = 0;
-  for (const c of terrain.courts) {
-    if (c.hidden || c.kind === 5 || /Forecourt|Apron/i.test(c.id || '')) continue;
-    const rot = c.rotY || 0, cos = Math.cos(rot), sin = Math.sin(rot), hw = c.w / 2, hd = c.d / 2;
-    const world = (lx, lz) => [c.x + lx * cos - lz * sin, c.z + lx * sin + lz * cos];
-    const spots = [];
-    for (const side of [-1, 1]) {
-      const n = Math.max(1, Math.floor(c.w / 7));
-      for (let i = 0; i < n; i++) spots.push({kind: 'bench', lx: (i + .5) / n * c.w - hw, lz: side * (hd - .55), yaw: side > 0 ? Math.PI : 0});
-      for (const cx of [-1, 1]) spots.push({kind: 'planter', lx: cx * (hw - 1.3), lz: side * (hd - .75), yaw: 0});
-    }
-    for (const sp of spots) {
-      if (Math.abs(sp.lx) > hw - .9 || hd < 1.4) continue;
-      const [x, z] = world(sp.lx, sp.lz);
-      if (onWalk(x, z, .9) || inPad(x, z, 1) || urban.isInsideUTurnCorridor(x, z, 1) || urban.isInsideHQForecourt(x, z, 1)) continue;
-      if (rects.some(q => q.obj && !q.gone && Math.abs(x - q.x) < q.hx + .6 && Math.abs(z - q.z) < q.hz + .6)) continue;
-      if (disks.some(d => !d.walk && !d.gone && d.soft && Math.hypot(x - d.x, z - d.z) < 1.5)) continue;
-      put(sp.kind, x, surface(x, z), z, 1, 1, 1, sp.yaw - rot);
-      sp.kind === 'bench' ? benchCount++ : planterCount++;
-    }
-  }
-
   // ---- Dựng InstancedMesh ---------------------------------------------------------------------
   const o = new T.Object3D();
   for (const [key, b] of batches) {
@@ -419,6 +383,6 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     GROUP_OF[b.kind].add(mesh);
   }
 
-  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, benches: benchCount, planters: planterCount, gatePillars: gateCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
+  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, gatePillars: gateCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
   return {root, parterres, free};
 }
