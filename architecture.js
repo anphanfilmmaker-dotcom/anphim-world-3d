@@ -100,6 +100,7 @@ export function createArchitecture(P) {
 
   function shell(g, w, h, d, rows = 2, cols = 4) {
     box(g, w, h, d, 0, 0, 0);
+    box(g, w + 0.3, 0.32, d + 0.3, 0, 0, 0, M.stone);
     front(g, w, h, d, rows, cols);
     windows(g, 0.07, h - 0.7, d - 0.5, w / 2 + 0.025, 0.3, 0, rows, cols);
     box(g, w + 0.25, 0.2, d + 0.25, 0, h, 0);
@@ -1813,6 +1814,18 @@ export function createArchitecture(P) {
     box(orangeRoofG, 12.2, 0.04, 8.2, 0, 7.33, -0.66, M.orange);
     g.add(orangeRoofG);
 
+    // Sân mái trước khối kỹ thuật: lan can kem, dàn pin mặt trời và bồn cây (mái trong ảnh tham chiếu không để trống)
+    const roofDeckG = new T.Group();
+    roofDeckG.userData.toggleKey = 'roofEquipment';
+    box(roofDeckG, 12.4, 0.32, 0.16, 0, 7.37, 3.46, M.cream);
+    for (const x of [-6.12, 6.12]) box(roofDeckG, 0.16, 0.32, 8.4, x, 7.37, -0.66, M.cream);
+    roofKitbash(roofDeckG, 12.2, 8.2, 7.33, {
+      solarCount: 3, solarStartX: -4.4, solarZ: 2.0,
+      hvac: false,
+      planter: true, planterX: 3.9, planterZ: 2.1
+    });
+    g.add(roofDeckG);
+
     // Khối kỹ thuật giật cấp nhô cao phía sau mái (Penthouse Y = 6.95 -> 7.55m)
     const penthouseG = new T.Group();
     penthouseG.userData.toggleKey = 'penthouse';
@@ -1955,6 +1968,15 @@ export function createArchitecture(P) {
     box(roofG, 2.2, 0.85, 1.6, 2.0, 7.94, -1.6, M.metal);
     cylinder(roofG, 0.38, 0.10, 1.5, 8.80, -1.6, M.dark, 16);
     cylinder(roofG, 0.38, 0.10, 2.5, 8.80, -1.6, M.dark, 16);
+    // Dàn pin mặt trời, giếng trời kính và bồn cây mái
+    roofKitbash(roofG, 9.4, 7.0, 8.30, {
+      solarCount: 2, solarStartX: -3.2, solarZ: -1.7,
+      hvac: false,
+      planter: true, planterX: -2.6, planterZ: 1.7
+    });
+    box(roofG, 2.6, 0.22, 1.8, 2.0, 8.36, 1.5, M.stone);
+    box(roofG, 2.3, 0.16, 1.5, 2.0, 8.54, 1.5, M.glass);
+    box(roofG, 0.08, 0.2, 1.5, 2.0, 8.54, 1.5, M.cream);
     g.add(roofG);
 
     // Socket vị trí nhân vật bước vào sảnh
