@@ -181,6 +181,8 @@ export function createUrbanPlanningEngine(L, terrain) {
       const p = new T.Vector3();
 
       scene.traverse(o => {
+        // The room of an inspected building stands on the building's own spot and is never scenery to clear
+        if (o.userData.interior) return;
         // 1. Quét InstancedMesh (cây cối, đá, bụi cây Kenney/Nature Kit)
         if (o.parent?.name === "hq-smooth-road-and-curbs" ||
             (o.parent?.name === "u-turn-central-island" && o.userData.arrivalMedianPlant)) return;

@@ -554,6 +554,7 @@ export function buildInterior(view, plan = roomPlan()) {
     cyl(lounge, 0.4, 0.36, M.wood, 0, 0.18, 0.4, 16);
   }
 
+  g.traverse(o => { o.userData.interior = true; });
   g.userData.update = (t, camera) => { for (const fn of anim) fn(t, camera); };
   g.userData.update(performance.now() / 1000);
   return g;
