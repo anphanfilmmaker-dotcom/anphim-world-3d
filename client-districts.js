@@ -613,11 +613,15 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       const key = (client?.id || '') + '|' + (client?.name || '') + '|' + openLotCount(slot, tpl, used);
       let d = districts.get(slot.id);
       if (!d || d.key !== key) {
-        if (d) root.remove(d.group);
+        if (d) {
+          root.remove(d.group);
+          if (d.road) access.remove(d.road);
+        }
         const built = client ? buildDistrict(slot, client, used) : buildReserve(slot);
-        d = {slot, client, key, ...built};
+        d = {slot, client, key, road: client ? gateRoad(slot) : null, ...built};
         districts.set(slot.id, d);
         root.add(d.group);
+        if (d.road) access.add(d.road);
       }
       d.projects = projects.length;
       const land = LANDSCAPES[slot.landscape] || LANDSCAPES.meadow;
@@ -666,17 +670,18 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     });
   }
 
-  // Roads from the ring to each gate, and the branch roads to the corner districts.
+  // The branch roads to the corner districts, and under each district in use its road from the ring.
   const access = new T.Group();
   access.name = 'client-district-access';
   root.add(access);
   for (const road of plan.accessRoads || []) access.add(drapedRibbon(road.points, road.width, M.asphalt));
-  for (const slot of plan.slots) {
-    if (!slot.ringXZ || !slot.clientId) continue;
-    const f = slotFrame(slot, tpl), [gx, gz] = f.toWorld(1, 0);
-    access.add(drapedRibbon([slot.ringXZ, [gx, gz]], tpl.roadWidth, M.asphalt));
+  function gateRoad(slot) {
+    if (!slot.ringXZ) return null;
+    const g = new T.Group(), f = slotFrame(slot, tpl);
+    g.add(drapedRibbon([slot.ringXZ, f.toWorld(1, 0)], tpl.roadWidth, M.asphalt));
     const len = Math.hypot(slot.ringXZ[0] - slot.gateXZ[0], slot.ringXZ[1] - slot.gateXZ[1]);
-    for (const s of [-1, 1]) access.add(drapedRibbon([f.toWorld(-len + 4.2, s * (tpl.roadWidth / 2 + 1)), f.toWorld(1, s * (tpl.roadWidth / 2 + 1))], tpl.sidewalkWidth, M.walk, 0.09));
+    for (const s of [-1, 1]) g.add(drapedRibbon([f.toWorld(-len + 4.2, s * (tpl.roadWidth / 2 + 1)), f.toWorld(1, s * (tpl.roadWidth / 2 + 1))], tpl.sidewalkWidth, M.walk, 0.09));
+    return g;
   }
 
   /**
