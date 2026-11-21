@@ -4411,7 +4411,7 @@ export function createCampusEditor({
     // 9. Camera & Rendering
     renderView: (viewName) => {
       if (views && views[viewName] && viewFn) {
-        viewFn(viewName);
+        viewFn(viewName, { immediate: true });
         return { ok: true, view: viewName, camera: views[viewName] };
       }
       return { ok: false, error: `View '${viewName}' not found` };
@@ -4787,28 +4787,7 @@ export function createCampusEditor({
     const activeEl = document.activeElement;
     const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
     if (!isTyping && (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight')) {
-      const right = new T.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-      right.y = 0;
-      if (right.lengthSq() < 0.0001) right.set(1, 0, 0);
-      right.normalize();
-
-      const forward = new T.Vector3(0, 1, 0).cross(right).normalize();
-      const panDist = e.shiftKey ? 3.0 : 1.2;
-
-      if (e.code === 'ArrowUp') {
-        camera.position.addScaledVector(forward, panDist);
-        controls.target.addScaledVector(forward, panDist);
-      } else if (e.code === 'ArrowDown') {
-        camera.position.addScaledVector(forward, -panDist);
-        controls.target.addScaledVector(forward, -panDist);
-      } else if (e.code === 'ArrowLeft') {
-        camera.position.addScaledVector(right, -panDist);
-        controls.target.addScaledVector(right, -panDist);
-      } else if (e.code === 'ArrowRight') {
-        camera.position.addScaledVector(right, panDist);
-        controls.target.addScaledVector(right, panDist);
-      }
-      controls.update();
+      // camera-director.js moves the camera for arrow keys, once per frame
       e.preventDefault();
       return;
     }
