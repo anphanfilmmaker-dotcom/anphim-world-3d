@@ -94,10 +94,11 @@ button:disabled{cursor:not-allowed;opacity:.5}
 [data-tone=warn]>.cf-dot,.cf-dot[data-tone=warn]{background:var(--cf-warn)}
 [data-tone=alert]>.cf-dot,.cf-dot[data-tone=alert]{background:var(--cf-alert)}
 [data-tone=info]>.cf-dot,.cf-dot[data-tone=info]{background:var(--cf-info)}
-.cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - 104px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
+.cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - var(--cf-bh,49px) - 55px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
 .cf-left{left:var(--cf-pad)}
 .cf-right{right:var(--cf-pad);width:auto;align-items:flex-end}
 .cf-right .cf-panel{width:var(--cf-side)}
+.cf-right [data-slot=building]{flex:none}
 .cf-right .cf-panel:not(.cf-open){display:none}
 .cf-rail{display:flex;gap:4px;padding:5px;border-radius:14px}
 .cf-rail button{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--cf-mute);transition:background .15s ease,color .15s ease}
@@ -182,14 +183,14 @@ button.cf-note:hover{background:var(--cf-bg2)}
 &.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-bottom *{pointer-events:none}
 @media (max-width:1480px){--cf-side:272px;.cf-res strong{font-size:15px}.cf-res-ico{display:none}.cf-res{padding:0 12px}.cf-brand span{display:none}}
 @media (max-width:1180px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 10px}.cf-res small{font-size:8.5px;letter-spacing:.04em}}
-@media (max-width:980px){&.cf-pane-open .cf-toast{display:none}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
+@media (max-width:980px){&.cf-pane-open .cf-toast{display:none}.cf-top .cf-lbl{display:none}.cf-top .cf-btn{padding:0 11px}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
 body.cf-frame:not(.cf-tools) #clean-top-nav,body.cf-frame:not(.cf-tools) #game-shader-dock,body.cf-frame:not(.cf-tools) #live-coord-badge{display:none!important}
 body.cf-frame.cf-tools #clean-top-nav{top:80px!important}
-body.cf-frame.cf-tools #game-shader-dock{top:126px!important}
-body.cf-frame.cf-tools #cockpit-frame-root .cf-side,body.cf-frame.cf-tools #cockpit-frame-root .cf-toast{top:166px;max-height:calc(100vh - 250px)}
+body.cf-frame.cf-tools #game-shader-dock{top:var(--cf-dock-top,126px)!important}
+body.cf-frame.cf-tools #cockpit-frame-root .cf-side,body.cf-frame.cf-tools #cockpit-frame-root .cf-toast{top:var(--cf-tools-top,166px);max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
 /* Inside a building the existing detail wing takes the right side; its KPI header and left wing are replaced by this frame. */
 body.cf-frame #cockpit-hud-root{inset:82px 0 70px auto!important;width:392px!important;padding:0 14px 0 0!important;z-index:44!important}
 body.cf-frame #cockpit-hud-root>header,body.cf-frame #cockpit-hud-root aside:first-of-type{display:none!important}
@@ -269,6 +270,8 @@ export class CockpitFrame {
       if (!e.target.closest?.('.cf-menu')) this.closeMenus();
       if (!e.target.closest?.('.cf-search') && this.query) { input.value = this.query = ''; this.renderResults(); }
     });
+    new ResizeObserver(() => root.style.setProperty('--cf-bh', this.slot.jump.offsetHeight + 'px')).observe(this.slot.jump);
+    addEventListener('resize', () => this.layoutTools());
     addEventListener('pointermove', e => {
       const tip = this.slot.tip;
       tip.style.left = Math.min(e.clientX + 16, innerWidth - tip.offsetWidth - 8) + 'px';
@@ -303,6 +306,16 @@ export class CockpitFrame {
   setBuilding(active) {
     if (!!active === this.root.classList.contains('cf-building')) return;
     this.root.classList.toggle('cf-building', !!active);
+  }
+
+  /** In tools mode the old builder toolbar and shader dock stack under the resource bar; the panels start below them. */
+  layoutTools() {
+    if (!document.body.classList.contains('cf-tools')) return;
+    const nav = document.getElementById('clean-top-nav');
+    const dock = document.getElementById('game-shader-dock');
+    const dockTop = 80 + (nav?.offsetHeight || 0) + 6;
+    document.body.style.setProperty('--cf-dock-top', dockTop + 'px');
+    document.body.style.setProperty('--cf-tools-top', dockTop + (dock ? dock.offsetHeight + 8 : 0) + 'px');
   }
 
   // ---- helpers ----------------------------------------------------------------
@@ -370,15 +383,15 @@ export class CockpitFrame {
     const tools = document.body.classList.contains('cf-tools');
     this.slot.controls.innerHTML = `
       <button class="cf-chip cf-btn" data-act="money" aria-pressed="${this.hideMoney}" title="${this.hideMoney ? 'Hiện số tiền' : 'Ẩn số tiền'}" aria-label="Ẩn hoặc hiện số tiền">${icon(this.hideMoney ? 'eyeOff' : 'eye')}</button>
-      <div class="cf-chip cf-btn" data-tone="${s.tone}" title="${esc(s.title + when)}"><i class="cf-dot"></i>${esc(s.label)}</div>
+      <div class="cf-chip cf-btn" data-tone="${s.tone}" title="${esc(s.title + when)}"><i class="cf-dot"></i><span class="cf-lbl">${esc(s.label)}</span></div>
       ${this.link(page, 'Mở dashboard', 'cf-chip cf-btn')}
       <button class="cf-chip cf-btn" data-act="tools" aria-pressed="${tools}" title="Công cụ dựng campus: góc máy, lưới, sửa cảnh" aria-label="Công cụ dựng campus">${icon('tools')}</button>`;
   }
 
   /** Link to a Workspace dashboard page; greyed out until workspace.baseUrl is set in the data. */
   link(page, text, cls) {
-    if (page?.url) return `<a class="${cls}" href="${esc(page.url)}" target="_blank" rel="noopener">${esc(text)} ${icon('external', 13)}</a>`;
-    return `<span class="${cls}" aria-disabled="true" title="Chưa có địa chỉ AN PHIM Workspace (workspace.baseUrl trong dữ liệu)">${esc(text)} ${icon('external', 13)}</span>`;
+    if (page?.url) return `<a class="${cls}" href="${esc(page.url)}" target="_blank" rel="noopener" title="${esc(text)}"><span class="cf-lbl">${esc(text)}</span> ${icon('external', 13)}</a>`;
+    return `<span class="${cls}" aria-disabled="true" title="Chưa có địa chỉ AN PHIM Workspace (workspace.baseUrl trong dữ liệu)"><span class="cf-lbl">${esc(text)}</span> ${icon('external', 13)}</span>`;
   }
 
   renderMissions() {
@@ -547,6 +560,7 @@ export class CockpitFrame {
     } else if (act === 'tools') {
       document.body.classList.toggle('cf-tools');
       this.renderControls();
+      this.layoutTools();
     } else if (act === 'collapse') {
       this.slot.missions.classList.toggle('cf-collapsed');
       this.renderMissions();
