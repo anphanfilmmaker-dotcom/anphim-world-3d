@@ -309,6 +309,13 @@ export class CockpitFrame {
   }
 
   /** Building the camera is inside (topology entry) or null for the campus view. */
+  /** Replace the building list, when project buildings were added or removed. */
+  setBuildings(buildings) {
+    this.buildings = buildings;
+    this.byId = new Map(buildings.map(b => [b.id, b]));
+    this.render();
+  }
+
   setInside(building) {
     this.inside = building ? (this.byId.get(building.id) || building) : null;
     this.root.classList.toggle('cf-inside', !!this.inside);

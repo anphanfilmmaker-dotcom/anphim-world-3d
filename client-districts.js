@@ -48,7 +48,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   const root = new T.Group();
   root.name = 'client-districts';
   scene.add(root);
-  const api = {root, districts: [], buildings: [], refresh: () => {}, dispose: () => scene.remove(root)};
+  // onChange is called after project buildings were added or removed.
+  const api = {root, districts: [], buildings: [], onChange: null, refresh: () => {}, dispose: () => scene.remove(root)};
   if (!plan) return api;
   const tpl = plan.template;
 
@@ -664,6 +665,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         api.buildings.push(binding);
       }
     }
+    if (changed) api.onChange?.();
     api.districts = [...districts.values()].map(d => {
       const f = slotFrame(d.slot, tpl);
       return {id: d.slot.id, label: d.slot.label, client: d.client, landscape: d.client ? (LANDSCAPES[d.slot.landscape] || LANDSCAPES.meadow).label : null, lots: d.slot.lots, depth: d.slot.depth, open: d.open, projects: d.projects, center: [f.center[0], f.y, f.center[1]], gate: [d.slot.gateXZ[0], f.y, d.slot.gateXZ[1]]};

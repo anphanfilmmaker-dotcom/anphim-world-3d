@@ -1031,9 +1031,11 @@ async function main() {
   dataConnector.subscribe(refreshInside);
 
   // Campus-view frame: resource bar, missions, hovered building, quick jump
+  const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
+  clientDistricts.onChange = () => cockpitFrame.setBuildings(frameBuildings());
   cockpitFrame = new CockpitFrame({
     dataConnector,
-    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings],
+    buildings: frameBuildings(),
     onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
     getDistricts: () => clientDistricts.districts,
