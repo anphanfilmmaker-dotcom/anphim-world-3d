@@ -41,14 +41,17 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
     const n = Math.max(2, Math.ceil(p.curve.getLength() / .6));
     for (let i = 0; i <= n; i++) { const q = p.curve.getPointAt(i / n); walks.push([q.x, q.z, (p.width || 2) / 2]); }
   }
+  const placed = [];
   function blocked(x, z, r) {
+    for (const f of placed) if (Math.hypot(x - f[0], z - f[1]) < r + f[2]) return true;
     for (const p of terrain?.pads || []) if (Math.abs(x - p.x) < p.hx + r + .25 && Math.abs(z - p.z) < p.hz + r + .25) return true;
     for (const s of terrain?.stairDefs || []) {
       const along = (s.start + s.end) / 2, ha = Math.abs(s.end - s.start) / 2 + r + 1, hc = s.width / 2 + r + .6;
       const [dx, dz] = s.axis === 'x' ? [x - along, z - s.cross] : [z - along, x - s.cross];
       if (Math.abs(dx) < ha && Math.abs(dz) < hc) return true;
     }
-    for (const o of terrain?.courts || []) if (o !== c && !o.hidden && inRect(x, z, o, r * .5)) return true;
+    // Thềm đá (kind khác 0) chỉ là lớp sơn nằm dưới mặt sân, đầu bậc thang đã được chừa ở trên: không tính là vật cản
+    for (const o of terrain?.courts || []) if (o !== c && !o.hidden && !o.kind && inRect(x, z, o, r * .5)) return true;
     // Không đặt lên lối đi bộ đang dẫn vào sân
     for (const w of walks) if (Math.hypot(x - w[0], z - w[1]) < w[2] + r * .5) return true;
     return false;
@@ -58,19 +61,20 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
     const [x, z] = world(lx, lz);
     if (blocked(x, z, r)) return false;
     const y = levelY ?? sampleY(x, z);
+    placed.push([x, z, r]);
     geos.push(geo.clone().applyMatrix4(m.compose(new T.Vector3(x, y, z), q.setFromAxisAngle(up, yawLocal - rot), one)));
     return true;
   }
-  // Bồn cây ở bốn góc (sân hẹp: hai đầu), ghế băng dọc cạnh dài quay vào giữa sân
+  // Bồn cây ở bốn góc (sân hẹp: hai đầu); góc bị lối đi / bậc thang chiếm thì lùi dần vào dọc cạnh dài, không vượt qua giữa sân
   const narrow = c.d < 5.5, inset = .95;
-  // Góc bị lối đi / bậc thang chiếm thì lùi dần bồn cây vào dọc cạnh dài
   for (const [sx, sz] of narrow ? [[-1, 0], [1, 0]] : [[-1, -1], [1, -1], [-1, 1], [1, 1]])
-    for (let k = 0; k < 3 && !place(PLANTER, sx * (hw - inset - k * 1.7), sz * (hd - inset), 0, .7); k++);
+    for (let k = 0, lx; k < 3 && (lx = hw - inset - k * 1.7) > .6 && !place(PLANTER, sx * lx, sz * (hd - inset), 0, .7); k++);
+  // Ghế băng dọc cạnh dài quay vào giữa sân; trùng bồn cây thì dịch ghế dọc cạnh (ưu tiên về phía giữa sân)
   const slots = Math.max(1, Math.min(4, Math.floor((c.w - 5) / 5))), spacing = Math.min(6.5, (c.w - 4) / slots);
   for (let i = 0; i < slots; i++) {
-    const lx = (i - (slots - 1) / 2) * spacing;
+    const lx = (i - (slots - 1) / 2) * spacing, inward = lx > 0 ? -1 : 1;
     for (const side of [1, -1]) {
-      const ok = place(BENCH, lx, side * (hd - .5), side < 0 ? 0 : Math.PI, .8);
+      const ok = [0, 1, -1, 2].some(k => place(BENCH, lx + inward * k * 1.1, side * (hd - .5), side < 0 ? 0 : Math.PI, .8));
       if (ok && narrow) break; // sân hẹp chỉ đủ chỗ cho một hàng ghế
     }
   }
