@@ -2596,10 +2596,17 @@ export function createCampusEditor({
       if (k > -1) customRoadsList.splice(k, 1);
       if (rec.mesh) roadsGroup.remove(rec.mesh);
     }
+    if (rec.path && roads?.paths) {
+      const pIdx = roads.paths.indexOf(rec.path);
+      if (attached && pIdx === -1) roads.paths.push(rec.path);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      terrain.rebuild(roads.paths);
+    }
     updateHierarchyUI();
   }
 
-  function createCustomSplineRoad(points, width, type) {
+  // routeLike: tuyến gốc đang có trong roads.paths (đường vẽ bằng chuột) -> nhánh tách ra cũng được đăng ký để người đi bộ / địa hình dùng tiếp
+  function createCustomSplineRoad(points, width, type, routeLike = null) {
     const mesh = generateRoadMesh(points, width, type);
     if (!mesh) return null;
     const roadRecord = {
@@ -2614,6 +2621,16 @@ export function createCampusEditor({
     mesh.userData.roadId = roadRecord.id;
     roadsGroup.add(mesh);
     customRoadsList.push(roadRecord);
+    if (routeLike && roads?.paths) {
+      roadRecord.path = {
+        ...routeLike,
+        id: roadRecord.id,
+        points: roadRecord.points.map(pt => [...pt]),
+        curve: new T.CatmullRomCurve3(roadRecord.points.map(pt => new T.Vector3(pt[0], 0, pt[1])), false, 'centripetal')
+      };
+      roads.paths.push(roadRecord.path);
+      terrain.rebuild(roads.paths);
+    }
     updateHierarchyUI();
     return roadRecord;
   }
@@ -5840,7 +5857,7 @@ export function createCampusEditor({
           const branch2 = pts.slice(i + 1);
           r.points = branch1;
           updateCustomRoadMesh(r);
-          addedRoad = createCustomSplineRoad(branch2, r.width, r.type);
+          addedRoad = createCustomSplineRoad(branch2, r.width, r.type, roads?.paths?.find(x => x.id === r.id) || null);
         }
 
         saveStudioState();
