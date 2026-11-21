@@ -3,7 +3,7 @@ import {createModularRoadSystem} from './modular-roads.js?rev=4';
 import {createHQGardens} from './hq-gardens.js?rev=62';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
-import {createCampusEditor} from './campus-editor.js?rev=110';
+import {createCampusEditor} from './campus-editor.js?rev=111';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
 import {createCampusGreenery} from './campus-greenery.js?rev=10';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -89,7 +89,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV4')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV5')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
