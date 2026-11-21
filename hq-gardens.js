@@ -232,39 +232,8 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
       createRibbonMesh(vertices,[0,1,2,2,1,3],roadStripeMat,'hq-loading-edge');
     }
 
-    // Vạch kẻ đường trắng đứt đoạn ở tim đường (Centerline dashes) - Tối ưu hóa InstancedMesh
-    const stripeBoxes = [];
-    for (let di = 8; di < N - 8; di += 12) {
-      const p1 = curve.getPointAt(di / N);
-      const p2 = curve.getPointAt((di + 5) / N);
-      if (p1.z > 31.5 || p2.z > 31.5) continue;
-      const mx = (p1.x + p2.x) / 2, mz = (p1.z + p2.z) / 2;
-      const tangent = p2.clone().sub(p1).normalize();
-      const nx = -tangent.z * 2.02, nz = tangent.x * 2.02;
-      const my = (terrain.height(mx + nx, mz + nz) + terrain.height(mx - nx, mz - nz)) / 2 + 0.075;
-      const dLen = Math.hypot(p2.x - p1.x, p2.z - p1.z);
-      const rotY = Math.atan2(p2.x - p1.x, p2.z - p1.z);
-      stripeBoxes.push({ w: 0.14, h: 0.012, d: dLen, x: mx, y: my, z: mz, rotY });
-    }
-    if (stripeBoxes.length > 0) {
-      const sGeo = new T.BoxGeometry(1, 1, 1);
-      const sMesh = new T.InstancedMesh(sGeo, roadStripeMat, stripeBoxes.length);
-      sMesh.name = 'hq-u-turn-dashes-instanced';
-      sMesh.castShadow = false;
-      sMesh.receiveShadow = true;
-      const dummy = new T.Object3D();
-      for (let i = 0; i < stripeBoxes.length; i++) {
-        const b = stripeBoxes[i];
-        dummy.position.set(b.x, b.y + b.h / 2, b.z);
-        dummy.rotation.set(0, b.rotY, 0);
-        dummy.scale.set(b.w, b.h, b.d);
-        dummy.updateMatrix();
-        sMesh.setMatrixAt(i, dummy.matrix);
-      }
-      sMesh.instanceMatrix.needsUpdate = true;
-      sMesh.computeBoundingSphere();
-      smoothRoadGroup.add(sMesh);
-    }
+    // Vạch tim đường của đường vòng do cơ chế vạch kẻ chung (road-markings.js, gọi từ modular-roads.js) sinh ra,
+    // để vạch dừng lại đúng trước vạch qua đường ở hai miệng đường vòng.
   }
 
   // --- 2.1 ĐÃ GỠ BỎ 2 ĐƯỜNG ĐI BỘ HAI BÊN ĐƯỜNG CHỮ U THEO YÊU CẦU CỦA SẾP ---
