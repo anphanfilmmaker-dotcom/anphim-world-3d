@@ -2624,6 +2624,7 @@ export function createCampusEditor({
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
         customRoadsList.push(roadRecord);
         updateHierarchyUI();
+        saveStudioState();
       },
       redo: () => {
         const i = customRoadsList.findIndex(r => r.id === roadId);
@@ -2632,6 +2633,7 @@ export function createCampusEditor({
           if (roadRecord.mesh) roadsGroup.remove(roadRecord.mesh);
         }
         updateHierarchyUI();
+        saveStudioState();
       }
     });
 
