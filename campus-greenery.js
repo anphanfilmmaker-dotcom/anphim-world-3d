@@ -401,9 +401,10 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     if (wd < 1.8 || wd > 5 || !free(x, z, .7)) continue;
     const bs = .42 + rand() * .26;
     put('bush', x, ground(x, z) + bs * .55, z, bs, bs * .8, bs, rand() * 6.28, null, false);
-    occupy(x, z, .7);
     shrubCount++;
-    if (rand() < .5) { const a = rand() * 6.28, cx = x + Math.cos(a) * .85, cz = z + Math.sin(a) * .85, cs = bs * .7; if (free(cx, cz, .3) && walkDistance(cx, cz) > 1.7) { put('bush', cx, ground(cx, cz) + cs * .55, cz, cs, cs * .8, cs, rand() * 6.28, null, false); shrubCount++; } }
+    // Bụi con đi kèm được xét chỗ trống trước khi bụi chính giữ chỗ (nó nằm trong vùng giữ chỗ của bụi chính)
+    if (rand() < .5) { const a = rand() * 6.28, cx = x + Math.cos(a) * .85, cz = z + Math.sin(a) * .85, cs = bs * .7; if (free(cx, cz, .3) && walkDistance(cx, cz) > 1.7) { put('bush', cx, ground(cx, cz) + cs * .55, cz, cs, cs * .8, cs, rand() * 6.28, null, false); occupy(cx, cz, .45); shrubCount++; } }
+    occupy(x, z, .7);
   }
 
   // ---- 4. Đèn lối đi dọc đường đi bộ ------------------------------------------------------------
