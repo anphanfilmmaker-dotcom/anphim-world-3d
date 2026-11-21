@@ -56,7 +56,9 @@ export function analyseRoadNetwork(defs) {
     for (const b of roads) if (b !== a && !sameRoad(a, b)) {
       const q = nearest(b, e.x, e.z), c = at(b, q.s);
       // Đầu đường phải thật sự chạm mặt nhựa của tuyến kia; đi vào xiên góc thì góc của đầu đường chạm trước tim đường
-      if (q.d > b.halfW + 0.3 + a.halfW * Math.abs(e.tx * c.tx + e.tz * c.tz)) continue;
+      // Đầu đường đã vượt qua tim tuyến kia: chỉ là ngã ba nếu nó dừng trong lòng mặt nhựa; vượt hẳn sang bên kia là giao cắt (xử lý bên dưới)
+      const body = sA === 0 ? 1 : -1, past = ((e.x - c.x) * e.tx + (e.z - c.z) * e.tz) * body < 0;
+      if (q.d > (past ? b.halfW : b.halfW + 0.3 + a.halfW * Math.abs(e.tx * c.tx + e.tz * c.tz))) continue;
       if (!b.closed && (q.s < 1.5 || b.len - q.s < 1.5)) continue; // hai đầu nối nhau = cùng một con đường đi tiếp
       add(c.x, c.z, [{road: a, s: sA, dir: sA === 0 ? 1 : -1, off: q.d}, ...armsOf(b, q.s)]);
       ends.push({x: c.x, z: c.z, a, b});
