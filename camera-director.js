@@ -31,10 +31,11 @@ export function createCameraDirector({
   leftDragRotates = () => true,
   onUserMove = () => {}
 }) {
-  // Event handlers inside OrbitControls and other modules call controls.update();
-  // those only mark the state dirty so damping advances exactly once per frame.
+  // Event handlers inside OrbitControls and other modules call controls.update().
+  // Those calls only re-aim the camera at the target, so code that renders right
+  // after moving it sees the right view; damping advances once per frame in update().
   const applyControls = controls.update.bind(controls);
-  controls.update = () => false;
+  controls.update = () => { camera.lookAt(controls.target); return false; };
 
   const lastPos = camera.position.clone(), lastTarget = controls.target.clone();
   const keys = new Set(), keyVel = new T.Vector3(), anchor = new T.Vector2();

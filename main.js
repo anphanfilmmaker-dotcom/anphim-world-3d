@@ -14,7 +14,7 @@ import {composeCapture} from './capture.js?rev=hq9';
 import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v4';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
-import {createCameraDirector} from './camera-director.js?rev=1';
+import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v28_restored';
 import {createAdapter} from './materials.js?rev=8';
