@@ -64,8 +64,8 @@ export class CutawayAnimator {
     const posZ = targetPos[2] || 0;
 
     // The room has the outline of the building itself, measured once per building
-    buildingGroup.userData.footprint ??= footprintOf(buildingGroup);
-    const plan = roomPlan(buildingGroup.userData.footprint, bInfo.width, bInfo.depth);
+    buildingGroup.userData.roomOutline ??= footprintOf(buildingGroup);
+    const plan = roomPlan(buildingGroup.userData.roomOutline, bInfo.width, bInfo.depth);
     this.room = {
       plan, pos: [posX, posY + 0.02, posZ],
       view: bInfo.view || {type: null, id: buildingId, title: bInfo.name, connected: false, agents: []}
