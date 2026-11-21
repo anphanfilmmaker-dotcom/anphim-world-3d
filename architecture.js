@@ -30,9 +30,29 @@ export function createArchitecture(P) {
   M.glass.color.set(P.colors.referenceGlass || '#2D8781'); // approved reference teal glass
 
   const boxes = new Map();
+  // Khối lớn (thân nhà, cánh nhà, tấm mái) được bo 4 cạnh đứng để ra dáng "chunky" như ảnh tham chiếu; chi tiết nhỏ vẫn là hộp vuông.
+  // Hình bo nằm trong mặt phẳng XZ, đùn theo Y và canh giữa quanh gốc, đúng quy ước của BoxGeometry.
+  // Mặt bên lùi vào 0.008: nhiều chi tiết (cánh kính, băng tường) được dựng trùng mặt với thân nhà, lùi vào để chúng luôn nằm trên, không bị chớp mặt.
+  function chunkyBox(w, h, d) {
+    const r = Math.min(0.45, w * 0.12, d * 0.12), hw = w / 2 - 0.008, hd = d / 2 - 0.008, shape = new T.Shape();
+    shape.moveTo(-hw + r, -hd);
+    shape.lineTo(hw - r, -hd);
+    shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0);
+    shape.lineTo(hw, hd - r);
+    shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2);
+    shape.lineTo(-hw + r, hd);
+    shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI);
+    shape.lineTo(-hw, -hd + r);
+    shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5);
+    const geo = new T.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 3 });
+    geo.rotateX(-Math.PI / 2);
+    geo.translate(0, -h / 2, 0);
+    // Trả về BufferGeometry thường: main.js nhận diện "vai" HQ bằng geometry.type === 'ExtrudeGeometry'
+    return new T.BufferGeometry().copy(geo);
+  }
   function box(g, w, h, d, x, y, z, m = M.cream) {
-    const k = [w, h, d].join('/');
-    if (!boxes.has(k)) boxes.set(k, new T.BoxGeometry(w, h, d));
+    const chunky = w >= 2.4 && d >= 2.4 && h >= 0.15 && m !== M.glass, k = [w, h, d, chunky].join('/');
+    if (!boxes.has(k)) boxes.set(k, chunky ? chunkyBox(w, h, d) : new T.BoxGeometry(w, h, d));
     const b = new T.Mesh(boxes.get(k), m);
     b.position.set(x, y + h / 2, z);
     b.castShadow = b.receiveShadow = true;
