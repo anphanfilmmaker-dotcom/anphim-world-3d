@@ -53,7 +53,7 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
     for (let i = 0; i <= n; i++) { const q = p.curve.getPointAt(i / n); walks.push([q.x, q.z, (p.width || 2) / 2]); }
   }
   const placed = [];
-  function blocked(x, z, r) {
+  function blocked(x, z, r, walkPad = r * .5) {
     for (const f of placed) if (Math.hypot(x - f[0], z - f[1]) < r + f[2]) return true;
     for (const p of terrain?.pads || []) if (Math.abs(x - p.x) < p.hx + r + .25 && Math.abs(z - p.z) < p.hz + r + .25) return true;
     for (const s of terrain?.stairDefs || []) {
@@ -64,13 +64,13 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
     // Thềm đá (kind khác 0) chỉ là lớp sơn nằm dưới mặt sân, đầu bậc thang đã được chừa ở trên: không tính là vật cản
     for (const o of terrain?.courts || []) if (o !== c && !o.hidden && !o.kind && inRect(x, z, o, r * .5)) return true;
     // Không đặt lên lối đi bộ đang dẫn vào sân
-    for (const w of walks) if (Math.hypot(x - w[0], z - w[1]) < w[2] + r * .5) return true;
+    for (const w of walks) if (Math.hypot(x - w[0], z - w[1]) < w[2] + walkPad) return true;
     return false;
   }
   const geos = [], m = new T.Matrix4(), q = new T.Quaternion(), up = new T.Vector3(0, 1, 0), one = new T.Vector3(1, 1, 1);
-  function place(geo, lx, lz, yawLocal, r) {
+  function place(geo, lx, lz, yawLocal, r, walkPad) {
     const [x, z] = world(lx, lz);
-    if (blocked(x, z, r)) return false;
+    if (blocked(x, z, r, walkPad)) return false;
     const y = levelY ?? sampleY(x, z);
     placed.push([x, z, r]);
     geos.push(geo.clone().applyMatrix4(m.compose(new T.Vector3(x, y, z), q.setFromAxisAngle(up, yawLocal - rot), one)));
@@ -93,7 +93,7 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
       if (ok && narrow) break; // sân hẹp chỉ đủ chỗ cho một hàng ghế
     }
   }
-  // Quảng trường lớn: cây bóng mát trong bồn đặt đối xứng ở các chỗ còn trống (ưu tiên hai đầu sân, cách nhau ít nhất 4.2) và đèn ở bốn góc,
+  // Quảng trường lớn: cây bóng mát trong bồn đặt đối xứng ở các chỗ còn trống (ưu tiên hai đầu sân, cách nhau ít nhất 4.2, bồn 1.5 x 1.5 không chờm lên lối đi) và đèn ở bốn góc,
   // như quảng trường HQ trong ảnh tham chiếu. Lối đi, bậc thang và nền nhà vẫn được chừa nhờ blocked().
   if (c.w >= 16 && c.d >= 6) {
     const trees = [];
@@ -101,7 +101,7 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
       for (let lx = hw - 1.3; lx >= 0 && trees.length < 8; lx -= .7)
         for (const sx of lx ? [-1, 1] : [1]) {
           const [x, z] = world(sx * lx, lz);
-          if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05)) trees.push([x, z]);
+          if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05, .85)) trees.push([x, z]);
         }
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) place(LAMP, sx * (hw - .45), sz * (hd - .45), 0, .25);
   }
