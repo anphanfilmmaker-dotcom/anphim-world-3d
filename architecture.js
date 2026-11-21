@@ -1480,6 +1480,10 @@ export function createArchitecture(P) {
     box(g, 5.2, 1.2, 4.8, -1.2, 6.55, -0.6, M.metal);
     box(g, 9.0, 0.45, 0.1, 0, 6.55, 3.75, M.stone);
     for (const [rx, rz] of [[1.8, 1.2], [2.8, 1.2]]) cylinder(g, 0.4, 0.9, rx, 6.55, rz, M.dark);
+    // Lan can mái bao kín + vườn mái xanh (các tòa trong ảnh tham chiếu đều có mái hoàn thiện)
+    box(g, 9.0, 0.45, 0.1, 0, 6.55, -4.15, M.stone);
+    for (const x of [-4.45, 4.45]) box(g, 0.1, 0.45, 8.0, x, 6.55, -0.2, M.stone);
+    box(g, 2.6, 0.2, 3.6, 2.9, 6.55, -2.1, M.moss);
     sign(g, 'AI INNOVATION HUB', 4.0, 0.65, 0, 2.7, 3.9);
     const socket = new T.Object3D();
     socket.name = 'entry-socket';

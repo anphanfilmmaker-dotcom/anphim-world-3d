@@ -69,8 +69,8 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       const sx = box.max.x - box.min.x, sz = box.max.z - box.min.z;
       if (!isFinite(sx) || sx > 14 || sz > 14) return;
       let loose = false;
-      for (let a = o.parent; a && a !== scene; a = a.parent) if (a.name === 'organic-bush-clusters') loose = true;
-      rects.push({x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, hx: sx / 2 + .5, hz: sz / 2 + .5, cos: 1, sin: 0, soft: loose && sx < 4 && sz < 4, obj: o});
+      for (let a = o.parent; a && a !== scene; a = a.parent) if (a.name === 'organic-bush-clusters' || a.name === 'hq-designed-gardens') loose = true;
+      rects.push({x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, hx: sx / 2 + .5, hz: sz / 2 + .5, cos: 1, sin: 0, soft: loose && sx < 5 && sz < 5, obj: o});
     });
   }
   const vistax = scene.getObjectByName('district-vistax-partner-campus');
@@ -270,13 +270,34 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     const d = walkDistance(x, z);
     if (d < 14) candidates.push({x, z, d});
   }
+  // Vườn rào định sẵn quanh HQ, quảng trường và đường vòng (landscapePlan.hedgedGardens trong physical-topology.json):
+  // mỗi ô được thử ở đúng kích thước, vướng thì thu nhỏ dần cho tới khi lọt vào khoảng trống.
+  function fits(x, z, w, d, r) {
+    let lo = Infinity, hi = -Infinity;
+    for (let i = -4; i <= 4; i++) for (let j = -4; j <= 4; j++) {
+      const px = x + i * w / 8, pz = z + j * d / 8, h = ground(px, pz);
+      lo = Math.min(lo, h); hi = Math.max(hi, h);
+      if (!free(px, pz, r, true) || !insideRing(px, pz)) return false;
+    }
+    return hi - lo <= 3.2; // vườn định sẵn nằm trên mái dốc quanh nền HQ: hàng rào bám theo địa hình
+  }
+  const SHRINK = [1, .92, .84, .76, .68];
+  for (const [x, z, w, d] of L.landscapePlan?.hedgedGardens || []) {
+    let best = null;
+    for (const fw of SHRINK) for (const fd of SHRINK) {
+      if (best && fw * fd <= best.w * best.d / (w * d)) continue;
+      if (fits(x, z, w * fw, d * fd, .2)) best = {x, z, w: w * fw, d: d * fd, seeded: true};
+    }
+    if (best) parterres.push(best);
+  }
+  const seededCount = parterres.length;
   candidates.sort((a, b) => a.d - b.d);
   const open = candidates.filter(c => free(c.x, c.z, 1.6, true));
   // Vườn lớn được xếp trước (ảnh tham chiếu dùng các ô vườn rào lớn), cỡ nhỏ lấp các khoảng còn lại
   for (const [w, d] of sizes) {
     const hw = w / 2, hd = d / 2;
     for (const c of open) {
-      if (parterres.length >= 10) break;
+      if (parterres.length >= seededCount + 8) break;
       if (parterres.some(p => Math.abs(p.x - c.x) < (p.w + w) / 2 + 2.5 && Math.abs(p.z - c.z) < (p.d + d) / 2 + 2.5)) continue;
       let ok = true, lo = Infinity, hi = -Infinity;
       for (let i = -3; i <= 3 && ok; i++) for (let j = -3; j <= 3 && ok; j++) {
@@ -295,6 +316,9 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       put('hedge', x, ground(x, z) - .12, z, alongX ? seg : th, hh + .12, alongX ? th : seg);
     }
   }
+  // Giữ chỗ toàn bộ các ô vườn trước khi trồng, để cây góc vườn này không mọc vào lòng vườn khác
+  for (const p of parterres) rects.push({x: p.x, z: p.z, hx: p.w / 2 + .35, hz: p.d / 2 + .35, cos: 1, sin: 0});
+  let roundCount = 0, pineCount = 0, rockCount = 0;
   for (const p of parterres) {
     const hw = p.w / 2, hd = p.d / 2, th = .55, hh = .6, gap = 1.3, in_ = th / 2;
     clearSoft(p.x, p.z, hw + .9, hd + .9);
@@ -303,20 +327,29 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     hedgeRun(p.x + hw - in_, p.z - hd + th, p.x + hw - in_, p.z + hd - th, th, hh);
     hedgeRun(p.x - hw, p.z + hd - in_, p.x - gap / 2, p.z + hd - in_, th, hh);
     hedgeRun(p.x + gap / 2, p.z + hd - in_, p.x + hw, p.z + hd - in_, th, hh);
-    const r = Math.min(hw, hd) * .52;
-    put('bloom', p.x, ground(p.x, p.z), p.z, r, r, r, rand() * 6.28);
+    // Vườn dài trồng hai cây nở hoa dọc trục dài, vườn vuông một cây giữa
+    const r = Math.min(Math.min(hw, hd) * .52, 2.1), longX = p.w >= p.d, span = Math.max(hw, hd);
+    for (const o of span > r * 2.4 ? [-span * .45, span * .45] : [0]) {
+      const tx = p.x + (longX ? o : 0), tz = p.z + (longX ? 0 : o), ts = r * (.92 + rand() * .16);
+      put('bloom', tx, ground(tx, tz), tz, ts, ts, ts, rand() * 6.28);
+    }
+    // Cây thông / cây tán nhỏ đứng ngoài góc vườn như ảnh tham chiếu
+    for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      if (rand() < .4) continue;
+      const cx = p.x + ox * (hw + 1.1), cz = p.z + oz * (hd + 1.1), cs = .7 + rand() * .25;
+      if (!free(cx, cz, 1.05)) continue;
+      if (rand() < .6) { pineTree(cx, cz, cs); pineCount++; } else { roundTree(cx, cz, cs * .9); roundCount++; }
+    }
     for (const [ox, oz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
       if (rand() < .35) continue;
       const bx = p.x + ox * (hw - th - .55), bz = p.z + oz * (hd - th - .55), bs = .32 + rand() * .14;
       put('bush', bx, ground(bx, bz) + bs * .6, bz, bs, bs * .8, bs, rand() * 6.28, null, false);
     }
-    occupy(p.x, p.z, Math.hypot(hw, hd) + .8);
   }
 
   for (const mesh of touched) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
 
   // ---- 2. Cây đa tầng: thông sẫm + cây tán đa diện sáng (trong campus và vành ngoài) ---------------
-  let roundCount = 0, pineCount = 0, rockCount = 0;
   function scatter(count, tries, pick, accept) {
     let placed = 0;
     for (let i = 0; i < tries && placed < count; i++) {

@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { TransformControls } from './vendor/TransformControls.js';
 import { applyCampusPaving } from './paving-pattern.js';
+import { buildCourtFurniture } from './court-furniture.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { getStudioModelById, loadStudioCatalog } from './asset-pack-extractor.js?rev=146';
 import {
@@ -1723,6 +1724,12 @@ export function createCampusEditor({
     curb.name = `smooth_court_curb_${c.id}`;
     curb.userData.isCourtCurb = true; // bó vỉa đi theo sân: không phải vật thể chọn/ủi riêng
     mesh.add(curb);
+    // Ghế băng + bồn cây là con của mặt sân: dời / ẩn / ủi sân thì chúng đi theo, bấm vào chúng = bấm vào sân
+    const furniture = buildCourtFurniture(c, { roads, terrain, levelY: courtLevelY });
+    if (furniture) {
+      furniture.userData.isCourtCurb = true;
+      mesh.add(furniture);
+    }
     mesh.name = `smooth_court_${c.id}`;
     mesh.userData.isSmoothCourtMesh = true;
     mesh.userData.courtId = c.id;
@@ -1741,6 +1748,11 @@ export function createCampusEditor({
         if (c.hidden) continue;
         const cm = buildSmoothCourtMesh(c);
         if (cm) nativeCourtsSmoothGroup.add(cm);
+        else if (c.useGroundTriangles) {
+          // Sân sơn thẳng lên địa hình không có mesh riêng: đồ đạc bám cao độ mặt đất, không phải vật thể chọn/ủi
+          const furniture = buildCourtFurniture(c, { roads, terrain, sampleY: (x, z) => sampleGroundSurfaceY(x, z) + 0.02 });
+          if (furniture) { furniture.raycast = () => {}; nativeCourtsSmoothGroup.add(furniture); }
+        }
       }
     }
 

@@ -1,7 +1,7 @@
 import * as T from 'three';
 export async function createEcosystemDesign(scene,P,L,terrain,roads,registry,layers,report,A){
  const courts=[
-    ['HQ Forecourt',0,6.0,19.6,8,0.35],
+    ['HQ Forecourt',0,6.1,23,8.2,0.6],
     ['Central Commons',0,-21,17,8,2],
     ['Administration',-23,-18,7,8,1.5],
     ['Finance',-25,15.85,13,4.1,0.65],
@@ -11,13 +11,15 @@ export async function createEcosystemDesign(scene,P,L,terrain,roads,registry,lay
     ['Internal Lower',30,-12,21,3,1],
     ['Internal Level 1',47,-18,7,3,1]
   ];
- for(const [id,x,z,w,d,r]of courts)terrain.courts.push({id,x,z,w,d,r,useGroundTriangles:id==='HQ Forecourt'||id==='Finance'});
+ for(const [id,x,z,w,d,r]of courts)terrain.courts.push({id,x,z,w,d,r,useGroundTriangles:id==='Finance'});
   // (arrival-low-curb cu da go bo hoan toan de triet tieu 4 rau go da tho ra nga ba duong chinh)
  // Grounded stair assemblies with bottom and top landings. Adjacent paths remain ramps.
  // The central stone apron sits on the same triangulated terrain as the orange court.
  terrain.courts.push({id:'HQ Stone Apron',x:0,z:7.25,w:10.5,d:5.5,r:.18,kind:5,useGroundTriangles:true});
  terrain.rebuild(roads.paths);
  const stairDefs=terrain.stairDefs;
+ // Chiếu nghỉ đầu/cuối bậc thang cùng tông đá với bậc (vật liệu địa hình cần vertex attribute riêng nên lên khối hộp bị đen)
+ const landingMat=new T.MeshStandardMaterial({color:'#beb6a3',roughness:.9,polygonOffset:true,polygonOffsetFactor:-5,polygonOffsetUnits:-5});
  report.stairs=[];
  for(const def of stairDefs){const s={...def,rise:(def.high-def.low)/def.count};terrain.stairs.push(s);
  const checks=[];for(let i=0;i<s.count;i++){const a=s.start+i*(s.end-s.start)/s.count,b=s.start+(i+1)*(s.end-s.start)/s.count,top=s.high-i*s.rise;
@@ -28,7 +30,7 @@ export async function createEcosystemDesign(scene,P,L,terrain,roads,registry,lay
  for(const [a,top]of [[s.start-.6,s.high],[s.end+.6,s.low]]){
    // Không tạo landing màu cam cho cầu thang sảnh chính HQ để loại bỏ hoàn toàn chấm cam ở 2 đầu cầu thang
    if (s.id === 'HQ arrival stair') continue;
-   const x=s.axis==='x'?a:s.cross,z=s.axis==='z'?a:s.cross,w=s.axis==='x'?1.2:s.width,d=s.axis==='z'?1.2:s.width,base=Math.min(terrain.height(x,z),top)-.12;const m=new T.Mesh(new T.BoxGeometry(w,top-base,d),terrain.materials[3]);m.position.set(x,(base+top)/2,z);m.name='landing:'+s.id;scene.add(m);
+   const x=s.axis==='x'?a:s.cross,z=s.axis==='z'?a:s.cross,w=s.axis==='x'?1.2:s.width,d=s.axis==='z'?1.2:s.width,base=Math.min(terrain.height(x,z),top)-.12;const m=new T.Mesh(new T.BoxGeometry(w,top-base,d),landingMat);m.position.set(x,(base+top)/2,z);m.name='landing:'+s.id;m.castShadow=m.receiveShadow=true;scene.add(m);
  }
  if (s.id === 'HQ arrival stair') {
    const depth = L.roadPlan.arrival.dropoffXZ[1] - L.roadPlan.arrival.width / 2 - s.end;

@@ -53,6 +53,13 @@ export async function createModularRoadSystem(scene, terrain, roads) {
     const curbH = 0.07;
     const walkW = 1.35;
 
+    // Vỉa hè và bó vỉa trong ngắt tại cửa đường vòng HQ: nối vào mép ngoài vỉa hè của đường vòng thay vì chắn ngang lòng đường
+    const arrival = roads.paths.find(p => p.id === 'road:HQ-arrival' && !p.hidden && p.curve);
+    const mouthA = arrival?.curve.getPointAt(0), mouthB = arrival?.curve.getPointAt(1);
+    const mouthHalf = arrival ? Math.abs(mouthA.x - mouthB.x) / 2 + (arrival.width || 4) / 2 + 1.35 : 0;
+    const mouthX = arrival ? (mouthA.x + mouthB.x) / 2 : 0, mouthZ = arrival ? (mouthA.z + mouthB.z) / 2 : 0;
+    const inMouth = i => { const q = curve.getPointAt(Math.min(1, i / N)); return mouthHalf > 0 && Math.abs(q.x - mouthX) < mouthHalf && Math.abs(q.z - mouthZ) < 8; };
+
     for (let i = 0; i <= N; i++) {
       const t = i / N;
       const p = curve.getPointAt(t);
@@ -87,15 +94,19 @@ export async function createModularRoadSystem(scene, terrain, roads) {
       // 4. Vỉa hè đi bộ bên trong (Inner Sidewalk)
       const iw1_x = ic2_x, iw1_z = ic2_z;
       const iw2_x = p.x + nx * (halfW + curbW + walkW), iw2_z = p.z + nz * (halfW + curbW + walkW);
-      const iwY1 = icY - 0.015;
-      const iwY2 = terrain.height(iw2_x, iw2_z) + 0.042;
+      // Vỉa hè nằm ngang bằng mặt bó vỉa, cao hơn mặt cỏ một chút để không bị các tam giác địa hình che mất
+      const iwY1 = icY;
+      const iwY2 = Math.max(icY - 0.03, terrain.height(iw2_x, iw2_z) + 0.1);
       innerWalkVerts.push(iw1_x, iwY1, iw1_z, iw2_x, iwY2, iw2_z);
 
       if (i < N) {
+        // Thứ tự đỉnh ngược với mặt đường để pháp tuyến hướng lên: bó vỉa và vỉa hè hiện ra phía trên mặt cỏ
         const k = i * 2;
-        innerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-        outerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-        innerWalkIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+        outerCurbIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+        if (!inMouth(i) && !inMouth(i + 1)) {
+          innerCurbIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+          innerWalkIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+        }
       }
     }
 
