@@ -226,7 +226,7 @@ export class BuildingPanels {
       this.agents(v.agents, 'Chưa có agent nào được gán cho tòa AN PHIM.');
     const mismatch = v.runningKpi == null ? '' : `<div class="bp-box" data-tone="warn" style="margin-bottom:6px">Số liệu lệch nhau: chỉ số dashboard báo <b>${esc(v.runningKpi)}</b> dự án đang chạy, danh sách dự án có <b>${v.projects.length}</b> dự án ở trạng thái Đang làm.</div>`;
     const right = this.sec('Tổng quan dự án', v.projects.length + (v.runningKpi == null ? ' đang chạy' : ' trong danh sách'), 'projects') + mismatch + v.projects.map(p => {
-      const b = this.frame.buildings.find(x => x.kind === 'project' && this.data.getProject(x.projectId) === p);
+      const b = this.frame.buildings.find(x => x.kind === 'project' && this.data.getProject(x.projectId)?.id === p.id);
       return `<button class="bp-rowbtn" data-focus="project:${esc(p.id)}" ${b ? `data-enter="${esc(b.id)}" title="→ Đến tòa ${esc(p.name)}"` : 'disabled title="Dự án này chưa có tòa trên campus"'}>
         <span class="cf-row"><b class="cf-fill">${esc(p.name)}</b><span class="bp-amt">${esc(this.frame.money(p.budgetFormatted))}</span></span>
         ${p.progress != null ? `<div class="cf-bar" data-tone="ok" style="margin:5px 0"><i style="width:${p.progress}%"></i></div>` : ''}
