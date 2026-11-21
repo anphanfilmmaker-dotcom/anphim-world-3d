@@ -259,7 +259,8 @@ export class DataConnector {
 
   /**
    * Documents page: one row per project with the six papers the dashboard tracks.
-   * slots[i] is true (have), false (missing) or null (the data does not say).
+   * slots[i] is true (have), false (missing) or null (the data does not say). A row is complete
+   * only when all six are true, so a paper the data does not mention never counts as held.
    */
   getDocumentBoard() {
     const rows = this.getProjects().map(p => {
@@ -267,6 +268,7 @@ export class DataConnector {
       const known = slots.some(s => s !== null);
       return {
         project: p, slots, known,
+        complete: slots.every(s => s === true),
         have: slots.filter(s => s === true).length,
         missing: PAPERS.filter((d, i) => slots[i] === false).map(d => d.label),
         signed: p.paperwork?.contract ?? null
@@ -279,7 +281,7 @@ export class DataConnector {
       rows: [...rows].sort((a, b) => b.missing.length - a.missing.length),
       connected: known.length > 0,
       missingCount: known.filter(r => r.missing.length).length,
-      completeCount: known.filter(r => !r.missing.length).length,
+      completeCount: known.filter(r => r.complete).length,
       unsignedCount: known.filter(r => r.signed === false).length,
       invoicesPending: invoices ?? null
     };

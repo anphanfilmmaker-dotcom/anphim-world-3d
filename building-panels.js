@@ -281,7 +281,7 @@ export class BuildingPanels {
         ${b.rows.map(r => `<tr data-set="project" data-val="${esc(r.project.id)}" aria-selected="${r === sel}" title="${esc(r.project.name)}"><td>${esc(r.project.name)}</td>${r.slots.map(s => `<td>${mark(s)}</td>`).join('')}</tr>`).join('')}</table>
       <div class="bp-subtitle">BG = Báo giá · HĐ = Hợp đồng · R1–R3 = VAT R1–R3 · ✗ = còn thiếu</div>` +
       (sel ? this.sec('Đang chọn: ' + sel.project.name, `${sel.project.client} · ${sel.known ? sel.have + '/' + b.papers.length + ' giấy tờ' : 'chưa kết nối'}`) +
-        `<div class="bp-box" data-tone="${sel.missing.length ? 'warn' : ''}">${sel.missing.length ? 'Thiếu: ' + esc(sel.missing.join(', ')) : sel.known ? 'Đầy đủ giấy tờ' : 'Chưa có dữ liệu giấy tờ của dự án này'}</div>
+        `<div class="bp-box" data-tone="${sel.missing.length ? 'warn' : ''}">${sel.missing.length ? 'Thiếu: ' + esc(sel.missing.join(', ')) : sel.complete ? 'Đầy đủ giấy tờ' : sel.known ? `Có ${sel.have}/${b.papers.length} giấy tờ, phần còn lại chưa có dữ liệu` : 'Chưa có dữ liệu giấy tờ của dự án này'}</div>
         <div class="bp-box" style="margin-top:6px">${sel.project.note ? this.frame.text(sel.project.note) : '<span class="bp-none">Chưa có ghi chú</span>'}</div>` : '') +
       this.actions(this.open(v.page, 'Mở Giấy tờ bên dashboard', true),
         sel?.project.driveUrl ? `<a class="cf-btn" href="${esc(sel.project.driveUrl)}" target="_blank" rel="noopener">Mở Drive của dự án ↗</a>` : '<span class="cf-btn" aria-disabled="true" title="Dự án chưa có link Drive trong dữ liệu">Mở Drive của dự án ↗</span>',
@@ -298,7 +298,7 @@ export class BuildingPanels {
         {label: 'Deadline', value: p.duedate}, {label: 'Mốc đã xong', value: ms.length ? `${v.doneCount}/${ms.length} · ${v.progress}%` : null}]) +
       this.sec('Việc cần làm tiếp theo', null, 'next') + `<div class="bp-box" data-tone="warn">${p.nextaction ? this.frame.text(p.nextaction) : '<span class="bp-none">Chưa có việc tiếp theo</span>'}</div>` +
       (v.missions.length ? this.missions(v.missions, 'Cần anh xử lý', '') : '') +
-      this.sec('Giấy tờ', !v.papers?.known ? 'chưa kết nối' : v.papers.missing.length ? 'Thiếu ' + v.papers.missing.length : 'Đầy đủ') +
+      this.sec('Giấy tờ', !v.papers?.known ? 'chưa kết nối' : v.papers.missing.length ? 'Thiếu ' + v.papers.missing.length : v.papers.complete ? 'Đầy đủ' : 'chưa đủ dữ liệu') +
       `<button class="bp-rowbtn" ${docs ? `data-enter="${esc(docs.id)}"` : 'disabled'}><span class="cf-row"><span class="cf-fill">${v.papers?.missing.length ? 'Thiếu: ' + esc(v.papers.missing.join(', ')) : 'Báo giá · Hợp đồng · VAT R1–R3 · BBTL'}</span><span class="cf-go">→ Giấy tờ</span></span></button>` +
       this.sec('Ghi chú') + `<div class="bp-subtitle">${p.note ? this.frame.text(p.note) : 'Chưa có ghi chú.'}</div>`;
     const right = this.sec('Thanh toán', `đã nhận ${this.frame.money(p.receivedFormatted ?? '—')} / ${this.frame.money(p.budgetFormatted ?? '—')}`, 'payments') +
