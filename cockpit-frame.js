@@ -321,7 +321,9 @@ export class CockpitFrame {
   /** When the window is too short for both right panels, only the one opened last stays. */
   fitPanes() {
     const {building, agents} = this.slot;
-    if (building.classList.contains('cf-open') && agents.classList.contains('cf-open') && agents.offsetHeight < 150) {
+    const list = agents.querySelector('.cf-scroll');
+    const squeezed = agents.offsetHeight < 150 && list && list.scrollHeight > list.clientHeight;
+    if (building.classList.contains('cf-open') && agents.classList.contains('cf-open') && squeezed) {
       (this.lastPane === 'building' ? agents : building).classList.remove('cf-open');
     }
     this.renderRail();
