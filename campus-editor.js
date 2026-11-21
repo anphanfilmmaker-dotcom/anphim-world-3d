@@ -1718,7 +1718,7 @@ export function createCampusEditor({
     curb.receiveShadow = true;
     curb.renderOrder = 3;
     curb.name = `smooth_court_curb_${c.id}`;
-    curb.raycast = () => {}; // bó vỉa đi theo sân: không phải vật thể chọn/ủi riêng
+    curb.userData.isCourtCurb = true; // bó vỉa đi theo sân: không phải vật thể chọn/ủi riêng
     mesh.add(curb);
     mesh.name = `smooth_court_${c.id}`;
     mesh.userData.isSmoothCourtMesh = true;
@@ -5393,7 +5393,8 @@ export function createCampusEditor({
     // 1. Raycast all scene objects first (trees, bushes, benches, road meshes)
     const allHits = raycasterInstance.intersectObjects(scene.children, true);
     for (const h of allHits) {
-      const o = h.object;
+      // Bấm vào bó vỉa = bấm vào chính sân của nó
+      const o = h.object?.userData?.isCourtCurb ? h.object.parent : h.object;
       if (!o || !o.visible) continue;
       if (
         o === tMesh ||
