@@ -20,12 +20,61 @@ const SYSTEM_STATUS = {
   down: {label: 'Ngừng chạy', tone: 'alert'}
 };
 
+/** Project status text -> the exterior state drawn on its building. */
+const PROJECT_MODE = {
+  'dang lam': 'building',
+  'cho feedback': 'feedback',
+  'can revise': 'revise',
+  'tam dung': 'paused',
+  'hoan thanh': 'done'
+};
+
+const plain = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').trim().toLowerCase();
+
+/** "dd/mm/yyyy" or ISO -> Date at local midnight, or null. */
+const parseDay = s => {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  const iso = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // Date-only ISO strings parse as UTC, which is the day before in zones west of it.
+  const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(s);
+  return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+const DOC_OK = /^(signed|approved|done|ok|da ky|da duyet|hoan thanh|du)$/;
+
 const PROJECT_TONE = {
   'Đang làm': 'ok',
   'Chờ feedback': 'warn',
   'Cần revise': 'alert',
   'Tạm dừng': 'alert',
   'Hoàn thành': 'done'
+};
+
+// Buildings with an approved interior (sketches 2-8), by full topology id. Project buildings go by kind.
+const INTERIOR_TYPES = {
+  'bld:facility:hq': 'hq',
+  'bld:facility:bank': 'bank',
+  'bld:facility:documents': 'documents',
+  'bld:facility:schedule': 'schedule',
+  'bld:facility:ai': 'ai',
+  'bld:facility:marketing': 'marketing'
+};
+
+// The six papers the Giấy tờ page tracks per project, in table order.
+const PAPERS = [
+  {key: 'quote', short: 'BG', label: 'Báo giá'},
+  {key: 'contract', short: 'HĐ', label: 'Hợp đồng'},
+  {key: 'vat1', short: 'R1', label: 'VAT R1'},
+  {key: 'vat2', short: 'R2', label: 'VAT R2'},
+  {key: 'vat3', short: 'R3', label: 'VAT R3'},
+  {key: 'handover', short: 'BBTL', label: 'BBTL'}
+];
+
+/** "dd/mm/yyyy" -> local-midnight timestamp (NaN when unreadable). */
+const dateKey = text => {
+  const m = String(text || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : NaN;
 };
 
 export class DataConnector {
@@ -128,6 +177,30 @@ export class DataConnector {
     return Math.round(ms.filter(m => m.completed).length / ms.length * 100);
   }
 
+  /**
+   * What the outside of a project's building shows.
+   * mode: 'building' | 'feedback' | 'revise' | 'paused' | 'done' | null (unknown status);
+   * progress: milestone percentage or null; overdueDays: days past the deadline (0 when on time or done).
+   */
+  getProjectState(project, now = new Date()) {
+    if (!project) return null;
+    const ms = project.milestones || [];
+    const mode = PROJECT_MODE[plain(project.status)] || null;
+    const due = parseDay(project.duedate || project.dueDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const late = due && mode !== 'done' ? Math.round((today - due) / 86400000) : 0;
+    return {
+      projectId: project.id,
+      status: project.status || '',
+      mode,
+      progress: this.getProjectProgress(project),
+      milestonesDone: ms.filter(m => m.completed).length,
+      milestonesTotal: ms.length,
+      overdueDays: Math.max(0, late),
+      missingDocs: (project.documents || []).filter(d => !DOC_OK.test(plain(d.status))).length
+    };
+  }
+
   /** Actions the owner must take: {open, done}, open sorted by priority then time. */
   getMissions() {
     const all = (this.cache?.missions || []).map(m => ({...m, project: this.getProject(m.projectId)}));
@@ -164,6 +237,214 @@ export class DataConnector {
 
   getMarketing() {
     return this.cache?.marketing || null;
+  }
+
+  // ---- building interiors ------------------------------------------------------
+
+  /** Money in the dashboard's format ("3.200.000 đ"), or null when the amount is unknown. */
+  formatMoney(amount) {
+    return typeof amount === 'number' && isFinite(amount) ? Math.round(amount).toLocaleString('vi-VN') + ' đ' : null;
+  }
+
+  /** The day the data describes, as a Date at local midnight: the snapshot's updatedAt, else now. */
+  getToday() {
+    const d = this.cache?.updatedAt ? new Date(this.cache.updatedAt) : new Date();
+    const day = isNaN(d) ? new Date() : d;
+    return new Date(day.getFullYear(), day.getMonth(), day.getDate());
+  }
+
+  /**
+   * Which approved interior a building gets, from its full id / legacyId / kind in the topology:
+   * 'hq' | 'bank' | 'project' | 'documents' | 'schedule' | 'ai' | 'marketing', or null when the
+   * building has no approved interior yet.
+   */
+  getBuildingType(building) {
+    if (!building) return null;
+    if (building.kind === 'project') return 'project';
+    return INTERIOR_TYPES[building.id] || null;
+  }
+
+  /** Agents assigned to a building (agent.buildingIds, or the single agent.buildingId). */
+  getAgentsAt(buildingId) {
+    return this.getAgents().filter(a => (a.buildingIds || [a.buildingId]).includes(buildingId));
+  }
+
+  /** Running projects, by the dashboard's rule: "Dự án đang chạy" counts status "Đang làm" only. */
+  getRunningProjects() {
+    return this.getProjects().filter(p => PROJECT_MODE[plain(p.status)] === 'building');
+  }
+
+  /**
+   * Finance page: totals, the newest expenses and incomes, spending per category and the daily
+   * cash flow. Totals that the data does not carry are null, never computed from thin air.
+   */
+  getFinance() {
+    const kpi = this.getKPI();
+    const byDate = (a, b) => dateKey(b.date) - dateKey(a.date);
+    const expenses = [...this.getAllExpenses()].sort(byDate);
+    const incomes = [...this.getAllIncomes()].sort(byDate);
+    const sum = list => list.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const totalExpense = expenses.length ? sum(expenses) : null;
+    const cats = new Map();
+    for (const e of expenses) cats.set(e.category || 'Khác', (cats.get(e.category || 'Khác') || 0) + (Number(e.amount) || 0));
+    const categories = [...cats].map(([name, amount]) => ({
+      name, amount, amountFormatted: this.formatMoney(amount), pct: totalExpense ? Math.round(amount / totalExpense * 100) : 0
+    })).sort((a, b) => b.amount - a.amount);
+    const days = new Map();
+    const day = d => days.get(d) || days.set(d, {date: d, income: 0, expense: 0}).get(d);
+    for (const e of expenses) if (e.date) day(e.date).expense += Number(e.amount) || 0;
+    for (const i of incomes) if (i.date) day(i.date).income += Number(i.amount) || 0;
+    return {
+      cash: kpi.cashAvailableFormatted ?? null,
+      receivable: kpi.receivableFormatted ?? null,
+      totalExpense: this.formatMoney(totalExpense),
+      profit: kpi.estimatedProfitFormatted ?? null,
+      expenses, incomes, categories,
+      flow: [...days.values()].sort((a, b) => dateKey(a.date) - dateKey(b.date))
+    };
+  }
+
+  /**
+   * Documents page: one row per project with the six papers the dashboard tracks.
+   * slots[i] is true (have), false (missing) or null (the data does not say). A row is complete
+   * only when all six are true, so a paper the data does not mention never counts as held.
+   */
+  getDocumentBoard() {
+    const rows = this.getProjects().map(p => {
+      const slots = PAPERS.map(d => typeof p.paperwork?.[d.key] === 'boolean' ? p.paperwork[d.key] : null);
+      const known = slots.some(s => s !== null);
+      return {
+        project: p, slots, known,
+        complete: slots.every(s => s === true),
+        have: slots.filter(s => s === true).length,
+        missing: PAPERS.filter((d, i) => slots[i] === false).map(d => d.label),
+        signed: p.paperwork?.contract ?? null
+      };
+    });
+    const known = rows.filter(r => r.known);
+    const invoices = this.cache?.kpi?.invoicesPendingCount;
+    return {
+      papers: PAPERS,
+      rows: [...rows].sort((a, b) => b.missing.length - a.missing.length),
+      connected: known.length > 0,
+      missingCount: known.filter(r => r.missing.length).length,
+      completeCount: known.filter(r => r.complete).length,
+      unsignedCount: known.filter(r => r.signed === false).length,
+      invoicesPending: invoices ?? null
+    };
+  }
+
+  /** Every calendar event: the month schedule when the data has one, else today's list. */
+  getScheduleEvents() {
+    const today = this.getToday();
+    const fallback = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const raw = this.cache?.schedule || this.getScheduleToday().map(e => ({...e, date: fallback(today)}));
+    return raw.map(e => ({...e, project: this.getProject(e.projectId)}));
+  }
+
+  /** Calendar page: today's events, the next 7 days and the events of one month (default: this month). */
+  getSchedule(year, month) {
+    const today = this.getToday();
+    const todayKey = today.getTime();
+    const y = year ?? today.getFullYear();
+    const m = month ?? today.getMonth();
+    const events = this.getScheduleEvents();
+    const covers = (e, key) => {
+      const start = dateKey(e.date);
+      const end = e.dateEnd ? dateKey(e.dateEnd) : start;
+      return key >= start && key <= end;
+    };
+    const order = (a, b) => dateKey(a.date) - dateKey(b.date) || String(a.time || '99').localeCompare(String(b.time || '99'));
+    const days = [];
+    const count = new Date(y, m + 1, 0).getDate();
+    for (let d = 1; d <= count; d++) {
+      const key = new Date(y, m, d).getTime();
+      days.push({day: d, key, isToday: key === todayKey, events: events.filter(e => covers(e, key)).sort(order)});
+    }
+    return {
+      today, year: y, month: m, days,
+      hasMonth: !!this.cache?.schedule,
+      todayEvents: events.filter(e => covers(e, todayKey)).sort(order),
+      upcoming: events.filter(e => dateKey(e.date) > todayKey && dateKey(e.date) <= todayKey + 7 * 864e5).sort(order)
+    };
+  }
+
+  /** Fanpage posts with status 'pending' | 'approved' | 'published'; null when the data has no post list. */
+  getMarketingPosts() {
+    return this.cache?.marketing?.posts || null;
+  }
+
+  /**
+   * Everything one building's interior shows, used by both the side panels and the 3D room so the
+   * two can never disagree. `building` is the topology entry. Returns null for a building with no
+   * approved interior. Shape: {type, id, title, subtitle, page, connected, missions, agents, ...type data}.
+   */
+  getBuildingView(building) {
+    const type = this.getBuildingType(building);
+    if (!type) return null;
+    const missions = this.getMissions();
+    const mine = missions.open.filter(m => m.buildingId === building.id);
+    const agent = a => ({...a, active: a.status === 'active'});
+    const view = {
+      type, id: building.id, title: building.name, subtitle: '', connected: !!this.cache,
+      page: this.getBuildingPage(building),
+      missions: mine,
+      agents: this.getAgentsAt(building.id).map(agent)
+    };
+
+    if (type === 'hq') {
+      view.title = 'AN PHIM (HQ)';
+      view.subtitle = 'Trung tâm điều phối · theo tab Tổng quan';
+      view.allMissions = missions;
+      view.inputCount = missions.open.filter(m => m.tag === 'Cần Input').length;
+      view.projects = this.getRunningProjects().map(p => ({...p, progress: this.getProjectProgress(p)}));
+      // The top bar shows the dashboard's own "Dự án đang chạy" KPI; the list below is counted from the
+      // project list. When the two disagree the room and the panel say so instead of showing two numbers.
+      const kpiCount = Number(this.cache?.kpi?.activeProjectsCount);
+      view.runningKpi = Number.isFinite(kpiCount) && kpiCount !== view.projects.length ? kpiCount : null;
+      view.schedulePage = this.getWorkspacePage('schedule');
+    } else if (type === 'bank') {
+      view.subtitle = 'Thu chi và dòng tiền · theo tab Tài chính';
+      view.finance = this.getFinance();
+      view.inputs = mine.filter(m => m.tag === 'Cần Input');
+    } else if (type === 'documents') {
+      view.subtitle = 'Hồ sơ pháp lý từng dự án · theo tab Giấy tờ';
+      view.board = this.getDocumentBoard();
+      view.connected = view.connected && view.board.connected;
+    } else if (type === 'schedule') {
+      view.title = 'Lịch làm việc';
+      view.subtitle = 'Lịch theo dự án · theo tab Lịch làm việc';
+      view.schedule = this.getSchedule();
+    } else if (type === 'ai') {
+      view.subtitle = 'Agent và việc đang làm · theo AI Workforce Trace';
+      view.agents = this.getAgents().map(agent);
+      view.chatPage = this.getWorkspacePage('marketing');
+    } else if (type === 'marketing') {
+      view.subtitle = 'Bài fanpage · theo tab Marketing';
+      view.counts = this.getMarketing();
+      view.posts = this.getMarketingPosts();
+      view.connected = view.connected && !!view.counts;
+    } else if (type === 'project') {
+      const p = this.getProject(building.projectId || building.id);
+      view.project = p;
+      view.connected = !!p;
+      if (p) {
+        const ms = p.milestones || [];
+        const current = ms.findIndex(m => !m.completed);
+        view.title = p.name;
+        view.subtitle = 'Tòa dự án · theo tab Dự án';
+        view.page = this.getWorkspacePage('projects');
+        view.milestones = ms.map((m, i) => ({...m, state: m.completed ? 'done' : i === current ? 'current' : 'todo'}));
+        view.doneCount = ms.filter(m => m.completed).length;
+        view.progress = this.getProjectProgress(p);
+        view.state = this.getProjectState(p);
+        view.payments = [p.paymentd1, p.paymentd2, p.paymentd3].map(v => typeof v === 'number' ? this.formatMoney(v) : null);
+        view.receivedPct = p.budget > 0 && typeof p.received === 'number' ? Math.round(p.received / p.budget * 100) : null;
+        view.papers = this.getDocumentBoard().rows.find(r => r.project === p) || null;
+        view.missions = missions.open.filter(m => m.buildingId === building.id || (m.projectId && this.getProject(m.projectId) === p));
+      }
+    }
+    return view;
   }
 
   /** Workspace dashboard page: {key, label, url}; url is null until workspace.baseUrl is set. */
