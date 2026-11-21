@@ -1225,11 +1225,7 @@ async function main() {
 
   document.querySelector('#photo').onclick = () => {
     renderer.setPixelRatio(2);
-    if (postPipeline) {
-      postPipeline.render();
-    } else {
-      renderer.render(scene, camera);
-    }
+    drawFrame();
     report.drawCalls = renderer.info.render.calls;
     report.triangles = renderer.info.render.triangles;
     report.exportPixels = [renderer.domElement.width, renderer.domElement.height];
@@ -1396,6 +1392,8 @@ async function main() {
   const frameTimes = [];
   let previous = performance.now();
   const drawCampus = () => postPipeline ? postPipeline.render() : renderer.render(scene, camera);
+  // While a building is open the animator draws the frame: the campus as a sketch, the room on top
+  const drawFrame = () => { if (!cutawayAnimator?.render(renderer, drawCampus)) drawCampus(); };
   function frame(now) {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
@@ -1407,8 +1405,7 @@ async function main() {
     const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
-      // While a building is open the animator draws the frame: the campus as a sketch, the room on top
-      if (!cutawayAnimator?.render(renderer, drawCampus)) drawCampus();
+      drawFrame();
     }
     frameTimes.push(now - previous);
     previous = now;
