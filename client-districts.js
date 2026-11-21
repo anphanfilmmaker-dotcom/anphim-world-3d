@@ -530,7 +530,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   signs.name = 'client-district-signs';
   root.add(signs);
 
-  const taken = new Map();       // slot id -> client id, for clients that took a free slot
+  const claimed = new Map();     // slot id -> client id, for clients that took a free slot
   // A free slot can be given out once a road reaches its gate: from the ring, or by a branch road.
   const served = slot => !!slot.ringXZ || (plan.accessRoads || []).some(r => {
     const end = r.points[r.points.length - 1];
@@ -544,28 +544,54 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       if (c) held.set(slot.id, c);
     }
     // A client keeps the free slot it took for as long as it is in the data.
-    for (const [slotId, clientId] of taken) {
+    for (const [slotId, clientId] of claimed) {
       const c = clients.find(x => x.id === clientId);
       if (c) held.set(slotId, c);
-      else taken.delete(slotId);
+      else claimed.delete(slotId);
     }
     for (const c of clients) {
       if (c.kind !== 'client' || [...held.values()].some(x => x.id === c.id)) continue;
       const slot = plan.slots.find(s => !s.clientId && !held.has(s.id) && served(s));
       if (slot) {
         held.set(slot.id, c);
-        taken.set(slot.id, c.id);
+        claimed.set(slot.id, c.id);
       } else console.warn('[client-districts] No free district slot with road access for client', c.name);
     }
     return held;
   }
 
+  function dropBuilding(num) {
+    const e = byProject.get(num);
+    root.remove(e.group);
+    signs.remove(e.sign, e.post);
+    if (buildingObjects?.get(e.binding.id) === e.group) buildingObjects.delete(e.binding.id);
+    for (const list of [clickable, api.buildings]) {
+      const i = list ? list.indexOf(list === clickable ? e.group : e.binding) : -1;
+      if (i >= 0) list.splice(i, 1);
+    }
+    byProject.delete(num);
+  }
+
   function refresh() {
     const clients = dataConnector.getClients(), held = assignSlots(clients);
     const fixed = new Set((L.buildings || []).filter(x => x.kind === 'project').map(x => projectNumber(x.projectId ?? x.id)));
+    const wanted = new Map(), home = new Map();
+    for (const slot of plan.slots) {
+      const client = held.get(slot.id) || null;
+      const projects = client ? dataConnector.getClientProjects(client.id).filter(p => !fixed.has(projectNumber(p.id))) : [];
+      wanted.set(slot.id, projects);
+      for (const p of projects) home.set(projectNumber(p.id), slot.id);
+    }
+    // A project that left the data, or now belongs to another client, gives its lot back.
+    let changed = false;
+    for (const [num, e] of [...byProject]) {
+      if (home.get(num) === e.slotId) continue;
+      dropBuilding(num);
+      changed = true;
+    }
     for (const slot of plan.slots) {
       const client = held.get(slot.id) || null, frame = slotFrame(slot, tpl), lots = slotLots(slot, tpl);
-      const projects = client ? dataConnector.getClientProjects(client.id).filter(p => !fixed.has(projectNumber(p.id))) : [];
+      const projects = wanted.get(slot.id);
       // Lots already given stay; a lot number sent with the project wins; the rest take the lowest free lot.
       const taken = new Map();
       for (const p of projects) {
@@ -627,7 +653,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         const post = new T.Mesh(new T.BoxGeometry(0.12, 0.9, 0.12), M.pole);
         post.position.set(sx, frame.y + 0.62, sz);
         signs.add(sign, post);
-        byProject.set(num, {group: g, binding, lot: n, slotId: slot.id});
+        byProject.set(num, {group: g, binding, lot: n, slotId: slot.id, sign, post});
+        changed = true;
         buildingObjects?.set(id, g);
         clickable?.push(g);
         api.buildings.push(binding);
