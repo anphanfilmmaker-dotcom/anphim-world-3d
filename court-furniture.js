@@ -103,7 +103,9 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
           const [x, z] = world(sx * lx, lz);
           if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05, .85)) trees.push([x, z]);
         }
-    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) place(LAMP, sx * (hw - .45), sz * (hd - .45), 0, .25);
+    // Góc sân bo tròn: lùi đèn theo đường chéo để chân đèn (bán kính .2) luôn nằm trong mép sân
+    const li = Math.max(.45, Math.min(c.r ?? 1.5, hw, hd) * .293 + .25);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) place(LAMP, sx * (hw - li), sz * (hd - li), 0, .25);
   }
   if (!geos.length) return null;
   const mesh = new T.Mesh(mergeGeometries(geos), material);
