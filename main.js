@@ -29,6 +29,7 @@ import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
+import {createClientDistricts} from './client-districts.js';
 
 window.THREE = T;
 
@@ -935,7 +936,6 @@ async function main() {
   console.log('[STEP 6] ecosystem design created');
   await createLandscapePolish(scene, P, L, terrain, roads, registry, layers, report, A);
   await createHQGardens(scene,terrain,roads,L,report);
-  await createVistaXDistrict(scene, terrain, roads, registry, P);
   await createModularRoadSystem(scene, terrain, roads);
   console.log('[STEP 6.5] HQ gardens created');
   scene.traverse(o => {
@@ -991,6 +991,9 @@ async function main() {
 
   // Cockpit Command Engine (Spec Kit Integration)
   await dataConnector.load();
+  // Client districts around the ring road: land from the topology, clients and projects from the data.
+  const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
+  window.__clientDistricts = clientDistricts;
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
@@ -1031,7 +1034,7 @@ async function main() {
   // Campus-view frame: resource bar, missions, hovered building, quick jump
   cockpitFrame = new CockpitFrame({
     dataConnector,
-    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom],
+    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings],
     onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
     onOverview: () => {

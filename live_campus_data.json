@@ -16,8 +16,7 @@
     {
       "id": "vistax",
       "name": "VistaX",
-      "kind": "client",
-      "landscape": "grassland"
+      "kind": "client"
     },
     {
       "id": "k87k",
@@ -26,32 +25,27 @@
         "Winterland87",
         "Winterland"
       ],
-      "kind": "client",
-      "landscape": "snow-mountain"
+      "kind": "client"
     },
     {
       "id": "9kolor",
       "name": "9KOLOR",
-      "kind": "client",
-      "landscape": "flower-hills"
+      "kind": "client"
     },
     {
       "id": "clevergroup",
       "name": "Clevergroup",
-      "kind": "client",
-      "landscape": "pine-forest"
+      "kind": "client"
     },
     {
       "id": "inverse",
       "name": "Inverse",
-      "kind": "client",
-      "landscape": "tropical-beach"
+      "kind": "client"
     },
     {
       "id": "f35story",
       "name": "F35Story",
-      "kind": "client",
-      "landscape": "red-canyon"
+      "kind": "client"
     },
     {
       "id": "film-studio",
@@ -59,8 +53,7 @@
       "aliases": [
         "PHIM AI"
       ],
-      "kind": "client",
-      "landscape": "film-set"
+      "kind": "client"
     },
     {
       "id": "internal",
@@ -69,8 +62,7 @@
         "AN PHIM",
         "Nội bộ"
       ],
-      "kind": "internal",
-      "landscape": null
+      "kind": "internal"
     }
   ],
   "projects": [

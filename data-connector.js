@@ -171,16 +171,16 @@ export class DataConnector {
   }
 
   /**
-   * Clients, one district each: {id, name, aliases, kind, landscape}. kind 'internal' is AN PHIM
+   * Clients, one district each: {id, name, aliases, kind}. kind 'internal' is AN PHIM
    * itself, whose projects stay in the main campus. A client that only appears as text on a
    * project is listed too, after the declared ones, so a new client needs no code change.
    */
   getClients() {
-    const out = (this.cache?.clients || []).map(c => ({aliases: [], kind: 'client', landscape: null, ...c}));
+    const out = (this.cache?.clients || []).map(c => ({aliases: [], kind: 'client', ...c}));
     const known = c => out.some(x => [x.id, x.name, ...x.aliases].some(n => plain(n) === plain(c)));
     for (const p of this.getProjects()) {
       if (p.client && !known(p.client)) {
-        out.push({id: plain(p.client).replace(/[^a-z0-9]+/g, '-'), name: p.client, aliases: [], kind: 'client', landscape: null});
+        out.push({id: plain(p.client).replace(/[^a-z0-9]+/g, '-'), name: p.client, aliases: [], kind: 'client'});
       }
     }
     return out;
