@@ -35,7 +35,7 @@ const plain = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, 
 const parseDay = s => {
   if (!s) return null;
   const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  const iso = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const iso = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   // Date-only ISO strings parse as UTC, which is the day before in zones west of it.
   const d = m ? new Date(+m[3], +m[2] - 1, +m[1]) : iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(s);
   return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
