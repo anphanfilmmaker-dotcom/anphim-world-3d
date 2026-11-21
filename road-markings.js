@@ -57,7 +57,9 @@ export function analyseRoadNetwork(defs) {
       const q = nearest(b, e.x, e.z), c = at(b, q.s);
       // Đầu đường phải thật sự chạm mặt nhựa của tuyến kia; đi vào xiên góc thì góc của đầu đường chạm trước tim đường
       // Đầu đường đã vượt qua tim tuyến kia: chỉ là ngã ba nếu nó dừng trong lòng mặt nhựa; vượt hẳn sang bên kia là giao cắt (xử lý bên dưới)
-      const body = sA === 0 ? 1 : -1, past = ((e.x - c.x) * e.tx + (e.z - c.z) * e.tz) * body < 0;
+      // So theo phương ngang của tuyến kia (pháp tuyến tại c): thân đường đi ra phía đối diện với đầu đường => đầu đã vượt tim. Ổn định cả khi nhập làn góc nhỏ
+      const body = sA === 0 ? 1 : -1, side = (e.x - c.x) * -c.tz + (e.z - c.z) * c.tx;
+      const past = side * body * (e.tx * -c.tz + e.tz * c.tx) < 0;
       if (q.d > (past ? b.halfW : b.halfW + 0.3 + a.halfW * Math.abs(e.tx * c.tx + e.tz * c.tz))) continue;
       if (!b.closed && (q.s < 1.5 || b.len - q.s < 1.5)) continue; // hai đầu nối nhau = cùng một con đường đi tiếp
       add(c.x, c.z, [{road: a, s: sA, dir: sA === 0 ? 1 : -1, off: q.d}, ...armsOf(b, q.s)]);
