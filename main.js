@@ -488,6 +488,7 @@ async function main() {
   for (const b of L.buildings) {
     let g, bbox, f = null;
     const [w, h, d] = (L.grades && L.grades[b.grade]) || [7, 7, 7];
+    const isSmallBuilding = ['documents', 'drive', 'google'].includes(b.legacyId) || String(b.id).startsWith('bld:project:');
 
     if (b.style === 'hq') {
       const studioCfg = getStudioConfig('hq');
@@ -536,7 +537,6 @@ async function main() {
         currentA = createArchitecture(customP);
       }
 
-      const isSmallBuilding = ['documents', 'drive', 'google'].includes(b.legacyId) || String(b.id).startsWith('bld:project:');
       let rawBuilding;
       if (b.legacyId === 'telegram') rawBuilding = currentA.telegramTower();
       else if (b.legacyId === 'hermes' || b.style === 'research') rawBuilding = currentA.hermesLab();
@@ -569,7 +569,14 @@ async function main() {
     b.position[1] = finalY;
 
     g.position.set(b.position[0], finalY, b.position[2]);
-    if (b.rotationY !== undefined) g.rotation.y = b.rotationY;
+    // Tòa nhỏ dựng bằng code có mặt tiền (+Z cục bộ): xoay mặt tiền về phía cửa khai trong topology (doorXZ) khi topology chưa cho rotationY.
+    let rotY = b.rotationY;
+    if (rotY === undefined && isSmallBuilding && b.doorXZ) {
+      const dx = b.doorXZ[0] - b.position[0], dz = b.doorXZ[1] - b.position[2];
+      if (Math.abs(dx) > Math.abs(dz)) rotY = dx > 0 ? Math.PI / 2 : -Math.PI / 2;
+      else if (dz < 0) rotY = Math.PI;
+    }
+    if (rotY !== undefined) g.rotation.y = rotY;
     g.userData.binding = b;
     g.userData.buildingId = b.id;
     g.userData.isBuildingRoot = true;
@@ -615,7 +622,7 @@ async function main() {
 
     if (b.legacyId !== 'hq') {
       const lbl = label(b.name, door.x, b.position[1] + 1.2, door.z + 0.10, Math.min(6, b.name.length * 0.27), 0.55, layers.labels, false);
-      if (b.rotationY !== undefined) lbl.rotation.y = b.rotationY;
+      if (rotY !== undefined) lbl.rotation.y = rotY;
     }
     const btn = document.createElement('button');
     btn.textContent = b.name;
