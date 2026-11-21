@@ -665,11 +665,11 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         api.buildings.push(binding);
       }
     }
-    if (changed) api.onChange?.();
     api.districts = [...districts.values()].map(d => {
       const f = slotFrame(d.slot, tpl);
       return {id: d.slot.id, label: d.slot.label, client: d.client, landscape: d.client ? (LANDSCAPES[d.slot.landscape] || LANDSCAPES.meadow).label : null, lots: d.slot.lots, depth: d.slot.depth, open: d.open, projects: d.projects, center: [f.center[0], f.y, f.center[1]], gate: [d.slot.gateXZ[0], f.y, d.slot.gateXZ[1]]};
     });
+    if (changed) api.onChange?.();
   }
 
   // The branch roads to the corner districts, and under each district in use its road from the ring.
