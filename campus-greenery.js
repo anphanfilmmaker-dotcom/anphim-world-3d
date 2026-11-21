@@ -297,8 +297,8 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
   for (const [w, d] of sizes) {
     const hw = w / 2, hd = d / 2;
     for (const c of open) {
-      if (parterres.length >= seededCount + 8) break;
-      if (parterres.some(p => Math.abs(p.x - c.x) < (p.w + w) / 2 + 2.5 && Math.abs(p.z - c.z) < (p.d + d) / 2 + 2.5)) continue;
+      if (parterres.length >= seededCount + 13) break;
+      if (parterres.some(p => Math.abs(p.x - c.x) < (p.w + w) / 2 + 2 && Math.abs(p.z - c.z) < (p.d + d) / 2 + 2)) continue;
       let ok = true, lo = Infinity, hi = -Infinity;
       for (let i = -3; i <= 3 && ok; i++) for (let j = -3; j <= 3 && ok; j++) {
         const px = c.x + i * hw / 3, pz = c.z + j * hd / 3, h = ground(px, pz);
@@ -328,8 +328,9 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     hedgeRun(p.x - hw, p.z + hd - in_, p.x - gap / 2, p.z + hd - in_, th, hh);
     hedgeRun(p.x + gap / 2, p.z + hd - in_, p.x + hw, p.z + hd - in_, th, hh);
     // Vườn dài trồng hai cây nở hoa dọc trục dài, vườn vuông một cây giữa
-    const r = Math.min(Math.min(hw, hd) * .52, 2.1), longX = p.w >= p.d, span = Math.max(hw, hd);
-    for (const o of span > r * 2.4 ? [-span * .45, span * .45] : [0]) {
+    const longX = p.w >= p.d, span = Math.max(hw, hd), pair = span >= 3.4;
+    const r = Math.min(Math.min(hw, hd) * .52, 2.1, pair ? span * .5 : 9);
+    for (const o of pair ? [-span * .45, span * .45] : [0]) {
       const tx = p.x + (longX ? o : 0), tz = p.z + (longX ? 0 : o), ts = r * (.92 + rand() * .16);
       put('bloom', tx, ground(tx, tz), tz, ts, ts, ts, rand() * 6.28);
     }
@@ -344,6 +345,17 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       if (rand() < .35) continue;
       const bx = p.x + ox * (hw - th - .55), bz = p.z + oz * (hd - th - .55), bs = .32 + rand() * .14;
       put('bush', bx, ground(bx, bz) + bs * .6, bz, bs, bs * .8, bs, rand() * 6.28, null, false);
+    }
+    // Lòng vườn: cụm bụi thấp sát hàng rào và một tảng đá cảnh, như các ô vườn trong ảnh tham chiếu
+    for (let k = 0, n = 2 + Math.floor(rand() * 3); k < n; k++) {
+      const side = rand() < .5 ? -1 : 1, t = (rand() - .5) * 1.5, bs = .36 + rand() * .2;
+      const bx = p.x + (longX ? t * (hw - th - .6) : side * (hw - th - .6)), bz = p.z + (longX ? side * (hd - th - .6) : t * (hd - th - .6));
+      put('bush', bx, ground(bx, bz) + bs * .6, bz, bs, bs * .8, bs, rand() * 6.28, null, false);
+    }
+    if (rand() < .6) {
+      const rx = p.x + (longX ? 0 : (rand() - .5) * hw * .6), rz = p.z + (longX ? (rand() - .5) * hd * .6 : 0), rs = .3 + rand() * .2;
+      put('rock', rx, ground(rx, rz) - .08 * rs, rz, rs, rs * .7, rs * .9, rand() * 6.28);
+      rockCount++;
     }
   }
 
@@ -372,7 +384,7 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
   scatter(120, 8000, () => [-108 + rand() * 216, -62 + rand() * 118], (x, z) => !insideRing(x, z) && free(x, z, 2.6));
 
   // ---- 3. Đá cảnh ---------------------------------------------------------------------------
-  for (let i = 0; i < 2500 && rockCount < 42; i++) {
+  for (let i = 0; i < 4000 && rockCount < 70; i++) {
     const x = -70 + rand() * 144, z = -52 + rand() * 104;
     if (!free(x, z, .9)) continue;
     rock(x, z, .45 + rand() * .45);
@@ -380,11 +392,25 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     if (rand() < .4) { const a = rand() * 6.28; const rx = x + Math.cos(a) * .9, rz = z + Math.sin(a) * .9; if (free(rx, rz, .3)) { rock(rx, rz, .28 + rand() * .2); rockCount++; } }
   }
 
+  // ---- 3b. Bụi thấp viền lối đi bộ (ảnh tham chiếu có cây bụi tròn dọc các lối đi) ---------------------
+  let shrubCount = 0;
+  for (let i = 0; i < 20000 && shrubCount < 90; i++) {
+    const x = -58 + rand() * 120, z = -46 + rand() * 88;
+    if (!insideRing(x, z)) continue;
+    const wd = walkDistance(x, z);
+    if (wd < 1.8 || wd > 5 || !free(x, z, .7)) continue;
+    const bs = .42 + rand() * .26;
+    put('bush', x, ground(x, z) + bs * .55, z, bs, bs * .8, bs, rand() * 6.28, null, false);
+    occupy(x, z, .7);
+    shrubCount++;
+    if (rand() < .5) { const a = rand() * 6.28, cx = x + Math.cos(a) * .85, cz = z + Math.sin(a) * .85, cs = bs * .7; if (free(cx, cz, .3) && walkDistance(cx, cz) > 1.7) { put('bush', cx, ground(cx, cz) + cs * .55, cz, cs, cs * .8, cs, rand() * 6.28, null, false); shrubCount++; } }
+  }
+
   // ---- 4. Đèn lối đi dọc đường đi bộ ------------------------------------------------------------
   let lampCount = 0;
   for (const p of roads.paths) {
     if (p.hidden || p.class !== 1 || !p.curve) continue;
-    const len = p.curve.getLength(), n = Math.floor(len / 9);
+    const len = p.curve.getLength(), n = Math.floor(len / 7);
     for (let i = 1; i <= n; i++) {
       const t = (i - .5) / n, q = p.curve.getPointAt(t), tan = p.curve.getTangentAt(t), side = i % 2 ? 1 : -1;
       const x = q.x - tan.z * side * ((p.width || 2) / 2 + .45), z = q.z + tan.x * side * ((p.width || 2) / 2 + .45);
@@ -418,6 +444,6 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     GROUP_OF[b.kind].add(mesh);
   }
 
-  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathLamps: lampCount, gatePillars: gateCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
+  if (report) report.greenery = {parterres: parterres.length, roundTrees: roundCount, pines: pineCount, rocks: rockCount, pathShrubs: shrubCount, pathLamps: lampCount, gatePillars: gateCount, drawCalls: batches.size, placement: 'auto: free-space map of pads, courts, stairs, roads, walks, existing landscape; fixed seed'};
   return {root, parterres, free};
 }
