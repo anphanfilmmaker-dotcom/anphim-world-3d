@@ -28,7 +28,6 @@ import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
-import {roomSize} from './interior-builder.js?rev=interior_v2';
 import {createStateVisuals} from './state-visuals.js';
 
 window.THREE = T;
@@ -323,23 +322,14 @@ async function main() {
 
   let buildingPanels = null;
   let insideBuilding = null;
-  // Amounts on the 3D wall boards follow the "Ẩn số tiền" switch of the cockpit frame.
-  const maskMoney = t => cockpitFrame && cockpitFrame.hideMoney ? String(t ?? '').replace(/\d[\d.,]*\s?(đ|VND|vnđ)/g, '•••••• đ') : t;
-
   async function inspector(b) {
     if (cutawayAnimator) {
       const g = (L && L.grades && L.grades[b.grade]) || [12, 5, 10];
-      // The room is wider than small buildings: stand it on the highest ground under it so the terrain never cuts through the floor.
       const pos = [...(b.position || [0, 0, 0])];
-      const [rw, rd] = roomSize(g[0], g[2]);
-      const ground = terrain.surfaceHeight ? (x, z) => terrain.surfaceHeight(x, z) : (x, z) => terrain.height(x, z);
-      for (let i = 0; i <= 8; i++) for (let k = 0; k <= 8; k++) {
-        pos[1] = Math.max(pos[1], ground(pos[0] + (i / 8 - 0.5) * (rw + 1), pos[2] + (k / 8 - 0.5) * (rd + 1)) + 0.05);
-      }
       insideBuilding = b;
       cutawayAnimator.inspect(b.id, pos, {
         width: g[0], depth: g[2], height: g[1], name: b.name, hostId: b.hostId,
-        view: dataConnector.getBuildingView(b), mask: maskMoney
+        view: dataConnector.getBuildingView(b)
       });
       // Approved interiors get their own left/right panels; other buildings keep the old detail wing.
       const own = buildingPanels && buildingPanels.show(b);
@@ -1033,8 +1023,7 @@ async function main() {
   function refreshInside() {
     if (!insideBuilding || !cutawayAnimator.isInspecting) return;
     cutawayAnimator.buildInterior(
-      dataConnector.getBuildingView(insideBuilding) || {type: null, id: insideBuilding.id, title: insideBuilding.name, connected: false, agents: []},
-      maskMoney);
+      dataConnector.getBuildingView(insideBuilding) || {type: null, id: insideBuilding.id, title: insideBuilding.name, connected: false, agents: []});
     if (buildingPanels) buildingPanels.render();
   }
   dataConnector.subscribe(refreshInside);
@@ -1414,11 +1403,11 @@ async function main() {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
     cockpitFrame.setBuilding(editor.isEditMode());
-    if (cutawayAnimator) cutawayAnimator.update(performance.now());
+    const insideMoving = !!cutawayAnimator && cutawayAnimator.update(performance.now());
     const networkMoving = network?.tick(now * 0.001) === true;
     const biomesMoving = updateBiomeAnimations();
     const statesMoving = stateVisuals.tick(now * 0.001);
-    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || now < activeUntil;
+    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
       if (postPipeline) {

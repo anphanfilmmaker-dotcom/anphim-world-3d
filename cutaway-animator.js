@@ -5,8 +5,10 @@
  */
 
 import * as T from 'three';
-import { buildInterior, pickFocus, roomSize } from './interior-builder.js?rev=interior_v2';
+import { buildInterior, footprintOf, pickFocus, roomPlan } from './interior-builder.js?rev=interior_v3';
 import { disposeObject } from './dispose-helper.js';
+
+const BACKDROP = 0x1a2230, SWAP_MS = 220;
 
 export class CutawayAnimator {
   constructor(scene, camera, controls, buildingObjects, setSpanFn, getSpanFn, director = null) {
@@ -23,7 +25,9 @@ export class CutawayAnimator {
     this.originalCameraState = null;
     this.currentInterior = null;
     this.interiorLight = null;
-    this.hiddenBuilding = null;
+    this.hiddenCampus = [];
+    this.room = null;      // the room that should be on screen: {plan, pos, view}
+    this.staged = false;   // true once the campus is hidden and the room is built
 
     // Cache ambient lights in scene for dusk/focus effect
     this.sunLight = null;
@@ -32,19 +36,21 @@ export class CutawayAnimator {
       if (child.isDirectionalLight && !this.sunLight) this.sunLight = child;
       if (child.isHemisphereLight && !this.hemiLight) this.hemiLight = child;
     });
+
+    // Going inside reads as loading another place: the view dips to the backdrop colour while the campus is swapped for the room.
+    this.veil = document.createElement('div');
+    this.veil.style.cssText = `position:fixed;inset:0;z-index:40;pointer-events:none;opacity:0;transition:opacity ${SWAP_MS}ms ease;background:#${BACKDROP.toString(16).padStart(6, '0')}`;
+    document.body.appendChild(this.veil);
   }
 
   inspect(buildingId, targetPos, bInfo = {}) {
     const buildingGroup = this.buildingObjects.get(bInfo.hostId || buildingId);
     if (!buildingGroup) return;
 
-    // Clean up previous interior if any
-    this.cleanupInterior();
-
     this.isInspecting = true;
     this.currentInspectedId = buildingId;
 
-    // 1. Save original camera state
+    // Save original camera state if not already saved
     if (!this.originalCameraState) {
       this.originalCameraState = {
         position: this.camera.position.clone(),
@@ -57,54 +63,32 @@ export class CutawayAnimator {
     const posY = targetPos[1] || 0;
     const posZ = targetPos[2] || 0;
 
-    // 2. Smooth Tween Camera & Orthographic Span (Zoom deeply from 95/115 -> 22)
-    const targetCamPos = new T.Vector3(posX + 16, posY + 16, posZ + 16);
-    const targetLookAt = new T.Vector3(posX, posY + 1.2, posZ);
-    const targetSpan = roomSize(bInfo.width)[0] * 1.3; // the room fills the space between the two panels
+    // The room has the outline of the building itself, measured once per building
+    buildingGroup.userData.footprint ??= footprintOf(buildingGroup);
+    const plan = roomPlan(buildingGroup.userData.footprint, bInfo.width, bInfo.depth);
+    this.room = {
+      plan, pos: [posX, posY + 0.02, posZ],
+      view: bInfo.view || {type: null, id: buildingId, title: bInfo.name, connected: false, agents: []}
+    };
 
-    // Lock controls to Orbit-only around inspected building (zero panning/drifting)
+    // While inside: no panning, every mouse button orbits the room
     this.controls.enablePan = false;
     this.controls.mouseButtons.LEFT = T.MOUSE.ROTATE;
     this.controls.mouseButtons.MIDDLE = T.MOUSE.ROTATE;
     this.controls.mouseButtons.RIGHT = T.MOUSE.ROTATE;
 
-    this.tweenCameraZoom(targetCamPos, targetLookAt, targetSpan, 750);
-
-    // 3. Hide outer building shell to expose interior cutaway cleanly
-    this.hiddenBuilding = buildingGroup;
-    this.hiddenBuilding.visible = false;
-
-    // Hide any floating rooftop elements (e.g. rooftop planter boxes) during cutaway
-    this.hiddenRoofObjects = [];
-    this.scene.traverse(o => {
-      if (o.name === 'rooftop-gardens' || o.userData?.isRooftop) {
-        if (o.visible) {
-          o.visible = false;
-          this.hiddenRoofObjects.push(o);
-        }
-      }
-    });
-
-    // 4. Build the room from the building's data (bInfo.view comes from dataConnector.getBuildingView)
-    this.interiorSize = [bInfo.width || 13, bInfo.depth || 10];
-    this.interiorPos = [posX, posY + 0.02, posZ];
-    this.buildInterior(bInfo.view || {type: null, id: buildingId, title: bInfo.name, connected: false, agents: []}, bInfo.mask);
-
-    this.hideClutter(posX, posZ);
-
-    this.interiorLight = new T.PointLight(0xfff7ed, 4.0, 32);
-    this.interiorLight.position.set(posX, posY + 4.5, posZ);
-    this.scene.add(this.interiorLight);
-
-    if (this.sunLight) this.sunLight.intensity = 0.55;
-    if (this.hemiLight) this.hemiLight.intensity = 0.40;
+    this.tweenCameraZoom(new T.Vector3(posX + 16, posY + 16, posZ + 16), new T.Vector3(posX, posY + 1.2, posZ), plan.span, 750);
+    this.swap();
   }
 
-  /** (Re)builds the room in place from a view model, e.g. after a data refresh; the camera does not move. */
-  buildInterior(view, mask) {
+  /** Rebuilds the room from a new view (data refresh) without touching the camera. */
+  buildInterior(view) {
+    if (!this.room) return;
+    this.room.view = view;
+    if (!this.staged) return;
     if (this.currentInterior) disposeObject(this.currentInterior);
-    this.currentInterior = buildInterior(view, this.interiorSize[0], this.interiorSize[1], {mask});
-    this.currentInterior.position.set(...this.interiorPos);
+    this.currentInterior = buildInterior(view, this.room.plan);
+    this.currentInterior.position.set(...this.room.pos);
     this.scene.add(this.currentInterior);
   }
 
@@ -113,42 +97,49 @@ export class CutawayAnimator {
     return this.currentInterior ? pickFocus(this.currentInterior, raycaster) : undefined;
   }
 
-  /** Hides scenery (trees, shrubs, lamps) standing in the room or between it and the camera; the terrain, roads and buildings stay. */
-  hideClutter(x, z) {
-    const [w, d] = roomSize(...this.interiorSize);
-    const inFront = p => { const dx = p.x - x, dz = p.z - z; return dx > -w / 2 - 1 && dx < w / 2 + 6 && dz > -d / 2 - 1 && dz < d / 2 + 6; };
-    const m = new T.Matrix4(), p = new T.Vector3(), size = new T.Vector3(), box = new T.Box3(), zero = new T.Matrix4().makeScale(0, 0, 0);
-    this.hiddenInstances = [];
-    this.hiddenClutter = [];
-    const visit = o => {
-      if (o === this.currentInterior || o.userData?.isBuildingRoot || !o.visible) return;
-      if (o.isInstancedMesh) {
-        let touched = false;
-        for (let i = 0; i < o.count; i++) {
-          o.getMatrixAt(i, m);
-          if (!inFront(p.setFromMatrixPosition(m).applyMatrix4(o.matrixWorld))) continue;
-          this.hiddenInstances.push([o, i, m.clone()]);
-          o.setMatrixAt(i, zero);
-          touched = true;
-        }
-        if (touched) o.instanceMatrix.needsUpdate = true;
-      } else if (o.isMesh && o.geometry) {
-        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
-        box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).getSize(size);
-        // Small enough to be a tree, a shrub, a lamp or a ground plate; larger meshes are terrain, roads and water.
-        const small = size.x < 12 && size.z < 12;
-        const over = (pad, front) => box.max.x > x - w / 2 - pad && box.min.x < x + w / 2 + front && box.max.z > z - d / 2 - pad && box.min.z < z + d / 2 + front;
-        if (small && (over(0, 0) || (size.y > 0.9 && over(0.5, 6)))) {
-          o.visible = false;
-          this.hiddenClutter.push(o);
-        }
-      }
-      for (const child of o.children) visit(child);
+  /** Dips to the backdrop, then shows what `this.room` asks for: the room alone, or the campus again. */
+  swap() {
+    clearTimeout(this.swapTimer);
+    this.veil.style.opacity = '1';
+    this.swapTimer = setTimeout(() => {
+      this.stage();
+      this.veil.style.opacity = '0';
+      window.requestRender?.();
+    }, SWAP_MS);
+  }
+
+  stage() {
+    this.cleanupInterior();
+    if (!this.room) return;
+    this.hideCampus();
+    this.staged = true;
+    this.buildInterior(this.room.view);
+
+    const [x, y, z] = this.room.pos;
+    this.interiorLight = new T.PointLight(0xfff7ed, 3.0, 40);
+    this.interiorLight.position.set(x, y + 5, z);
+    this.scene.add(this.interiorLight);
+    if (this.sunLight) this.sunLight.intensity = 1.5;
+    if (this.hemiLight) this.hemiLight.intensity = 1.25;
+  }
+
+  /** Hides everything of the campus (terrain, roads, buildings, scenery); only lights stay, on a plain backdrop. */
+  hideCampus() {
+    const hasLight = o => o.isLight || o.children.some(hasLight);
+    const hide = o => {
+      if (o.isLight || o.isCamera || !o.visible) return;
+      if (hasLight(o)) return o.children.forEach(hide);
+      o.visible = false;
+      this.hiddenCampus.push(o);
     };
-    visit(this.scene);
+    this.scene.children.forEach(hide);
+    this.campusBackdrop = {background: this.scene.background, fog: this.scene.fog};
+    this.scene.background = new T.Color(BACKDROP);
+    this.scene.fog = null;
   }
 
   cleanupInterior() {
+    this.staged = false;
     if (this.currentInterior) {
       disposeObject(this.currentInterior);
       this.currentInterior = null;
@@ -157,20 +148,12 @@ export class CutawayAnimator {
       this.scene.remove(this.interiorLight);
       this.interiorLight = null;
     }
-    for (const [o, i, m] of this.hiddenInstances || []) {
-      o.setMatrixAt(i, m);
-      o.instanceMatrix.needsUpdate = true;
-    }
-    this.hiddenInstances = [];
-    for (const o of this.hiddenClutter || []) o.visible = true;
-    this.hiddenClutter = [];
-    if (this.hiddenBuilding) {
-      this.hiddenBuilding.visible = true;
-      this.hiddenBuilding = null;
-    }
-    if (this.hiddenRoofObjects && this.hiddenRoofObjects.length > 0) {
-      this.hiddenRoofObjects.forEach(o => { o.visible = true; });
-      this.hiddenRoofObjects = [];
+    for (const o of this.hiddenCampus) o.visible = true;
+    this.hiddenCampus = [];
+    if (this.campusBackdrop) {
+      this.scene.background = this.campusBackdrop.background;
+      this.scene.fog = this.campusBackdrop.fog;
+      this.campusBackdrop = null;
     }
     if (this.sunLight) this.sunLight.intensity = 1.85;
     if (this.hemiLight) this.hemiLight.intensity = 0.85;
@@ -179,9 +162,8 @@ export class CutawayAnimator {
   exit() {
     if (!this.isInspecting) return;
     this.isInspecting = false;
-
-    // 1. Clean up interior staging & restore building visibility & campus lighting
-    this.cleanupInterior();
+    this.room = null;
+    this.swap();
 
     // Restore free campus navigation controls
     this.controls.enablePan = true;
@@ -189,7 +171,7 @@ export class CutawayAnimator {
     this.controls.mouseButtons.MIDDLE = T.MOUSE.ROTATE;
     this.controls.mouseButtons.RIGHT = T.MOUSE.PAN;
 
-    // 2. Restore camera position, lookAt target, and Orthographic Span
+    // Restore camera position, lookAt target, and Orthographic Span
     if (this.originalCameraState) {
       this.tweenCameraZoom(
         this.originalCameraState.position,
@@ -242,7 +224,10 @@ export class CutawayAnimator {
     requestAnimationFrame(anim);
   }
 
+  /** Moves the people in the room; true while a room is on screen, so the caller keeps drawing frames. */
   update(now = performance.now()) {
-    this.currentInterior?.userData.update?.(now / 1000);
+    if (!this.currentInterior) return false;
+    this.currentInterior.userData.update(now / 1000, this.camera);
+    return true;
   }
 }

@@ -437,6 +437,7 @@ export class DataConnector {
         view.milestones = ms.map((m, i) => ({...m, state: m.completed ? 'done' : i === current ? 'current' : 'todo'}));
         view.doneCount = ms.filter(m => m.completed).length;
         view.progress = this.getProjectProgress(p);
+        view.state = this.getProjectState(p);
         view.payments = [p.paymentd1, p.paymentd2, p.paymentd3].map(v => typeof v === 'number' ? this.formatMoney(v) : null);
         view.receivedPct = p.budget > 0 && typeof p.received === 'number' ? Math.round(p.received / p.budget * 100) : null;
         view.papers = this.getDocumentBoard().rows.find(r => r.project === p) || null;

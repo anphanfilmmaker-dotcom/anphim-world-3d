@@ -88,6 +88,9 @@ button.bp-rowbtn:hover,.bp-rowbtn[aria-pressed=true]{border-color:rgba(247,148,2
 body.bp-open #cockpit-hud-root{display:none!important}
 `;
 
+// A clicked object whose own entry is not listed (filtered out, past the cap) focuses the list it belongs to.
+const FOCUS_LIST = {agent: 'agents', project: 'projects', mission: 'missions', entry: 'ledger', post: 'posts'};
+
 export class BuildingPanels {
   /**
    * @param {object} o
@@ -160,8 +163,7 @@ export class BuildingPanels {
     const root = this.frame.root;
     const el = (f.id != null && root.querySelector(`.bp-side [data-focus="${f.section}:${CSS.escape(String(f.id))}"]`))
       || root.querySelector(`.bp-side [data-focus="${f.section}"]`)
-      || (f.section === 'agent' && root.querySelector('.bp-side [data-focus="agents"]'))
-      || (f.section === 'project' && root.querySelector('.bp-side [data-focus="projects"]'));
+      || (FOCUS_LIST[f.section] && root.querySelector(`.bp-side [data-focus="${FOCUS_LIST[f.section]}"]`));
     if (!el) return;
     el.scrollIntoView({block: 'nearest', behavior: 'smooth'});
     el.classList.remove('bp-flash');
@@ -299,7 +301,7 @@ export class BuildingPanels {
         {label: 'Deadline', value: p.duedate}, {label: 'Mốc đã xong', value: ms.length ? `${v.doneCount}/${ms.length} · ${v.progress}%` : null}]) +
       this.sec('Việc cần làm tiếp theo', null, 'next') + `<div class="bp-box" data-tone="warn">${p.nextaction ? this.frame.text(p.nextaction) : '<span class="bp-none">Chưa có việc tiếp theo</span>'}</div>` +
       (v.missions.length ? this.missions(v.missions, 'Cần anh xử lý', '') : '') +
-      this.sec('Giấy tờ', !v.papers?.known ? 'chưa kết nối' : v.papers.missing.length ? 'Thiếu ' + v.papers.missing.length : v.papers.complete ? 'Đầy đủ' : 'chưa đủ dữ liệu') +
+      this.sec('Giấy tờ', !v.papers?.known ? 'chưa kết nối' : v.papers.missing.length ? 'Thiếu ' + v.papers.missing.length : v.papers.complete ? 'Đầy đủ' : 'chưa đủ dữ liệu', 'papers') +
       `<button class="bp-rowbtn" ${docs ? `data-enter="${esc(docs.id)}"` : 'disabled'}><span class="cf-row"><span class="cf-fill">${v.papers?.missing.length ? 'Thiếu: ' + esc(v.papers.missing.join(', ')) : 'Báo giá · Hợp đồng · VAT R1–R3 · BBTL'}</span><span class="cf-go">→ Giấy tờ</span></span></button>` +
       this.sec('Ghi chú') + `<div class="bp-subtitle">${p.note ? this.frame.text(p.note) : 'Chưa có ghi chú.'}</div>`;
     const right = this.sec('Thanh toán', `đã nhận ${this.frame.money(p.receivedFormatted ?? '—')} / ${this.frame.money(p.budgetFormatted ?? '—')}`, 'payments') +
