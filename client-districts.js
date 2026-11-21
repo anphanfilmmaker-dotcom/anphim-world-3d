@@ -561,10 +561,20 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     return held;
   }
 
+  // Frees what a removed object owns. Cached materials, sign textures and tree geometry are shared and stay.
+  function release(...objects) {
+    for (const obj of objects) obj?.traverse(o => {
+      if (o.isInstancedMesh) return o.dispose();
+      o.geometry?.dispose();
+      if (o.material?.map) o.material.dispose();
+    });
+  }
+
   function dropBuilding(num) {
     const e = byProject.get(num);
     root.remove(e.group);
     signs.remove(e.sign, e.post);
+    release(e.group, e.sign, e.post);
     if (buildingObjects?.get(e.binding.id) === e.group) buildingObjects.delete(e.binding.id);
     for (const list of [clickable, api.buildings]) {
       const i = list ? list.indexOf(list === clickable ? e.group : e.binding) : -1;
@@ -617,6 +627,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         if (d) {
           root.remove(d.group);
           if (d.road) access.remove(d.road);
+          release(d.group, d.road);
         }
         const built = client ? buildDistrict(slot, client, used) : buildReserve(slot);
         d = {slot, client, key, road: client ? gateRoad(slot) : null, ...built};
