@@ -2586,6 +2586,19 @@ export function createCampusEditor({
     updateHierarchyUI();
   }
 
+  // Gắn / gỡ một tuyến tự vẽ khỏi scene và danh sách (dùng cho undo/redo, không ghi thêm mục undo)
+  function setCustomRoadAttached(rec, attached) {
+    const k = customRoadsList.indexOf(rec);
+    if (attached) {
+      if (k === -1) customRoadsList.push(rec);
+      if (rec.mesh) roadsGroup.add(rec.mesh);
+    } else {
+      if (k > -1) customRoadsList.splice(k, 1);
+      if (rec.mesh) roadsGroup.remove(rec.mesh);
+    }
+    updateHierarchyUI();
+  }
+
   function createCustomSplineRoad(points, width, type) {
     const mesh = generateRoadMesh(points, width, type);
     if (!mesh) return null;
@@ -5831,20 +5844,21 @@ export function createCampusEditor({
         }
 
         saveStudioState();
+        const newPts = r.points.map(pt => [...pt]);
         pushUndo({
           type: 'bulldoze_custom_road_segment',
           undo: () => {
-            if (addedRoad) {
-              const k = customRoadsList.indexOf(addedRoad);
-              if (k > -1) customRoadsList.splice(k, 1);
-              if (addedRoad.mesh) roadsGroup.remove(addedRoad.mesh);
-            }
-            r.points = oldPts;
+            if (addedRoad) setCustomRoadAttached(addedRoad, false);
+            r.points = oldPts.map(pt => [...pt]);
             updateCustomRoadMesh(r);
             saveStudioState();
           },
+          // Dựng lại đúng kết quả đã ủi (không gọi lại executeBulldozeTarget: nó sẽ tạo thêm một nhánh và một mục undo mới)
           redo: () => {
-            executeBulldozeTarget(target);
+            r.points = newPts.map(pt => [...pt]);
+            updateCustomRoadMesh(r);
+            if (addedRoad) setCustomRoadAttached(addedRoad, true);
+            saveStudioState();
           }
         });
         showToast(`🚜 Đã ủi khúc đường tự vẽ [${i + 1}] giữa 2 mối nối! (Ctrl+Z để khôi phục)`, '#dc2626');
