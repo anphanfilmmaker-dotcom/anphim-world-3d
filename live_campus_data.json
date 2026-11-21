@@ -5,15 +5,19 @@
     "cashAvailableFormatted": "348.520.000 đ",
     "receivable": 182400000.0,
     "receivableFormatted": "182.400.000 đ",
-    "activeProjectsCount": 8,
+    "activeProjectsCount": 15,
     "missingDocumentsCount": 3,
-    "pendingActionsCount": 1
+    "pendingActionsCount": 1,
+    "estimatedProfit": 86200000.0,
+    "estimatedProfitFormatted": "86.200.000 đ",
+    "invoicesPendingCount": 2
   },
   "projects": [
     {
       "id": "proj_1",
       "name": "Brand Identity 3D",
       "client": "Alpha Media",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 45000000.0,
       "budgetFormatted": "45.000.000 đ",
@@ -50,12 +54,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_2",
       "name": "Cinematic Film Trailer",
       "client": "Creative Studio",
+      "type": "Video",
       "status": "Chờ feedback",
       "budget": 50000000.0,
       "budgetFormatted": "50.000.000 đ",
@@ -92,12 +105,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_3",
       "name": "Campus WebGL Diorama",
       "client": "Global Tech",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 55000000.0,
       "budgetFormatted": "55.000.000 đ",
@@ -134,12 +156,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_4",
       "name": "Commercial Spot VFX",
       "client": "Starlight Film",
+      "type": "Video",
       "status": "Hoàn thành",
       "budget": 60000000.0,
       "budgetFormatted": "60.000.000 đ",
@@ -176,12 +207,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_5",
       "name": "Feature Animation Pre-Viz",
       "client": "Nexus Entertainment",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 65000000.0,
       "budgetFormatted": "65.000.000 đ",
@@ -218,12 +258,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_6",
       "name": "Interactive 3D Web",
       "client": "Vanguard Studio",
+      "type": "Graphic",
       "status": "Cần revise",
       "budget": 70000000.0,
       "budgetFormatted": "70.000.000 đ",
@@ -260,12 +309,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": false,
+        "vat3": false,
+        "handover": false
+      }
     },
     {
       "id": "proj_7",
       "name": "Music Video Post-Production",
       "client": "Alpha Media",
+      "type": "Video",
       "status": "Đang làm",
       "budget": 75000000.0,
       "budgetFormatted": "75.000.000 đ",
@@ -302,12 +360,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_8",
       "name": "Corporate Brand Film",
       "client": "Creative Studio",
+      "type": "Video",
       "status": "Tạm dừng",
       "budget": 80000000.0,
       "budgetFormatted": "80.000.000 đ",
@@ -344,12 +411,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_9",
       "name": "Documentary Color Grading",
       "client": "Global Tech",
+      "type": "Video",
       "status": "Đang làm",
       "budget": 85000000.0,
       "budgetFormatted": "85.000.000 đ",
@@ -386,12 +462,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_10",
       "name": "Motion Graphics Identity",
       "client": "Starlight Film",
+      "type": "Graphic",
       "status": "Chờ feedback",
       "budget": 90000000.0,
       "budgetFormatted": "90.000.000 đ",
@@ -428,12 +513,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_11",
       "name": "Virtual Studio Environment",
       "client": "Nexus Entertainment",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 95000000.0,
       "budgetFormatted": "95.000.000 đ",
@@ -470,12 +564,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_12",
       "name": "Title Sequence Design",
       "client": "Vanguard Studio",
+      "type": "Graphic",
       "status": "Hoàn thành",
       "budget": 100000000.0,
       "budgetFormatted": "100.000.000 đ",
@@ -512,12 +615,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_13",
       "name": "Brand Identity 3D #13",
       "client": "Alpha Media",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 105000000.0,
       "budgetFormatted": "105.000.000 đ",
@@ -554,12 +666,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_14",
       "name": "Cinematic Film Trailer #14",
       "client": "Creative Studio",
+      "type": "Video",
       "status": "Cần revise",
       "budget": 110000000.0,
       "budgetFormatted": "110.000.000 đ",
@@ -596,12 +717,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": false
+      }
     },
     {
       "id": "proj_15",
       "name": "Campus WebGL Diorama #15",
       "client": "Global Tech",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 115000000.0,
       "budgetFormatted": "115.000.000 đ",
@@ -638,12 +768,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_16",
       "name": "Commercial Spot VFX #16",
       "client": "Starlight Film",
+      "type": "Video",
       "status": "Tạm dừng",
       "budget": 120000000.0,
       "budgetFormatted": "120.000.000 đ",
@@ -680,12 +819,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_17",
       "name": "Feature Animation Pre-Viz #17",
       "client": "Nexus Entertainment",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 125000000.0,
       "budgetFormatted": "125.000.000 đ",
@@ -722,12 +870,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_18",
       "name": "Interactive 3D Web #18",
       "client": "Vanguard Studio",
+      "type": "Graphic",
       "status": "Chờ feedback",
       "budget": 130000000.0,
       "budgetFormatted": "130.000.000 đ",
@@ -764,12 +921,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_19",
       "name": "Music Video Post-Production #19",
       "client": "Alpha Media",
+      "type": "Video",
       "status": "Đang làm",
       "budget": 135000000.0,
       "budgetFormatted": "135.000.000 đ",
@@ -806,12 +972,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_20",
       "name": "Corporate Brand Film #20",
       "client": "Creative Studio",
+      "type": "Video",
       "status": "Hoàn thành",
       "budget": 140000000.0,
       "budgetFormatted": "140.000.000 đ",
@@ -848,12 +1023,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_21",
       "name": "Documentary Color Grading #21",
       "client": "Global Tech",
+      "type": "Video",
       "status": "Đang làm",
       "budget": 145000000.0,
       "budgetFormatted": "145.000.000 đ",
@@ -890,12 +1074,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_22",
       "name": "Motion Graphics Identity #22",
       "client": "Starlight Film",
+      "type": "Graphic",
       "status": "Cần revise",
       "budget": 150000000.0,
       "budgetFormatted": "150.000.000 đ",
@@ -932,12 +1125,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_23",
       "name": "Virtual Studio Environment #23",
       "client": "Nexus Entertainment",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 155000000.0,
       "budgetFormatted": "155.000.000 đ",
@@ -974,12 +1176,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_24",
       "name": "Title Sequence Design #24",
       "client": "Vanguard Studio",
+      "type": "Graphic",
       "status": "Tạm dừng",
       "budget": 160000000.0,
       "budgetFormatted": "160.000.000 đ",
@@ -1016,12 +1227,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": false,
+        "vat1": false,
+        "vat2": false,
+        "vat3": false,
+        "handover": false
+      }
     },
     {
       "id": "proj_25",
       "name": "Brand Identity 3D #25",
       "client": "Alpha Media",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 165000000.0,
       "budgetFormatted": "165.000.000 đ",
@@ -1058,12 +1278,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_26",
       "name": "Cinematic Film Trailer #26",
       "client": "Creative Studio",
+      "type": "Video",
       "status": "Chờ feedback",
       "budget": 170000000.0,
       "budgetFormatted": "170.000.000 đ",
@@ -1100,12 +1329,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_27",
       "name": "Campus WebGL Diorama #27",
       "client": "Global Tech",
+      "type": "Graphic",
       "status": "Đang làm",
       "budget": 175000000.0,
       "budgetFormatted": "175.000.000 đ",
@@ -1142,12 +1380,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_28",
       "name": "Commercial Spot VFX #28",
       "client": "Starlight Film",
+      "type": "Video",
       "status": "Hoàn thành",
       "budget": 180000000.0,
       "budgetFormatted": "180.000.000 đ",
@@ -1184,12 +1431,21 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     },
     {
       "id": "proj_29",
       "name": "Feature Animation Pre-Viz #29",
       "client": "Nexus Entertainment",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 185000000.0,
       "budgetFormatted": "185.000.000 đ",
@@ -1226,7 +1482,15 @@
           "title": "Creative Brief.pdf",
           "status": "Approved"
         }
-      ]
+      ],
+      "paperwork": {
+        "quote": true,
+        "contract": true,
+        "vat1": true,
+        "vat2": true,
+        "vat3": true,
+        "handover": true
+      }
     }
   ],
   "recentExpenses": [
@@ -1236,7 +1500,9 @@
       "amount": 8500000,
       "amountFormatted": "8.500.000 đ",
       "date": "20/11/2026",
-      "category": "IT / Infrastructure"
+      "category": "IT / Infrastructure",
+      "method": "Thẻ công ty",
+      "projectId": null
     },
     {
       "id": "exp_2",
@@ -1244,7 +1510,9 @@
       "amount": 3200000,
       "amountFormatted": "3.200.000 đ",
       "date": "18/11/2026",
-      "category": "Production"
+      "category": "Production",
+      "method": "Chuyển khoản",
+      "projectId": "proj_2"
     },
     {
       "id": "exp_3",
@@ -1252,7 +1520,9 @@
       "amount": 4600000,
       "amountFormatted": "4.600.000 đ",
       "date": "15/11/2026",
-      "category": "Art & Design"
+      "category": "Art & Design",
+      "method": "Chuyển khoản",
+      "projectId": "proj_3"
     }
   ],
   "allExpenses": [
@@ -1262,7 +1532,9 @@
       "amount": 8500000,
       "amountFormatted": "8.500.000 đ",
       "date": "20/11/2026",
-      "category": "IT / Infrastructure"
+      "category": "IT / Infrastructure",
+      "method": "Thẻ công ty",
+      "projectId": null
     },
     {
       "id": "exp_2",
@@ -1270,7 +1542,9 @@
       "amount": 3200000,
       "amountFormatted": "3.200.000 đ",
       "date": "18/11/2026",
-      "category": "Production"
+      "category": "Production",
+      "method": "Chuyển khoản",
+      "projectId": "proj_2"
     },
     {
       "id": "exp_3",
@@ -1278,7 +1552,9 @@
       "amount": 4600000,
       "amountFormatted": "4.600.000 đ",
       "date": "15/11/2026",
-      "category": "Art & Design"
+      "category": "Art & Design",
+      "method": "Chuyển khoản",
+      "projectId": "proj_3"
     }
   ],
   "allIncomes": [
@@ -1288,7 +1564,9 @@
       "amount": 60000000,
       "amountFormatted": "60.000.000 đ",
       "date": "19/11/2026",
-      "category": "Production"
+      "category": "Production",
+      "method": "Chuyển khoản",
+      "projectId": "proj_2"
     },
     {
       "id": "inc_2",
@@ -1296,7 +1574,9 @@
       "amount": 42500000,
       "amountFormatted": "42.500.000 đ",
       "date": "10/11/2026",
-      "category": "Commercial"
+      "category": "Commercial",
+      "method": "Chuyển khoản",
+      "projectId": "proj_1"
     }
   ],
   "actionsPending": [
@@ -1310,7 +1590,7 @@
   ],
   "dailyBriefing": {
     "tramanh": {
-      "activeProjectsSummary": "Đang có 8 dự án đang chạy tiến độ.",
+      "activeProjectsSummary": "Đang có 15 dự án đang chạy tiến độ.",
       "pendingActionsSummary": "1 việc cần Sếp ra quyết định.",
       "highlights": [
         "Brand Identity 3D: Đang làm (Hạn: 15/12/2026)",
@@ -1446,7 +1726,11 @@
       "status": "active",
       "task": "Quản lý thu chi, báo giá & hợp đồng",
       "loadPct": 72,
-      "buildingId": "bld:facility:bank"
+      "buildingId": "bld:facility:bank",
+      "buildingIds": [
+        "bld:facility:bank",
+        "bld:facility:documents"
+      ]
     },
     {
       "id": "tramanh",
@@ -1455,7 +1739,10 @@
       "status": "active",
       "task": "Quản lý luồng công việc",
       "loadPct": 65,
-      "buildingId": "bld:facility:hq"
+      "buildingId": "bld:facility:hq",
+      "buildingIds": [
+        "bld:facility:hq"
+      ]
     },
     {
       "id": "minhdan",
@@ -1464,7 +1751,10 @@
       "status": "active",
       "task": "Lên bài fanpage",
       "loadPct": 58,
-      "buildingId": "bld:facility:ai"
+      "buildingId": "bld:facility:ai",
+      "buildingIds": [
+        "bld:facility:marketing"
+      ]
     },
     {
       "id": "chihai",
@@ -1473,7 +1763,10 @@
       "status": "idle",
       "task": null,
       "loadPct": null,
-      "buildingId": "bld:facility:supabase"
+      "buildingId": "bld:facility:supabase",
+      "buildingIds": [
+        "bld:facility:supabase"
+      ]
     },
     {
       "id": "quocbao",
@@ -1482,7 +1775,10 @@
       "status": "idle",
       "task": null,
       "loadPct": null,
-      "buildingId": "bld:facility:ai"
+      "buildingId": "bld:facility:ai",
+      "buildingIds": [
+        "bld:facility:marketing"
+      ]
     }
   ],
   "systems": [
@@ -1549,7 +1845,129 @@
     "totalPosts": 12,
     "pendingApproval": 2,
     "approvedQueued": 3,
-    "published": 7
+    "published": 7,
+    "posts": [
+      {
+        "id": "post_1",
+        "page": "AN PHIM Media",
+        "status": "pending",
+        "title": "Hậu trường quay TVC tháng 11",
+        "author": "Hermes",
+        "date": "21/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_2",
+        "page": "AN PHIM Media",
+        "status": "pending",
+        "title": "5 lỗi thường gặp khi viết brief video",
+        "author": "Hermes",
+        "date": "21/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_3",
+        "page": "AN PHIM Media",
+        "status": "approved",
+        "title": "Showreel 2026: bản cắt 30 giây",
+        "author": "Minh Đan",
+        "date": "20/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_4",
+        "page": "AN PHIM Media",
+        "status": "approved",
+        "title": "Quy trình dựng phim 3 bước của AN PHIM",
+        "author": "Minh Đan",
+        "date": "19/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_5",
+        "page": "AN PHIM Media",
+        "status": "approved",
+        "title": "Case study: phim thương hiệu 60 giây",
+        "author": "Minh Đan",
+        "date": "18/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_6",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Tuyển cộng tác viên dựng phim",
+        "author": "Minh Đan",
+        "date": "16/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_7",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Mẹo chọn nhạc nền cho video doanh nghiệp",
+        "author": "Minh Đan",
+        "date": "13/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_8",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Ảnh hậu kỳ: trước và sau chỉnh màu",
+        "author": "Minh Đan",
+        "date": "10/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_9",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Lịch nghỉ lễ và nhận dự án cuối năm",
+        "author": "Minh Đan",
+        "date": "06/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_10",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Giới thiệu đội AI Team của AN PHIM",
+        "author": "Minh Đan",
+        "date": "03/11/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_11",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Checklist chuẩn bị buổi quay",
+        "author": "Minh Đan",
+        "date": "30/10/2026",
+        "image": null,
+        "url": null
+      },
+      {
+        "id": "post_12",
+        "page": "AN PHIM Media",
+        "status": "published",
+        "title": "Cảm ơn khách hàng tháng 10",
+        "author": "Minh Đan",
+        "date": "27/10/2026",
+        "image": null,
+        "url": null
+      }
+    ]
   },
   "workspace": {
     "baseUrl": "",
@@ -1586,7 +2004,119 @@
       "bld:facility:drive": "documents",
       "bld:facility:schedule": "schedule",
       "bld:facility:ai": "overview",
-      "bld:facility:hermes": "overview"
+      "bld:facility:hermes": "overview",
+      "bld:facility:marketing": "marketing"
     }
-  }
+  },
+  "schedule": [
+    {
+      "id": "evt_10",
+      "title": "Kick-off dự án",
+      "date": "10/11/2026",
+      "time": "09:00",
+      "priority": "medium",
+      "projectId": "proj_25",
+      "done": true
+    },
+    {
+      "id": "evt_9",
+      "title": "Quay ngoại cảnh",
+      "date": "18/11/2026",
+      "dateEnd": "19/11/2026",
+      "time": null,
+      "priority": "medium",
+      "projectId": "proj_7",
+      "done": true
+    },
+    {
+      "id": "evt_0",
+      "title": "Chốt SOW, ký HĐ & kick-off",
+      "date": "21/11/2026",
+      "time": "08:30",
+      "priority": "medium",
+      "projectId": "proj_1",
+      "done": true
+    },
+    {
+      "id": "evt_1",
+      "title": "Chỉnh sửa bản dựng vòng 2 & chốt online",
+      "date": "21/11/2026",
+      "time": "09:00-15:00",
+      "priority": "high",
+      "projectId": "proj_25",
+      "done": false
+    },
+    {
+      "id": "evt_2",
+      "title": "Kịch bản nháp lần 2 (Second Draft)",
+      "date": "21/11/2026",
+      "time": "09:00",
+      "priority": "medium",
+      "projectId": "proj_5",
+      "done": false
+    },
+    {
+      "id": "evt_3",
+      "title": "Review tiến độ tuần",
+      "date": "21/11/2026",
+      "time": "16:00",
+      "priority": "medium",
+      "projectId": null,
+      "done": false
+    },
+    {
+      "id": "evt_4",
+      "title": "Bàn giao bản dựng offline",
+      "date": "22/11/2026",
+      "time": "10:00",
+      "priority": "high",
+      "projectId": "proj_2",
+      "done": false
+    },
+    {
+      "id": "evt_5",
+      "title": "Script + storyboard vòng 2",
+      "date": "24/11/2026",
+      "time": null,
+      "priority": "medium",
+      "projectId": "proj_7",
+      "done": false
+    },
+    {
+      "id": "evt_6",
+      "title": "Bàn giao bản dựng (deadline)",
+      "date": "25/11/2026",
+      "time": "17:00",
+      "priority": "high",
+      "projectId": "proj_2",
+      "done": false
+    },
+    {
+      "id": "evt_7",
+      "title": "Storyboard & chốt key visual",
+      "date": "26/11/2026",
+      "time": null,
+      "priority": "medium",
+      "projectId": "proj_3",
+      "done": false
+    },
+    {
+      "id": "evt_8",
+      "title": "Họp khách: review concept",
+      "date": "27/11/2026",
+      "time": "14:00",
+      "priority": "low",
+      "projectId": "proj_9",
+      "done": false
+    },
+    {
+      "id": "evt_11",
+      "title": "Final Delivery",
+      "date": "05/12/2026",
+      "time": null,
+      "priority": "high",
+      "projectId": "proj_1",
+      "done": false
+    }
+  ]
 }

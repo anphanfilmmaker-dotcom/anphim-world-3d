@@ -27,6 +27,7 @@ import {dataConnector} from './data-connector.js';
 import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
+import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 
 window.THREE = T;
@@ -319,14 +320,22 @@ async function main() {
   let cockpitHUD = null;
   let cockpitFrame = null;
 
+  let buildingPanels = null;
+  let insideBuilding = null;
   async function inspector(b) {
     if (cutawayAnimator) {
-      const pos = b.position || [0, 0, 0];
       const g = (L && L.grades && L.grades[b.grade]) || [12, 5, 10];
-      cutawayAnimator.inspect(b.id, pos, { width: g[0], depth: g[2], height: g[1] });
+      const pos = [...(b.position || [0, 0, 0])];
+      insideBuilding = b;
+      cutawayAnimator.inspect(b.id, pos, {
+        width: g[0], depth: g[2], height: g[1], name: b.name, hostId: b.hostId,
+        view: dataConnector.getBuildingView(b)
+      });
+      // Approved interiors get their own left/right panels; other buildings keep the old detail wing.
+      const own = buildingPanels && buildingPanels.show(b);
       const root = document.getElementById('cockpit-hud-root');
-      if (root) root.style.display = 'flex';
-      if (cockpitHUD) cockpitHUD.render(b.id);
+      if (root) root.style.display = own ? 'none' : 'flex';
+      if (cockpitHUD && !own) cockpitHUD.render(b.id);
       if (cockpitFrame) cockpitFrame.setInside(b);
     } else {
       const sel = document.querySelector('#selection');
@@ -990,6 +999,8 @@ async function main() {
     const root = document.getElementById('cockpit-hud-root');
     if (root) root.style.display = 'none';
     if (cockpitFrame) cockpitFrame.setInside(null);
+    if (buildingPanels) buildingPanels.hide();
+    insideBuilding = null;
   }
 
   cockpitHUD = new CockpitHUD(
@@ -1001,10 +1012,27 @@ async function main() {
     exitInspect
   );
 
+  // Marketing has an approved interior but no building on the campus yet (its position waits for
+  // approval), so its room opens inside the AI Team building until the topology gets one.
+  const marketingHost = L.buildings.find(b => b.id === 'bld:facility:ai');
+  const marketingRoom = marketingHost && !L.buildings.some(b => b.id === 'bld:facility:marketing')
+    ? [{...marketingHost, id: 'bld:facility:marketing', legacyId: 'marketing', name: 'Marketing', hostId: marketingHost.id}]
+    : [];
+
+  // A data refresh or the money switch rebuilds the room in place and re-renders its panels.
+  function refreshInside() {
+    if (!insideBuilding || !cutawayAnimator.isInspecting) return;
+    cutawayAnimator.buildInterior(
+      dataConnector.getBuildingView(insideBuilding) || {type: null, id: insideBuilding.id, title: insideBuilding.name, connected: false, agents: []});
+    if (buildingPanels) buildingPanels.render();
+  }
+  dataConnector.subscribe(refreshInside);
+
   // Campus-view frame: resource bar, missions, hovered building, quick jump
   cockpitFrame = new CockpitFrame({
     dataConnector,
-    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}],
+    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom],
+    onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
     onOverview: () => {
       if (cutawayAnimator.isInspecting) exitInspect();
@@ -1012,6 +1040,8 @@ async function main() {
     }
   });
   window.__cockpitFrame = cockpitFrame;
+  buildingPanels = new BuildingPanels({dataConnector, frame: cockpitFrame});
+  window.__buildingPanels = buildingPanels;
 
   // Project state drawn on the building exteriors (scaffolding, crane, built height, DELAY sign)
   const stateVisuals = createStateVisuals({scene, renderer, buildingObjects, dataConnector});
@@ -1075,11 +1105,16 @@ async function main() {
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
     ray.setFromCamera(mouse, camera);
-    const hit = ray.intersectObjects(clickable, true)[0];
-    if (!hit && cutawayAnimator && cutawayAnimator.isInspecting) {
-      exitInspect();
+    // Inside a building: an object in the room opens its section in the panels; the room itself never exits.
+    // The campus is hidden meanwhile and takes no clicks; a click on the backdrop goes back out.
+    if (cutawayAnimator && cutawayAnimator.isInspecting) {
+      if (!cutawayAnimator.staged) return;
+      const focus = cutawayAnimator.pick(ray);
+      if (focus === undefined) exitInspect();
+      else if (focus && buildingPanels) buildingPanels.focus(focus);
       return;
     }
+    const hit = ray.intersectObjects(clickable, true)[0];
     if (hit) {
       let o = hit.object;
       let cur = o;
@@ -1123,7 +1158,14 @@ async function main() {
       binding = o?.userData.binding || null;
     }
     cockpitFrame.setHovered(binding);
-    renderer.domElement.style.cursor = binding && buildingClickEnabled ? 'pointer' : '';
+    let overFocus = false;
+    if (cutawayAnimator.isInspecting) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
+      ray.setFromCamera(mouse, camera);
+      overFocus = !!cutawayAnimator.pick(ray);
+    }
+    renderer.domElement.style.cursor = overFocus || (binding && buildingClickEnabled) ? 'pointer' : '';
   });
   renderer.domElement.addEventListener('pointerleave', () => cockpitFrame.setHovered(null));
 
@@ -1358,11 +1400,11 @@ async function main() {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
     cockpitFrame.setBuilding(editor.isEditMode());
-    if (cutawayAnimator) cutawayAnimator.update();
+    const insideMoving = !!cutawayAnimator && cutawayAnimator.update(performance.now());
     const networkMoving = network?.tick(now * 0.001) === true;
     const biomesMoving = updateBiomeAnimations();
     const statesMoving = stateVisuals.tick(now * 0.001);
-    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || now < activeUntil;
+    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
       if (postPipeline) {

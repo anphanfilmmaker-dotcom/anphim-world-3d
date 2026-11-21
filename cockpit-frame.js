@@ -17,7 +17,7 @@ const RESOURCES = [
 ];
 
 // Buildings with their own quick-jump button; other facilities go under "Hạ tầng".
-const MAIN_JUMPS = ['bld:facility:hq', 'bld:facility:bank', 'bld:facility:documents', 'bld:facility:schedule', 'bld:facility:ai'];
+const MAIN_JUMPS = ['bld:facility:hq', 'bld:facility:bank', 'bld:facility:documents', 'bld:facility:schedule', 'bld:facility:ai', 'bld:facility:marketing'];
 
 const PRIORITY = {
   high: {label: 'CAO', tone: 'alert'},
@@ -88,6 +88,7 @@ button:disabled{cursor:not-allowed;opacity:.5}
 .cf-btn{display:flex;align-items:center;gap:7px;padding:0 13px;white-space:nowrap;font-weight:800;font-size:12px;text-decoration:none;color:var(--cf-text);transition:transform .15s ease,background .15s ease}
 .cf-btn:hover:not(:disabled):not([aria-disabled=true]){transform:translateY(-1px);background:rgba(40,54,60,.96)}
 .cf-btn[aria-pressed=true]{background:var(--cf-accent);color:#1b2428;border-color:transparent}
+.cf-btn[aria-pressed=true]:hover:not(:disabled):not([aria-disabled=true]){background:var(--cf-accent)}
 .cf-btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
 .cf-dot{width:8px;height:8px;border-radius:50%;background:var(--cf-mute);flex:none}
 [data-tone=ok]>.cf-dot,.cf-dot[data-tone=ok]{background:var(--cf-ok);box-shadow:0 0 0 3px rgba(95,214,138,.18)}
@@ -210,8 +211,10 @@ export class CockpitFrame {
    * @param {object[]} o.buildings    topology entries ({id, legacyId, kind, projectId, name})
    * @param {(b: object) => void} o.onEnterBuilding  fly inside a building
    * @param {() => void} o.onOverview  back to the whole-campus view
+   * @param {() => void} [o.onMoneyToggle]  the "hide money" switch changed
    */
-  constructor({dataConnector, buildings, onEnterBuilding, onOverview}) {
+  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle}) {
+    this.onMoneyToggle = onMoneyToggle;
     this.data = dataConnector;
     this.buildings = buildings;
     this.byId = new Map(buildings.map(b => [b.id, b]));
@@ -525,7 +528,7 @@ export class CockpitFrame {
     this.slot.jump.innerHTML = `<small>ĐI NHANH</small>
       <button class="cf-btn" data-act="overview" aria-pressed="${!this.inside}">Toàn cảnh</button>
       ${main.map(b => `<button class="cf-btn" data-enter="${esc(b.id)}" aria-pressed="${pressed(b.id)}">${esc(b.name)}${badge(b.id)}</button>`).join('')}
-      ${marketing ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
+      ${marketing && !this.byId.has('bld:facility:marketing') ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
       ${menu('projects', 'Dự án', projects, b => esc(this.data.getProject(b.projectId)?.status || ''))}
       ${menu('infra', 'Hạ tầng', infra, b => esc(this.data.getBuildingSummary(b)?.status?.label || 'Chưa kết nối'))}
       ${this.inside ? `<button class="cf-btn" data-act="overview" title="Esc">${icon('close', 13)} Thoát</button>` : ''}`;
@@ -580,6 +583,7 @@ export class CockpitFrame {
       localStorage.setItem(HIDE_MONEY_KEY, this.hideMoney ? '1' : '0');
       document.body.classList.toggle('cf-hide-money', this.hideMoney);
       this.render();
+      this.onMoneyToggle?.();
     } else if (act === 'tools') {
       document.body.classList.toggle('cf-tools');
       this.renderControls();
