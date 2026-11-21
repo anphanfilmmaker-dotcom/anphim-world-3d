@@ -1325,5 +1325,268 @@
       "dbLatency": "38ms (PostgreSQL Cloud)",
       "backupStatus": "Đã sao lưu tự động"
     }
+  },
+  "missions": [
+    {
+      "id": "mis_1",
+      "title": "Chỉnh sửa bản dựng vòng 2 & chốt online",
+      "priority": "high",
+      "tag": "Lịch làm",
+      "projectId": "proj_25",
+      "buildingId": "bld:project:proj_25",
+      "date": "21/11/2026",
+      "time": "09:00-15:00",
+      "done": false
+    },
+    {
+      "id": "mis_2",
+      "title": "Kịch bản nháp lần 2 (Second Draft)",
+      "priority": "medium",
+      "tag": "Lịch làm",
+      "projectId": "proj_5",
+      "buildingId": "bld:project:proj_05",
+      "date": "21/11/2026",
+      "time": "09:00",
+      "done": false
+    },
+    {
+      "id": "mis_3",
+      "title": "Bổ sung thông tin khoản chi 3.200.000 đ (Sound FX Library License)",
+      "priority": "high",
+      "tag": "Cần Input",
+      "source": "hermes-mail-scan",
+      "expenseId": "exp_2",
+      "buildingId": "bld:facility:bank",
+      "date": "21/11/2026",
+      "time": null,
+      "done": false
+    },
+    {
+      "id": "mis_4",
+      "title": "Duyệt HĐDV & giấy đề nghị tạm ứng đợt 1",
+      "priority": "high",
+      "tag": "Cần Input",
+      "projectId": "proj_24",
+      "buildingId": "bld:facility:documents",
+      "date": "21/11/2026",
+      "time": null,
+      "done": false
+    },
+    {
+      "id": "mis_5",
+      "title": "Phê duyệt kế hoạch Art Direction Campus V2.5",
+      "priority": "high",
+      "tag": "Cần Input",
+      "actionId": "act_1",
+      "buildingId": "bld:facility:hq",
+      "date": "22/11/2026",
+      "time": null,
+      "done": false
+    },
+    {
+      "id": "mis_6",
+      "title": "Chốt SOW, ký HĐ & kick-off",
+      "priority": "medium",
+      "tag": "Lịch làm",
+      "projectId": "proj_1",
+      "buildingId": "bld:facility:hq",
+      "date": "21/11/2026",
+      "time": "08:30",
+      "done": true
+    }
+  ],
+  "notifications": [
+    {
+      "id": "ntf_1",
+      "type": "mail-scan",
+      "level": "warn",
+      "text": "Hermes quét mail tối qua: 1 khoản chi thiếu thông tin",
+      "time": "20/11/2026 22:00",
+      "buildingId": "bld:facility:hermes"
+    },
+    {
+      "id": "ntf_2",
+      "type": "deadline",
+      "level": "alert",
+      "text": "Sắp deadline: Cinematic Film Trailer, bàn giao bản dựng (25/11)",
+      "time": "25/11/2026",
+      "projectId": "proj_2",
+      "buildingId": "bld:facility:hq"
+    },
+    {
+      "id": "ntf_3",
+      "type": "meeting",
+      "level": "info",
+      "text": "Sắp họp: review tiến độ tuần lúc 16:00",
+      "time": "21/11/2026 16:00",
+      "buildingId": "bld:facility:schedule"
+    },
+    {
+      "id": "ntf_4",
+      "type": "documents",
+      "level": "warn",
+      "text": "Giấy tờ: 3 dự án cần bổ sung",
+      "time": "21/11/2026",
+      "buildingId": "bld:facility:documents"
+    },
+    {
+      "id": "ntf_5",
+      "type": "marketing",
+      "level": "info",
+      "text": "Marketing: 2 bài fanpage chờ anh duyệt",
+      "time": "21/11/2026",
+      "buildingId": null
+    }
+  ],
+  "aiWorkforce": [
+    {
+      "id": "minhthu",
+      "name": "Minh Thư",
+      "role": "Finance, Legal & Quotation",
+      "status": "active",
+      "task": "Quản lý thu chi, báo giá & hợp đồng",
+      "loadPct": 72,
+      "buildingId": "bld:facility:bank"
+    },
+    {
+      "id": "tramanh",
+      "name": "Trâm Anh",
+      "role": "PM Agent",
+      "status": "active",
+      "task": "Quản lý luồng công việc",
+      "loadPct": 65,
+      "buildingId": "bld:facility:hq"
+    },
+    {
+      "id": "minhdan",
+      "name": "Minh Đan",
+      "role": "Social Manager",
+      "status": "active",
+      "task": "Lên bài fanpage",
+      "loadPct": 58,
+      "buildingId": "bld:facility:ai"
+    },
+    {
+      "id": "chihai",
+      "name": "Chí Hải",
+      "role": "Tech Agent",
+      "status": "idle",
+      "task": null,
+      "loadPct": null,
+      "buildingId": "bld:facility:supabase"
+    },
+    {
+      "id": "quocbao",
+      "name": "Quốc Bảo",
+      "role": "Marketing Lead & AI Video Editor",
+      "status": "idle",
+      "task": null,
+      "loadPct": null,
+      "buildingId": "bld:facility:ai"
+    }
+  ],
+  "systems": [
+    {
+      "id": "supabase",
+      "buildingId": "bld:facility:supabase",
+      "name": "Supabase PostgreSQL",
+      "status": "online",
+      "detail": "Độ trễ 38ms",
+      "lastCheck": "21/11/2026 16:00"
+    },
+    {
+      "id": "oracle",
+      "buildingId": "bld:facility:oracle",
+      "name": "Oracle Cloud",
+      "status": "online",
+      "detail": "Máy chủ Hermes đang chạy",
+      "lastCheck": "21/11/2026 16:00"
+    },
+    {
+      "id": "google",
+      "buildingId": "bld:facility:google",
+      "name": "Google Cloud",
+      "status": "online",
+      "detail": "Drive & Gmail API hoạt động",
+      "lastCheck": "21/11/2026 16:00"
+    },
+    {
+      "id": "telegram",
+      "buildingId": "bld:facility:telegram",
+      "name": "Telegram Bot",
+      "status": "online",
+      "detail": "Bot đang nhận lệnh",
+      "lastCheck": "21/11/2026 16:00"
+    }
+  ],
+  "scheduleToday": [
+    {
+      "id": "evt_1",
+      "title": "Chỉnh sửa bản dựng vòng 2 & chốt online",
+      "time": "09:00-15:00",
+      "priority": "high",
+      "projectId": "proj_25",
+      "done": false
+    },
+    {
+      "id": "evt_2",
+      "title": "Kịch bản nháp lần 2 (Second Draft)",
+      "time": "09:00",
+      "priority": "medium",
+      "projectId": "proj_5",
+      "done": false
+    },
+    {
+      "id": "evt_3",
+      "title": "Review tiến độ tuần",
+      "time": "16:00",
+      "priority": "medium",
+      "projectId": null,
+      "done": false
+    }
+  ],
+  "marketing": {
+    "totalPosts": 12,
+    "pendingApproval": 2,
+    "approvedQueued": 3,
+    "published": 7
+  },
+  "workspace": {
+    "baseUrl": "",
+    "pages": {
+      "overview": {
+        "label": "Tổng quan",
+        "path": "/"
+      },
+      "projects": {
+        "label": "Dự án",
+        "path": "/projects"
+      },
+      "finance": {
+        "label": "Tài chính",
+        "path": "/finance"
+      },
+      "documents": {
+        "label": "Giấy tờ",
+        "path": "/documents"
+      },
+      "schedule": {
+        "label": "Lịch làm việc",
+        "path": "/schedule"
+      },
+      "marketing": {
+        "label": "Marketing",
+        "path": "/marketing"
+      }
+    },
+    "buildingPages": {
+      "bld:facility:hq": "overview",
+      "bld:facility:bank": "finance",
+      "bld:facility:documents": "documents",
+      "bld:facility:drive": "documents",
+      "bld:facility:schedule": "schedule",
+      "bld:facility:ai": "overview",
+      "bld:facility:hermes": "overview"
+    }
   }
 }
