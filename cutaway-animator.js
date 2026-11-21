@@ -97,6 +97,8 @@ export class CutawayAnimator {
     this.interiorLight.position.set(posX, posY + 4.5, posZ);
     this.scene.add(this.interiorLight);
 
+    // Nhớ cường độ ánh sáng ban ngày của campus (lấy từ campus-palette.json) để trả lại đúng khi thoát
+    if (!this.dayLight) this.dayLight = { sun: this.sunLight?.intensity, hemi: this.hemiLight?.intensity };
     if (this.sunLight) this.sunLight.intensity = 0.55;
     if (this.hemiLight) this.hemiLight.intensity = 0.40;
   }
@@ -118,8 +120,11 @@ export class CutawayAnimator {
       this.hiddenRoofObjects.forEach(o => { o.visible = true; });
       this.hiddenRoofObjects = [];
     }
-    if (this.sunLight) this.sunLight.intensity = 1.85;
-    if (this.hemiLight) this.hemiLight.intensity = 0.85;
+    if (this.dayLight) {
+      if (this.sunLight) this.sunLight.intensity = this.dayLight.sun;
+      if (this.hemiLight) this.hemiLight.intensity = this.dayLight.hemi;
+      this.dayLight = null;
+    }
   }
 
   exit() {

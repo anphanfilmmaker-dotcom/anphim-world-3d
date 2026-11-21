@@ -3,7 +3,7 @@ import {createModularRoadSystem} from './modular-roads.js?rev=4';
 import {createHQGardens} from './hq-gardens.js?rev=62';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
-import {createCampusEditor} from './campus-editor.js?rev=108';
+import {createCampusEditor} from './campus-editor.js?rev=109';
 import {createLandscapePolish} from './landscape-polish.js?rev=116';
 import {createCampusGreenery} from './campus-greenery.js?rev=8';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -25,7 +25,7 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up3';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 
