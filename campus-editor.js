@@ -3829,8 +3829,6 @@ export function createCampusEditor({
         if (sw.id === 'walk:ecosystem-loop' && Array.isArray(sw.points)) {
           sw.points = sw.points.map(pt => (pt[0] === 19 && pt[1] === 14 ? [19, 15] : pt[0] === 9 && pt[1] === 14 ? [9, 15] : pt));
         }
-        if (sw.id === 'walk:commons-finance') sw.points = [[-10, 9.2], [-9.5, 9.8]];
-        if (sw.id === 'walk:commons-IT') sw.points = [[10, 9.2], [9.5, 9.8]];
       }
       const visibleWalks = validWalks.filter(sw => !sw.hidden);
       const preservedDoorPaths = roads.paths.filter(p => p.class === 1 && p.id && p.id.startsWith('door:'));
