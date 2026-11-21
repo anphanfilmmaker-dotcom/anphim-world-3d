@@ -188,7 +188,7 @@ export class CockpitHUD {
           ${recentExp.map(e => `
             <div class="flex items-center justify-between p-2 rounded bg-neutral-900/60 border border-neutral-800/80">
               <div class="overflow-hidden pr-2">
-                <span class="font-bold text-white block truncate text-[11px]">${e.payee}</span>
+                <span class="font-bold text-white block truncate text-[11px]">${e.payee || e.description || ""}</span>
                 <span class="text-[10px] text-neutral-400">${e.date} · ${e.category}</span>
               </div>
               <span class="text-rose-400 font-mono font-bold text-xs shrink-0">${e.amountFormatted}</span>
@@ -301,7 +301,7 @@ export class CockpitHUD {
               </div>
               <div class="flex justify-between items-center">
                 <div class="overflow-hidden pr-2">
-                  <span class="font-bold text-white block truncate text-[11px]">${t.payee || t.client || 'Giao dịch'}</span>
+                  <span class="font-bold text-white block truncate text-[11px]">${t.payee || t.client || t.description || 'Giao dịch'}</span>
                   <span class="text-[10px] text-neutral-400 block truncate">${t.notes || ''}</span>
                 </div>
                 <span class="font-mono font-bold text-xs shrink-0 ${isExpenses ? 'text-white' : 'text-emerald-400'}">${t.amountFormatted}</span>

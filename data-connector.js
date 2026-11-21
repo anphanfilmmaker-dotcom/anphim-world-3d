@@ -2,13 +2,39 @@
  * data-connector.js
  * Centralized data bridge for AN PHIM World 3D Game Command Cockpit.
  * Ingests live Supabase metrics with local synchronous caching.
+ *
+ * Every panel and every 3D state reads through this class. Swapping the
+ * snapshot for the production API only changes load() / _transformRawDb().
  */
+
+const projectNumber = id => {
+  const m = String(id).match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : null;
+};
+
+const PRIORITY_ORDER = {high: 0, medium: 1, low: 2};
+
+const SYSTEM_STATUS = {
+  online: {label: 'Đang chạy', tone: 'ok'},
+  slow: {label: 'Chậm', tone: 'warn'},
+  down: {label: 'Ngừng chạy', tone: 'alert'}
+};
+
+const PROJECT_TONE = {
+  'Đang làm': 'ok',
+  'Chờ feedback': 'warn',
+  'Cần revise': 'alert',
+  'Tạm dừng': 'alert',
+  'Hoàn thành': 'done'
+};
 
 export class DataConnector {
   constructor() {
     this.cache = null;
     this.lastFetched = null;
     this.ttl = 30000; // 30s cache TTL
+    this.source = 'offline'; // 'snapshot' | 'api' | 'offline'
+    this.listeners = new Set();
   }
 
   async load() {
@@ -20,10 +46,9 @@ export class DataConnector {
       // 1. First try static live snapshot generated directly from Supabase
       const res = await fetch('./live_campus_data.json?t=' + Date.now());
       if (res.ok) {
-        this.cache = await res.json();
-        this.lastFetched = Date.now();
+        const data = await res.json();
         console.log('[DataConnector] Loaded live Supabase snapshot successfully.');
-        return this.cache;
+        return this._store(data, 'snapshot');
       }
     } catch (err) {
       console.warn('[DataConnector] Failed to fetch live snapshot, falling back:', err);
@@ -34,9 +59,7 @@ export class DataConnector {
       const res = await fetch('/api/db');
       if (res.ok) {
         const raw = await res.json();
-        this.cache = this._transformRawDb(raw);
-        this.lastFetched = Date.now();
-        return this.cache;
+        return this._store(this._transformRawDb(raw), 'api');
       }
     } catch (err) {
       console.warn('[DataConnector] API fallback unavailable:', err);
@@ -45,14 +68,19 @@ export class DataConnector {
     return this.cache || this._getDefaults();
   }
 
+  /** Calls fn() whenever a load brings in data that differs from the cache. */
+  subscribe(fn) {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+
+  /** Where the numbers on screen come from, for the "DB" light. */
+  getDataStatus() {
+    return {source: this.cache ? this.source : 'offline', updatedAt: this.cache?.updatedAt || null};
+  }
+
   getKPI() {
-    return this.cache?.kpi || {
-      cashAvailableFormatted: "348.520.000 đ",
-      receivableFormatted: "182.400.000 đ",
-      activeProjectsCount: 8,
-      missingDocumentsCount: 3,
-      pendingActionsCount: 1
-    };
+    return this.cache?.kpi || this._getDefaults().kpi;
   }
 
   getRecentExpenses() {
@@ -83,19 +111,243 @@ export class DataConnector {
     };
   }
 
-  getProject(id) {
-    if (!this.cache?.projects) return null;
-    return this.cache.projects.find(p => p.id === id || p.id === 'proj_' + id.replace(/[^0-9]/g, ''));
+  getProjects() {
+    return this.cache?.projects || [];
   }
 
+  getProject(id) {
+    if (id == null) return null;
+    const n = projectNumber(id);
+    return this.getProjects().find(p => p.id === id || (n !== null && projectNumber(p.id) === n)) || null;
+  }
+
+  /** Share of production milestones done, 0-100, or null when the project has none. */
+  getProjectProgress(project) {
+    const ms = project?.milestones || [];
+    if (!ms.length) return null;
+    return Math.round(ms.filter(m => m.completed).length / ms.length * 100);
+  }
+
+  /** Actions the owner must take: {open, done}, open sorted by priority then time. */
+  getMissions() {
+    const all = (this.cache?.missions || []).map(m => ({...m, project: this.getProject(m.projectId)}));
+    const open = all.filter(m => !m.done).sort((a, b) =>
+      (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9) ||
+      String(a.time || '99').localeCompare(String(b.time || '99')));
+    return {open, done: all.filter(m => m.done)};
+  }
+
+  /** Open missions per building id. */
+  getMissionCounts() {
+    const counts = new Map();
+    for (const m of this.getMissions().open) {
+      if (m.buildingId) counts.set(m.buildingId, (counts.get(m.buildingId) || 0) + 1);
+    }
+    return counts;
+  }
+
+  getNotifications() {
+    return this.cache?.notifications || [];
+  }
+
+  getAgents() {
+    return this.cache?.aiWorkforce || [];
+  }
+
+  getSystems() {
+    return this.cache?.systems || [];
+  }
+
+  getScheduleToday() {
+    return this.cache?.scheduleToday || [];
+  }
+
+  getMarketing() {
+    return this.cache?.marketing || null;
+  }
+
+  /** Workspace dashboard page: {key, label, url}; url is null until workspace.baseUrl is set. */
+  getWorkspacePage(key) {
+    const ws = this.cache?.workspace;
+    const page = ws?.pages?.[key];
+    if (!page) return null;
+    const base = (ws.baseUrl || '').replace(/\/+$/, '');
+    return {key, label: page.label, url: base ? base + (page.path || '') : null};
+  }
+
+  /** The dashboard page a building stands for. */
+  getBuildingPage(building) {
+    if (!building) return null;
+    if (building.kind === 'project') return this.getWorkspacePage('projects');
+    const key = this.cache?.workspace?.buildingPages?.[building.id];
+    return key ? this.getWorkspacePage(key) : null;
+  }
+
+  /**
+   * One card of facts for a building, used by the hover card on the campus view.
+   * `building` is the topology entry ({id, legacyId, kind, projectId, name}).
+   * Returns {id, title, subtitle, status: {label, tone}, progress, facts: [{label, value, money}],
+   * next, missionCount, connected, page}.
+   */
+  getBuildingSummary(building) {
+    if (!building) return null;
+    const kpi = this.getKPI();
+    const missions = this.getMissions().open.filter(m => m.buildingId === building.id);
+    const card = {
+      id: building.id,
+      title: building.name,
+      subtitle: '',
+      status: null,
+      progress: null,
+      facts: [],
+      next: missions[0]?.title || null,
+      missionCount: missions.length,
+      connected: true,
+      page: this.getBuildingPage(building)
+    };
+    const needsYou = missions.length
+      ? {label: missions.length + ' việc cần anh', tone: 'warn'}
+      : {label: 'Ổn', tone: 'ok'};
+    const key = building.legacyId || building.id;
+
+    if (building.kind === 'project') {
+      const p = this.getProject(building.projectId || building.id);
+      if (!p) return {...card, connected: false};
+      card.title = p.name;
+      card.subtitle = p.client;
+      card.status = {label: p.status, tone: PROJECT_TONE[p.status] || 'info'};
+      card.progress = this.getProjectProgress(p);
+      card.facts = [
+        {label: 'Deadline', value: p.duedate},
+        {label: 'Ngân sách', value: p.budgetFormatted, money: true},
+        {label: 'Đã nhận', value: p.receivedFormatted, money: true}
+      ];
+      card.next = p.nextaction || card.next;
+      return card;
+    }
+
+    switch (key) {
+      case 'hq':
+        card.subtitle = 'Tổng quan';
+        card.status = needsYou;
+        card.facts = [
+          {label: 'Dự án đang chạy', value: kpi.activeProjectsCount},
+          {label: 'Việc chờ anh quyết định', value: kpi.pendingActionsCount},
+          {label: 'Tiền mặt sẵn có', value: kpi.cashAvailableFormatted, money: true}
+        ];
+        return card;
+      case 'bank': {
+        const exp = this.getRecentExpenses()[0];
+        const inc = this.getAllIncomes()[0];
+        card.subtitle = 'Tài chính';
+        card.status = needsYou;
+        card.facts = [
+          {label: 'Tiền mặt sẵn có', value: kpi.cashAvailableFormatted, money: true},
+          {label: 'Khoản thu dự kiến', value: kpi.receivableFormatted, money: true}
+        ];
+        if (exp) card.facts.push({label: 'Chi gần nhất · ' + exp.description, value: exp.amountFormatted, money: true});
+        if (inc) card.facts.push({label: 'Thu gần nhất · ' + inc.description, value: inc.amountFormatted, money: true});
+        return card;
+      }
+      case 'documents': {
+        const missing = kpi.missingDocumentsCount;
+        card.subtitle = 'Giấy tờ';
+        card.status = missing > 0 ? {label: 'Thiếu: ' + missing, tone: 'warn'} : needsYou;
+        card.facts = [
+          {label: 'Dự án thiếu giấy tờ', value: missing},
+          {label: 'Dự án đang theo dõi', value: this.getProjects().length}
+        ];
+        return card;
+      }
+      case 'drive':
+        card.subtitle = 'Thư mục Drive theo dự án';
+        card.status = {label: 'Lối tắt', tone: 'info'};
+        card.facts = [{label: 'Thư mục dự án', value: this.getProjects().length}];
+        return card;
+      case 'schedule': {
+        const events = this.getScheduleToday();
+        const upcoming = events.find(e => !e.done);
+        card.subtitle = 'Lịch làm việc';
+        card.status = {label: events.length + ' việc hôm nay', tone: events.length ? 'info' : 'ok'};
+        card.facts = events.slice(0, 3).map(e => ({label: e.title, value: e.time || ''}));
+        card.next = upcoming ? upcoming.title : card.next;
+        return card;
+      }
+      case 'ai': {
+        const agents = this.getAgents();
+        const active = agents.filter(a => a.status === 'active');
+        card.subtitle = 'AI Workforce Trace';
+        card.status = {label: active.length + '/' + agents.length + ' agent đang chạy', tone: active.length ? 'ok' : 'idle'};
+        card.facts = active.map(a => ({label: a.name + ' · ' + (a.task || a.role), value: a.loadPct != null ? a.loadPct + '%' : ''}));
+        return card;
+      }
+      case 'hermes': {
+        const h = this.cache?.dailyBriefing?.hermes;
+        if (!h) return {...card, connected: false};
+        card.subtitle = 'Quét mail & tự động hóa';
+        card.status = needsYou;
+        card.facts = [
+          {label: 'Hệ thống', value: h.systemStatus},
+          {label: 'Quét mail', value: h.mailScanStatus},
+          {label: 'Sao lưu', value: h.backupStatus}
+        ];
+        return card;
+      }
+      default: {
+        const sys = this.getSystems().find(s => s.buildingId === building.id);
+        if (!sys) return {...card, connected: false};
+        card.subtitle = sys.name;
+        card.status = SYSTEM_STATUS[sys.status] || {label: sys.status, tone: 'info'};
+        card.facts = [
+          {label: 'Chi tiết', value: sys.detail},
+          {label: 'Kiểm tra gần nhất', value: sys.lastCheck}
+        ];
+        return card;
+      }
+    }
+  }
+
+  /** Projects, clients and missions matching a search string. */
+  search(query) {
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) return [];
+    const hit = (...texts) => texts.some(t => String(t || '').toLowerCase().includes(q));
+    const out = [];
+    for (const p of this.getProjects()) {
+      if (hit(p.name, p.client)) out.push({type: 'project', label: p.name, sub: p.client + ' · ' + p.status, projectId: p.id});
+      for (const doc of p.documents || []) {
+        if (hit(doc.title)) out.push({type: 'document', label: doc.title, sub: p.name + ' · ' + doc.status, projectId: p.id});
+      }
+    }
+    for (const m of [...this.getMissions().open, ...this.getMissions().done]) {
+      if (hit(m.title)) out.push({type: 'mission', label: m.title, sub: m.project?.name || m.tag || '', buildingId: m.buildingId});
+    }
+    return out;
+  }
+
+  /** Maps the production API response onto the snapshot schema. The API is expected to return it as is. */
+  _transformRawDb(raw) {
+    return raw;
+  }
+
+  _store(data, source) {
+    const changed = source !== this.source || JSON.stringify(data) !== JSON.stringify(this.cache);
+    this.cache = data;
+    this.source = source;
+    this.lastFetched = Date.now();
+    if (changed) this.listeners.forEach(fn => fn());
+    return this.cache;
+  }
+
+  // No data yet: show dashes, never invented numbers.
   _getDefaults() {
     return {
       kpi: {
-        cashAvailableFormatted: "348.520.000 đ",
-        receivableFormatted: "182.400.000 đ",
-        activeProjectsCount: 8,
-        missingDocumentsCount: 3,
-        pendingActionsCount: 1
+        cashAvailableFormatted: '—',
+        receivableFormatted: '—',
+        activeProjectsCount: '—',
+        missingDocumentsCount: '—',
+        pendingActionsCount: '—'
       },
       projects: [],
       recentExpenses: [],
