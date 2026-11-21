@@ -2,7 +2,7 @@ import * as T from 'three';
 
 /**
  * Cơ chế vạch kẻ đường theo mạng lưới (road network markings).
- * Đầu vào là danh sách tuyến đường xe chạy: {id, curve, halfW, closed, yAt(x,z), center, edges, walkW}.
+ * Đầu vào là danh sách tuyến đường xe chạy: {id, curve, halfW, closed, yAt(x,z), center, edges, walkW, group}.
  * Module tự tìm giao lộ (ngã ba: đầu một tuyến chạm vào tuyến khác; ngã tư: hai tuyến cắt nhau) rồi sinh:
  * vạch tim đứt đoạn, vạch mép liền, vạch dừng và vạch qua đường (zebra) ở từng nhánh của giao lộ.
  * Không tuyến nào được vẽ vạch xuyên qua lòng giao lộ.
@@ -31,6 +31,8 @@ function at(r, s) {
 export function analyseRoadNetwork(defs) {
   const roads = defs.filter(d => d && d.curve && d.halfW >= MIN_HALF).map(sampleRoad);
   const junctions = [], ends = [];
+  // Các khúc của cùng một con đường (tách ở chỗ quay đầu gấp) không tạo giao lộ với nhau
+  const sameRoad = (a, b) => a.group != null && a.group === b.group;
   const add = (x, z, arms) => {
     let j = junctions.find(q => Math.hypot(q.x - x, q.z - z) < 3);
     if (!j) junctions.push(j = {x, z, arms: []});
@@ -51,11 +53,11 @@ export function analyseRoadNetwork(defs) {
   // Ngã ba: đầu của một tuyến hở chạm vào thân một tuyến khác
   for (const a of roads) if (!a.closed) for (const sA of [0, a.len]) {
     const e = at(a, sA);
-    for (const b of roads) if (b !== a) {
-      const q = nearest(b, e.x, e.z);
-      if (q.d > b.halfW + 0.3) continue; // đầu đường phải thật sự chạm mặt nhựa của tuyến kia
+    for (const b of roads) if (b !== a && !sameRoad(a, b)) {
+      const q = nearest(b, e.x, e.z), c = at(b, q.s);
+      // Đầu đường phải thật sự chạm mặt nhựa của tuyến kia; đi vào xiên góc thì góc của đầu đường chạm trước tim đường
+      if (q.d > b.halfW + 0.3 + a.halfW * Math.abs(e.tx * c.tx + e.tz * c.tz)) continue;
       if (!b.closed && (q.s < 1.5 || b.len - q.s < 1.5)) continue; // hai đầu nối nhau = cùng một con đường đi tiếp
-      const c = at(b, q.s);
       add(c.x, c.z, [{road: a, s: sA, dir: sA === 0 ? 1 : -1, off: q.d}, ...armsOf(b, q.s)]);
       ends.push({x: c.x, z: c.z, a, b});
     }
@@ -63,6 +65,7 @@ export function analyseRoadNetwork(defs) {
   // Ngã tư: hai tim đường cắt nhau
   for (let i = 0; i < roads.length; i++) for (let k = i + 1; k < roads.length; k++) {
     const a = roads[i], b = roads[k];
+    if (sameRoad(a, b)) continue;
     for (let p = 0; p < a.n; p++) {
       const a0 = a.pts[p], a1 = a.pts[p + 1];
       for (let q = 0; q < b.n; q++) {
@@ -225,7 +228,7 @@ export function createMarkingMesh(boxes, material, name = 'road-markings-instanc
   mesh.count = boxes.length;
   mesh.castShadow = false;
   mesh.receiveShadow = true;
-  mesh.userData.isRoadMarking = true; // Studio bỏ qua khi chọn / ủi: vạch sơn không phải cây hay đồ vật
+  mesh.userData.studioPassThrough = true; // Studio bỏ qua khi chọn / ủi: vạch sơn không phải cây hay đồ vật
   mesh.userData.keepInArrivalZone = true; // vạch kẻ ở cổng không phải cảnh quan cần dọn khỏi vùng đón khách
   const dummy = new T.Object3D(), H = 0.012;
   dummy.rotation.order = 'YXZ';

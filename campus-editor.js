@@ -3603,7 +3603,7 @@ export function createCampusEditor({
       if (stripe) stripe.visible = false;
       // Cùng cách tách khúc với generateRoadMesh để vạch nằm đúng trên mặt nhựa ở khúc quay đầu gấp
       chains.rawChains.forEach((chain, i) => defs.push({
-        id: `${r.id}#${i}`, halfW: (r.width || 6) / 2, signature: JSON.stringify(chain),
+        id: `${r.id}#${i}`, group: r.id, halfW: (r.width || 6) / 2, signature: JSON.stringify(chain),
         curve: new T.CatmullRomCurve3(chain.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal')
       }));
     }
@@ -5506,7 +5506,7 @@ export function createCampusEditor({
       }
       if (hiddenAncestor) continue;
       if (isProtectedBuildingObject(o)) continue;
-      if (o.userData?.isRoadMarking) continue; // vạch sơn: nhìn xuyên qua để chọn đúng con đường bên dưới
+      if (o.userData?.studioPassThrough) continue; // vạch sơn / mặt nhựa vành đai: nhìn xuyên qua để chọn đúng thứ bên dưới
 
       // Case A0: mặt sân cam dựng mesh riêng -> ủi qua trạng thái court.hidden (được lưu và dựng lại), không chỉ ẩn mesh
       if (o.userData?.isSmoothCourtMesh) {

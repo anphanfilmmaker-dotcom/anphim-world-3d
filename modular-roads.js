@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
-import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=2';
+import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=3';
 
 /**
  * AN PHIM HIGH-FIDELITY UNIFIED ROAD NETWORK
@@ -126,8 +126,10 @@ export async function createModularRoadSystem(scene, terrain, roads) {
         mesh.name = name;
         mesh.receiveShadow = true;
         group.add(mesh);
+        return mesh;
       };
-      ribbon(roadVerts, roadIndices, asphaltMat, 'ring-road-smooth-asphalt');
+      // Mặt nhựa vành đai không phải vật thể để chọn / ủi trong Studio (click xuyên xuống địa hình như trước)
+      ribbon(roadVerts, roadIndices, asphaltMat, 'ring-road-smooth-asphalt').userData.studioPassThrough = true;
       ribbon(innerCurbVerts, innerCurbIndices, curbMat, 'ring-road-inner-curb');
       ribbon(outerCurbVerts, outerCurbIndices, curbMat, 'ring-road-outer-curb');
       ribbon(innerWalkVerts, innerWalkIndices, sidewalkMat, 'ring-road-inner-walkway');
