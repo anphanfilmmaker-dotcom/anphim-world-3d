@@ -17,7 +17,7 @@ const RESOURCES = [
 ];
 
 // Buildings with their own quick-jump button; other facilities go under "Hạ tầng".
-const MAIN_JUMPS = ['bld:facility:hq', 'bld:facility:bank', 'bld:facility:documents', 'bld:facility:schedule', 'bld:facility:ai'];
+const MAIN_JUMPS = ['bld:facility:hq', 'bld:facility:bank', 'bld:facility:documents', 'bld:facility:schedule', 'bld:facility:ai', 'bld:facility:marketing'];
 
 const PRIORITY = {
   high: {label: 'CAO', tone: 'alert'},
@@ -206,8 +206,10 @@ export class CockpitFrame {
    * @param {object[]} o.buildings    topology entries ({id, legacyId, kind, projectId, name})
    * @param {(b: object) => void} o.onEnterBuilding  fly inside a building
    * @param {() => void} o.onOverview  back to the whole-campus view
+   * @param {() => void} [o.onMoneyToggle]  the "hide money" switch changed
    */
-  constructor({dataConnector, buildings, onEnterBuilding, onOverview}) {
+  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle}) {
+    this.onMoneyToggle = onMoneyToggle;
     this.data = dataConnector;
     this.buildings = buildings;
     this.byId = new Map(buildings.map(b => [b.id, b]));
@@ -514,7 +516,7 @@ export class CockpitFrame {
     this.slot.jump.innerHTML = `<small>ĐI NHANH</small>
       <button class="cf-btn" data-act="overview" aria-pressed="${!this.inside}">Toàn cảnh</button>
       ${main.map(b => `<button class="cf-btn" data-enter="${esc(b.id)}" aria-pressed="${pressed(b.id)}">${esc(b.name)}${badge(b.id)}</button>`).join('')}
-      ${marketing ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
+      ${marketing && !this.byId.has('bld:facility:marketing') ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
       ${menu('projects', 'Dự án', projects, b => esc(this.data.getProject(b.projectId)?.status || ''))}
       ${menu('infra', 'Hạ tầng', infra, b => esc(this.data.getBuildingSummary(b)?.status?.label || 'Chưa kết nối'))}
       ${this.inside ? `<button class="cf-btn" data-act="overview" title="Esc">${icon('close', 13)} Thoát</button>` : ''}`;
@@ -569,6 +571,7 @@ export class CockpitFrame {
       localStorage.setItem(HIDE_MONEY_KEY, this.hideMoney ? '1' : '0');
       document.body.classList.toggle('cf-hide-money', this.hideMoney);
       this.render();
+      this.onMoneyToggle?.();
     } else if (act === 'tools') {
       document.body.classList.toggle('cf-tools');
       this.renderControls();

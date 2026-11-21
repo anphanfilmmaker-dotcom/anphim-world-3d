@@ -5,7 +5,7 @@
  */
 
 import * as T from 'three';
-import { buildInterior } from './interior-builder.js?rev=interior_v2';
+import { buildInterior, pickFocus } from './interior-builder.js?rev=interior_v2';
 import { disposeObject } from './dispose-helper.js';
 
 export class CutawayAnimator {
@@ -35,7 +35,7 @@ export class CutawayAnimator {
   }
 
   inspect(buildingId, targetPos, bInfo = {}) {
-    const buildingGroup = this.buildingObjects.get(buildingId);
+    const buildingGroup = this.buildingObjects.get(bInfo.hostId || buildingId);
     if (!buildingGroup) return;
 
     // Clean up previous interior if any
@@ -86,19 +86,30 @@ export class CutawayAnimator {
     });
 
     // 4. Build and stage 3D Interior (parquet floor, low cutaway walls, desks, glowing PCs, agents, plants)
-    const bW = bInfo.width || (buildingId.includes('hq') ? 16 : 9);
-    const bD = bInfo.depth || (buildingId.includes('hq') ? 12 : 8);
-    this.currentInterior = buildInterior(buildingId, bW, bD);
-    this.currentInterior.position.set(posX, posY + 0.02, posZ);
-    this.scene.add(this.currentInterior);
+    // Nội thất dựng theo dữ liệu của tòa (bInfo.view từ dataConnector.getBuildingView)
+    this.interiorSize = [bInfo.width || 13, bInfo.depth || 10];
+    this.interiorPos = [posX, posY + 0.02, posZ];
+    this.buildInterior(bInfo.view || {type: null, id: buildingId, title: bInfo.name, connected: false, agents: []}, bInfo.mask);
 
-    // 5. Warm interior illumination & dusk ambient focus
     this.interiorLight = new T.PointLight(0xfff7ed, 4.0, 32);
     this.interiorLight.position.set(posX, posY + 4.5, posZ);
     this.scene.add(this.interiorLight);
 
     if (this.sunLight) this.sunLight.intensity = 0.55;
     if (this.hemiLight) this.hemiLight.intensity = 0.40;
+  }
+
+  /** (Re)builds the room in place from a view model, e.g. after a data refresh; the camera does not move. */
+  buildInterior(view, mask) {
+    if (this.currentInterior) disposeObject(this.currentInterior);
+    this.currentInterior = buildInterior(view, this.interiorSize[0], this.interiorSize[1], {mask});
+    this.currentInterior.position.set(...this.interiorPos);
+    this.scene.add(this.currentInterior);
+  }
+
+  /** What the pointer ray hits inside the room: undefined (nothing), null (room, nothing clickable) or {section, id}. */
+  pick(raycaster) {
+    return this.currentInterior ? pickFocus(this.currentInterior, raycaster) : undefined;
   }
 
   cleanupInterior() {
@@ -188,7 +199,7 @@ export class CutawayAnimator {
     requestAnimationFrame(anim);
   }
 
-  update() {
-    // Selection ring removed per CEO request
+  update(now = performance.now()) {
+    this.currentInterior?.userData.update?.(now / 1000);
   }
 }
