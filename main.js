@@ -1,4 +1,3 @@
-import {createVistaXDistrict} from './district-vistax.js?rev=11';
 import {createModularRoadSystem} from './modular-roads.js?rev=1';
 import {createHQGardens} from './hq-gardens.js?rev=61';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
