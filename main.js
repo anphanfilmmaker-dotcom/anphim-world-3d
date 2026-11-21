@@ -26,6 +26,7 @@ import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median1'
 import {dataConnector} from './data-connector.js';
 import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
+import {CockpitFrame} from './cockpit-frame.js';
 
 window.THREE = T;
 
@@ -315,6 +316,7 @@ async function main() {
 
   let cutawayAnimator = null;
   let cockpitHUD = null;
+  let cockpitFrame = null;
 
   async function inspector(b) {
     if (cutawayAnimator) {
@@ -324,6 +326,7 @@ async function main() {
       const root = document.getElementById('cockpit-hud-root');
       if (root) root.style.display = 'flex';
       if (cockpitHUD) cockpitHUD.render(b.id);
+      if (cockpitFrame) cockpitFrame.setInside(b);
     } else {
       const sel = document.querySelector('#selection');
       if (sel) sel.hidden = false;
@@ -981,31 +984,38 @@ async function main() {
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
+  function exitInspect() {
+    if (cutawayAnimator) cutawayAnimator.exit();
+    const root = document.getElementById('cockpit-hud-root');
+    if (root) root.style.display = 'none';
+    if (cockpitFrame) cockpitFrame.setInside(null);
+  }
+
   cockpitHUD = new CockpitHUD(
     dataConnector,
     (jumpId) => {
       const b = L.buildings.find(item => item.id === jumpId);
       if (b) inspector(b);
     },
-    () => {
-      if (cutawayAnimator) cutawayAnimator.exit();
-      const root = document.getElementById('cockpit-hud-root');
-      if (root) root.style.display = 'none';
-    }
+    exitInspect
   );
 
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      if (cutawayAnimator) cutawayAnimator.exit();
-      const root = document.getElementById('cockpit-hud-root');
-      if (root) root.style.display = 'none';
+  // Campus-view frame: resource bar, missions, hovered building, quick jump
+  cockpitFrame = new CockpitFrame({
+    dataConnector,
+    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}],
+    onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
+    onOverview: () => {
+      if (cutawayAnimator.isInspecting) exitInspect();
+      else view('overview');
     }
   });
+  window.__cockpitFrame = cockpitFrame;
 
   // Chế độ click chọn tòa nhà (Cockpit / Cutaway)
-  // Mặc định: TẮT theo yêu cầu của sếp để tập trung kiểm tra ngoại cảnh và làm cảnh quan
-  let buildingClickEnabled = false;
-  window.buildingClickEnabled = false;
+  // Mặc định: BẬT, bấm vào tòa là bay vào bên trong; tắt trong "Công cụ" khi làm cảnh quan
+  let buildingClickEnabled = true;
+  window.buildingClickEnabled = true;
 
   function updateBuildingClickUI() {
     const btn = document.getElementById('btn-toggle-building-click');
@@ -1046,11 +1056,7 @@ async function main() {
   // Phím ESC để thoát ngay chế độ Cockpit/Cutaway nếu đang mở
   window.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      if (cutawayAnimator && cutawayAnimator.isInspecting) {
-        cutawayAnimator.exit();
-        const root = document.getElementById('cockpit-hud-root');
-        if (root) root.style.display = 'none';
-      }
+      if (cutawayAnimator && cutawayAnimator.isInspecting) exitInspect();
     }
   });
 
@@ -1066,9 +1072,7 @@ async function main() {
     ray.setFromCamera(mouse, camera);
     const hit = ray.intersectObjects(clickable, true)[0];
     if (!hit && cutawayAnimator && cutawayAnimator.isInspecting) {
-      cutawayAnimator.exit();
-      const root = document.getElementById('cockpit-hud-root');
-      if (root) root.style.display = 'none';
+      exitInspect();
       return;
     }
     if (hit) {
@@ -1097,6 +1101,26 @@ async function main() {
       }
     }
   });
+
+  // Hover: the building under the pointer shows its summary card in the cockpit frame
+  let hoverAt = 0;
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (e.buttons || performance.now() - hoverAt < 60) return;
+    hoverAt = performance.now();
+    if (editor.isEditMode()) return;
+    let binding = null;
+    if (!cutawayAnimator.isInspecting) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.set((e.clientX - rect.left) / rect.width * 2 - 1, -(e.clientY - rect.top) / rect.height * 2 + 1);
+      ray.setFromCamera(mouse, camera);
+      let o = ray.intersectObjects(clickable, true)[0]?.object;
+      while (o && !o.userData.binding) o = o.parent;
+      binding = o?.userData.binding || null;
+    }
+    cockpitFrame.setHovered(binding);
+    renderer.domElement.style.cursor = binding && buildingClickEnabled ? 'pointer' : '';
+  });
+  renderer.domElement.addEventListener('pointerleave', () => cockpitFrame.setHovered(null));
 
   // Massing Review toggle implementation
   const massingToggle = document.querySelector('#massing-review');
@@ -1328,6 +1352,7 @@ async function main() {
   function frame(now) {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
+    cockpitFrame.setBuilding(editor.isEditMode());
     if (cutawayAnimator) cutawayAnimator.update();
     const networkMoving = network?.tick(now * 0.001) === true;
     const biomesMoving = updateBiomeAnimations();
