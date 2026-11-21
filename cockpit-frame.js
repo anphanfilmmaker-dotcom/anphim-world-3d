@@ -88,6 +88,7 @@ button:disabled{cursor:not-allowed;opacity:.5}
 .cf-btn{display:flex;align-items:center;gap:7px;padding:0 13px;white-space:nowrap;font-weight:800;font-size:12px;text-decoration:none;color:var(--cf-text);transition:transform .15s ease,background .15s ease}
 .cf-btn:hover:not(:disabled):not([aria-disabled=true]){transform:translateY(-1px);background:rgba(40,54,60,.96)}
 .cf-btn[aria-pressed=true]{background:var(--cf-accent);color:#1b2428;border-color:transparent}
+.cf-btn[aria-pressed=true]:hover:not(:disabled):not([aria-disabled=true]){background:var(--cf-accent)}
 .cf-btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
 .cf-dot{width:8px;height:8px;border-radius:50%;background:var(--cf-mute);flex:none}
 [data-tone=ok]>.cf-dot,.cf-dot[data-tone=ok]{background:var(--cf-ok);box-shadow:0 0 0 3px rgba(95,214,138,.18)}
