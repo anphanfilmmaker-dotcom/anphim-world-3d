@@ -119,7 +119,11 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
     ctx.fillStyle = C.board; rounded(ctx, 4, 4, W - 8, H - 8, 26); ctx.fill();
     ctx.strokeStyle = accent; ctx.lineWidth = 6; ctx.stroke();
     ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = accent; ctx.font = `800 46px ${FONT}`;
+    ctx.fillStyle = accent;
+    // Shrink a long heading before cutting it off, so amounts in it stay whole
+    let size = 46;
+    do ctx.font = `800 ${size}px ${FONT}`;
+    while (ctx.measureText(title.toUpperCase()).width > W - 80 && (size -= 2) >= 28);
     ctx.fillText(fit(ctx, title.toUpperCase(), W - 80), 40, 72);
     if (view.connected === false) {
       ctx.fillStyle = C.mute; ctx.font = `700 40px ${FONT}`;
