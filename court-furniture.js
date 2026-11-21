@@ -27,6 +27,17 @@ const PLANTER = mergeGeometries([
   part(new T.IcosahedronGeometry(.5, 1).translate(0, .82, 0), LEAF), part(new T.IcosahedronGeometry(.3, 1).translate(.28, .62, .22), LEAF)
 ]);
 
+// Bồn cây lớn có cây bóng mát và cột đèn quảng trường: chỉ dùng cho quảng trường lớn (sảnh HQ)
+const TREE_PLANTER = mergeGeometries([
+  box(1.5, .46, 1.5, 0, .23, 0, STONE), box(1.3, .06, 1.3, 0, .48, 0, SOIL),
+  part(new T.CylinderGeometry(.1, .14, 1.3, 6).translate(0, 1.1, 0), '#7a5535'),
+  part(new T.IcosahedronGeometry(.95, 1).translate(0, 2.25, 0), '#5aa044'), part(new T.IcosahedronGeometry(.6, 1).translate(.45, 1.8, .3), LEAF)
+]);
+const LAMP = mergeGeometries([
+  part(new T.CylinderGeometry(.16, .2, .22, 8).translate(0, .11, 0), LEG), part(new T.CylinderGeometry(.045, .055, 2.5, 6).translate(0, 1.4, 0), LEG),
+  part(new T.SphereGeometry(.2, 8, 6).translate(0, 2.78, 0), '#fff3cf')
+]);
+
 export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
   if (!c || c.hidden || c.kind || c.w < 4.5 || c.d < 2.8) return null;
   const hw = c.w / 2, hd = c.d / 2, rot = c.rotY || 0, cos = Math.cos(rot), sin = Math.sin(rot);
@@ -81,6 +92,18 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
       });
       if (ok && narrow) break; // sân hẹp chỉ đủ chỗ cho một hàng ghế
     }
+  }
+  // Quảng trường lớn: cây bóng mát trong bồn đặt đối xứng ở các chỗ còn trống (ưu tiên hai đầu sân, cách nhau ít nhất 4.2) và đèn ở bốn góc,
+  // như quảng trường HQ trong ảnh tham chiếu. Lối đi, bậc thang và nền nhà vẫn được chừa nhờ blocked().
+  if (c.w >= 16 && c.d >= 6) {
+    const trees = [];
+    for (const lz of [hd - 1.15, -(hd - 1.15), hd - 2.7, -(hd - 2.7)])
+      for (let lx = hw - 1.3; lx >= 0 && trees.length < 8; lx -= .7)
+        for (const sx of lx ? [-1, 1] : [1]) {
+          const [x, z] = world(sx * lx, lz);
+          if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05)) trees.push([x, z]);
+        }
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) place(LAMP, sx * (hw - .45), sz * (hd - .45), 0, .25);
   }
   if (!geos.length) return null;
   const mesh = new T.Mesh(mergeGeometries(geos), material);
