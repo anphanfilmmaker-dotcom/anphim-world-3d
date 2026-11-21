@@ -23,7 +23,7 @@ export function createTerrain(scene,P,L){
  const basePosArray=new Float32Array(baseCount*3);
  const origHeights=new Float32Array(baseCount);
  const baseColorArray=new Float32Array(baseCount*3);
- const AO_REACH=2.6,AO_STRENGTH=.4;
+ const AO_REACH=3.2,AO_STRENGTH=.5;
  for(let i=0;i<baseCount;i++){
   const x=pos.getX(i),z=pos.getZ(i),y=designHeight(x,z);
   pos.setY(i,y);
@@ -35,7 +35,9 @@ export function createTerrain(scene,P,L){
   // P3: Biến thiên hữu cơ ±5-8% độ sáng và sắc cỏ (vertex colors mảng loang tự nhiên)
   const n1 = Math.sin(x * 0.08) * Math.cos(z * 0.06);
   const n2 = Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5;
-  const variation = n1 * 0.04 + n2 * 0.035;
+  // Mảng loang lớn, mềm (cỏ trong ảnh tham chiếu có vệt sáng / tối như tô tay)
+  const n3 = Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.053 - 0.7) + 0.6 * Math.sin((x + z) * 0.021 + 2.1);
+  const variation = n1 * 0.04 + n2 * 0.035 + n3 * 0.045;
   // Contact AO nướng vào vertex color: tối dần mềm quanh chân mỗi công trình (bóng tiếp địa, không tốn GPU).
   let ao = 1;
   for (const p of pads) {
@@ -43,9 +45,9 @@ export function createTerrain(scene,P,L){
     const d = Math.hypot(Math.max(0, Math.abs(x - p.x) - (p.hx - .4)), Math.max(0, Math.abs(z - p.z) - (p.hz - .4)));
     if (d < AO_REACH) ao = Math.min(ao, 1 - AO_STRENGTH * (1 - smooth(d / AO_REACH)));
   }
-  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.92, 1.08) * ao * ao;
-  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.92, 1.08) * ao;
-  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.92, 1.08) * ao;
+  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.86, 1.12) * ao * ao;
+  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.86, 1.12) * ao;
+  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.86, 1.12) * ao;
  }
  geo.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(baseColorArray),3));
  // Sample the actual triangle plane from basePosArray using exact PlaneGeometry stepX/stepZ so height(x,z) matches rendered triangles 100%.

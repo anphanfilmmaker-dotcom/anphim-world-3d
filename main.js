@@ -4,7 +4,7 @@ import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createCampusEditor} from './campus-editor.js?rev=118';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
-import {createCampusGreenery} from './campus-greenery.js?rev=10';
+import {createCampusGreenery} from './campus-greenery.js?rev=11';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -16,10 +16,10 @@ import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v35';
+import {createArchitecture} from './architecture.js?rev=v38';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq17';
+import {createTerrain} from './terrain.js?rev=hq18';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -509,6 +509,7 @@ async function main() {
         currentA = createArchitecture(customP);
       }
 
+      const isSmallBuilding = ['documents', 'drive', 'google'].includes(b.legacyId) || String(b.id).startsWith('bld:project:');
       let rawBuilding;
       if (b.legacyId === 'telegram') rawBuilding = currentA.telegramTower();
       else if (b.legacyId === 'hermes' || b.style === 'research') rawBuilding = currentA.hermesLab();
@@ -517,6 +518,8 @@ async function main() {
       else if (b.legacyId === 'supabase') rawBuilding = currentA.databaseBuilding();
       else if (b.legacyId === 'oracle') rawBuilding = currentA.oracleCloudBuilding();
       else if (b.legacyId === 'ai' || b.style === 'office') rawBuilding = currentA.officeBuilding();
+      // Các tòa nhỏ (tài liệu, drive, google, tòa dự án) dựng bằng code theo ảnh tham chiếu thay cho model GLB mặt phẳng
+      else if (isSmallBuilding) rawBuilding = currentA.smallCampusBuilding(b.legacyId);
       else rawBuilding = await registry.building(V23.bindings[b.legacyId], currentA, b.legacyId);
 
       if (bldType) {
@@ -526,7 +529,9 @@ async function main() {
         }
       }
 
-      f = A.fit(mergeBuilding(rawBuilding), b.grade, L.grades);
+      // Tòa nhỏ dựng bằng code nằm gọn trong mặt bằng của model cũ, nên khe hở và khoảng lùi giữa các tòa không đổi
+      const plot = isSmallBuilding ? currentA.smallBuildingPlot(b.legacyId) : null;
+      f = A.fit(mergeBuilding(rawBuilding), b.grade, plot ? {[b.grade]: [plot[0], L.grades[b.grade][1], plot[1]]} : L.grades);
       g = f.group;
       bbox = f.bbox;
     }
