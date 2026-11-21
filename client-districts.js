@@ -273,7 +273,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     },
     'film-set'(b, ctx) {
       const {depth, roadEnd, accent} = ctx;
-      b.box(accent, 9.5, 0.03, 2.2, 6.2, 0.14, -8);
+      // Red carpet beside the road, clear of the plaza palm and the spotlight poles.
+      b.box(accent, 9.5, 0.03, 2, 6.2, 0.14, -6.4);
       for (const [u, v] of [[3, -10.5], [3, 10.5], [10.5, -10.5], [10.5, 10.5]]) {
         b.box(M.pole, 0.28, 6.5, 0.28, u, 0, v);
         b.box(M.pole, 1.5, 0.22, 0.22, u, 6.4, v);
@@ -688,6 +689,56 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   access.name = 'client-district-access';
   root.add(access);
   for (const road of plan.accessRoads || []) access.add(drapedRibbon(road.points, road.width, M.asphalt));
+  // Sidewalks and a dashed centre line along the branch roads, left open where the ring or a gate road crosses.
+  const branchDress = new T.Group();
+  access.add(branchDress);
+  const ringHalf = (L.roadWidths?.[3] || 8) / 2;
+  const ringGap = (() => {
+    const c = L.roadPlan?.ringCorners, r = L.roadPlan?.ringCornerRadius || 0;
+    if (!c) return () => Infinity;
+    const xs = c.map(p => p[0]), zs = c.map(p => p[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+    const hx = (Math.max(...xs) - Math.min(...xs)) / 2, hz = (Math.max(...zs) - Math.min(...zs)) / 2;
+    return (x, z) => {
+      const qx = Math.abs(x - cx) - hx, qz = Math.abs(z - cz) - hz;
+      return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - r;
+    };
+  })();
+  const segGap = (x, z, [ax, az], [bx, bz]) => {
+    const dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  };
+  function dressBranches() {
+    release(branchDress);
+    branchDress.clear();
+    const gates = [...districts.values()].filter(d => d.road).map(d => [d.slot.ringXZ, d.slot.gateXZ]);
+    const free = ([x, z], r) => ringGap(x, z) >= ringHalf + r && gates.every(([a, b]) => segGap(x, z, a, b) >= tpl.roadWidth / 2 + r);
+    for (const road of plan.accessRoads || []) {
+      const v = road.points.map(p => new T.Vector3(p[0], 0, p[1]));
+      const curve = v.length > 2 ? new T.CatmullRomCurve3(v, false, 'catmullrom', 0.15) : new T.LineCurve3(v[0], v[1]);
+      const len = curve.getLength();
+      const at = (d, o) => {
+        const u = T.MathUtils.clamp(d / len, 0, 1), p = curve.getPointAt(u), t = curve.getTangentAt(u);
+        return [p.x - t.z * o, p.z + t.x * o];
+      };
+      for (const s of [-1, 1]) {
+        let piece = [];
+        const close = () => {
+          if (piece.length > 1) branchDress.add(drapedRibbon(piece, tpl.sidewalkWidth, M.walk, 0.09));
+          piece = [];
+        };
+        for (let d = 0; d <= len; d += 1.2) {
+          const p = at(d, s * (road.width / 2 + tpl.sidewalkWidth / 2));
+          if (free(p, tpl.sidewalkWidth / 2 + 0.2)) piece.push(p); else close();
+        }
+        close();
+      }
+      for (let d = 2; d < len - 3.5; d += 3.2) {
+        const dash = [at(d, 0), at(d + 0.8, 0), at(d + 1.6, 0)];
+        if (dash.every(p => free(p, 0.6))) branchDress.add(drapedRibbon(dash, 0.16, M.line, 0.1));
+      }
+    }
+  }
   function gateRoad(slot) {
     if (!slot.ringXZ) return null;
     const g = new T.Group(), f = slotFrame(slot, tpl);
@@ -709,7 +760,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         return (u >= -4 && u <= f.depth + 4 && Math.abs(v) <= f.half + 4) || (u > f.depth && u <= f.depth + 36 && Math.abs(v) <= f.half + 14);
       };
     });
-    const lines = [...(plan.accessRoads || []).map(r => [r.points, r.width / 2 + 2])];
+    const lines = [...(plan.accessRoads || []).map(r => [r.points, r.width / 2 + tpl.sidewalkWidth + 1])];
     for (const d of districts.values()) if (d.client && d.slot.ringXZ) lines.push([[d.slot.ringXZ, d.slot.gateXZ], tpl.roadWidth / 2 + tpl.sidewalkWidth + 1.5]);
     const onRoad = (x, z) => lines.some(([pts, r]) => {
       for (let i = 0; i < pts.length - 1; i++) {
@@ -751,10 +802,13 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   api.refresh = () => {
     const before = [...districts.values()].map(d => d.key).join();
     refresh();
-    if (before !== [...districts.values()].map(d => d.key).join()) clearLand();
+    if (before === [...districts.values()].map(d => d.key).join()) return;
+    clearLand();
+    dressBranches();
   };
   refresh();
   clearLand();
+  dressBranches();
   dataConnector.subscribe?.(api.refresh);
   return api;
 }
