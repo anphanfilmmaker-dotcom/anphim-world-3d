@@ -298,7 +298,7 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
     g.rotation.y = ry;
     g.updateMatrixWorld(true);
     const size = box.getSize(new T.Vector3()), center = box.getCenter(new T.Vector3());
-    return {w: size.x, h: size.y, d: size.z, cx: center.x - g.position.x, cz: center.z - g.position.z, y0: box.min.y - g.position.y};
+    return {w: size.x, h: size.y, d: size.z, cx: center.x - g.position.x, cz: center.z - g.position.z, y0: box.min.y - g.position.y, scale: g.scale.x};
   }
 
   /** Clip the building at the built height and/or dim it, without touching its shared materials. */
@@ -701,7 +701,9 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
       group.visible = g.visible && !!g.parent;
       group.position.copy(g.position);
       group.rotation.y = g.rotation.y;
-      if (o.clip) o.clip.constant = g.position.y + o.dim.y0 + o.builtH;
+      const k = g.scale.x / o.dim.scale;   // the editor can resize a building after it was measured
+      group.scale.setScalar(k);
+      if (o.clip) o.clip.constant = g.position.y + (o.dim.y0 + o.builtH) * k;
       if (!group.visible) continue;
       for (const fn of o.animate) fn(t);
       busy = busy || o.busy;
@@ -710,7 +712,8 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
     for (const m of markers.values()) {
       const g = m.building;
       m.group.visible = g.visible && !!g.parent;
-      m.group.position.set(g.position.x + m.dim.cx, g.position.y + m.dim.y0 + m.dim.h + m.lift, g.position.z + m.dim.cz);
+      const k = g.scale.x / m.dim.scale;
+      m.group.position.set(g.position.x + m.dim.cx * k, g.position.y + (m.dim.y0 + m.dim.h) * k + m.lift, g.position.z + m.dim.cz * k);
       if (m.beacon) {
         m.beacon.material = blink ? M.beaconOn : M.beaconOff;
         busy = busy || m.group.visible;
