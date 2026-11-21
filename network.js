@@ -67,5 +67,5 @@ export function createNetwork(scene,P,L,objects,operations,systems,report,sync,r
  const rtEl=document.querySelector('#relation-type'); if(rtEl) rtEl.onchange=e=>{filter=e.target.value;rebuild();};
  const afEl=document.querySelector('#animate-flow'); if(afEl) afEl.onchange=e=>animated=e.target.checked;
  const cfEl=document.querySelector('#clear-focus'); if(cfEl) cfEl.onclick=()=>{selected=null;rebuild();};
- setMode('world');return {select:id=>{selected=id;rebuild();},setMode,rebuild,tick:t=>{if(mode==='world')return;for(const d of dots){const u=animated?(t*.12)%1:.5;d.pulse.position.copy(d.curve.getPoint(d.direction>0?u:1-u));}}};
+ setMode('world');return {select:id=>{selected=id;rebuild();},setMode,rebuild,tick:t=>{if(mode==='world')return false;for(const d of dots){const u=animated?(t*.12)%1:.5;d.pulse.position.copy(d.curve.getPoint(d.direction>0?u:1-u));}return animated&&dots.length>0;}};
 }

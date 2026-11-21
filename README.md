@@ -48,7 +48,11 @@ npx serve .
 
 ## Camera Controls
 
-- **Left Mouse Drag:** Orbit / Rotate view
+- **Left Mouse Drag:** Orbit / Rotate view (view mode; in Edit Mode the left button is reserved for editing)
+- **Middle Mouse Drag:** Orbit / Rotate view (also in Edit Mode)
 - **Right Mouse Drag:** Pan scene
-- **Scroll Wheel:** Zoom in / out
-- **Preset Buttons:** Quick navigation to Overview, Hero HQ, Topview, Front, and Side perspectives.
+- **Scroll Wheel:** Zoom in / out toward the cursor
+- **Arrow Keys:** Move across the campus (hold Shift to move faster)
+- **Preset Buttons:** Animated move to Overview, Hero HQ, Topview, Front, and Side perspectives; dragging or scrolling interrupts it.
+
+All camera motion goes through `camera-director.js` (`director.flyTo(...)`), not direct `camera.position` writes.

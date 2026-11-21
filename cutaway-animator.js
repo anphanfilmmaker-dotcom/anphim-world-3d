@@ -9,13 +9,14 @@ import { buildInterior } from './interior-builder.js?rev=interior_v2';
 import { disposeObject } from './dispose-helper.js';
 
 export class CutawayAnimator {
-  constructor(scene, camera, controls, buildingObjects, setSpanFn, getSpanFn) {
+  constructor(scene, camera, controls, buildingObjects, setSpanFn, getSpanFn, director = null) {
     this.scene = scene;
     this.camera = camera;
     this.controls = controls;
     this.buildingObjects = buildingObjects;
     this.setSpan = setSpanFn;
     this.getSpan = getSpanFn;
+    this.director = director;
 
     this.currentInspectedId = null;
     this.isInspecting = false;
@@ -143,6 +144,10 @@ export class CutawayAnimator {
         750,
         () => {
           this.originalCameraState = null;
+        },
+        reason => {
+          // Interrupted by the user: stay where they are. A new inspect keeps the saved state.
+          if (reason !== 'replaced') this.originalCameraState = null;
         }
       );
     }
@@ -150,7 +155,11 @@ export class CutawayAnimator {
     this.currentInspectedId = null;
   }
 
-  tweenCameraZoom(endPos, endTarget, endSpan, duration, onComplete) {
+  tweenCameraZoom(endPos, endTarget, endSpan, duration, onComplete, onCancel) {
+    if (this.director) {
+      this.director.flyTo({ position: endPos, target: endTarget, span: endSpan }, { onComplete, onCancel });
+      return;
+    }
     const startPos = this.camera.position.clone();
     const startTarget = this.controls.target.clone();
     const startSpan = this.getSpan ? this.getSpan() : 95;

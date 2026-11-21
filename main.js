@@ -3,7 +3,7 @@ import {createModularRoadSystem} from './modular-roads.js?rev=1';
 import {createHQGardens} from './hq-gardens.js?rev=61';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createDistrictShowcase} from './district-showcase.js?rev=100';
-import {createCampusEditor} from './campus-editor.js?rev=103';
+import {createCampusEditor} from './campus-editor.js?rev=104';
 import {createLandscapePolish} from './landscape-polish.js?rev=112';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
@@ -12,8 +12,9 @@ import {getStudioModelById, preloadAllStudioPacks} from './asset-pack-extractor.
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
 import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v4';
-import {createNetwork} from './network.js?rev=20';
+import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
+import {createCameraDirector} from './camera-director.js?rev=1';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v28_restored';
 import {createAdapter} from './materials.js?rev=8';
@@ -23,7 +24,7 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up3';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median1';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v2';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
 
 window.THREE = T;
@@ -143,7 +144,6 @@ async function main() {
   const camera = new T.OrthographicCamera(-100, 100, 50, -50, 0.1, 800);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
   controls.maxPolarAngle = Math.PI * 0.48;
   controls.minDistance = 10;
   controls.maxDistance = 450;
@@ -151,7 +151,7 @@ async function main() {
   controls.screenSpacePanning = true;
   controls.panSpeed = 1.35;
   controls.mouseButtons = {
-    LEFT: -1,     // Chuột trái dùng để chọn/vẽ/tương tác, KHÔNG di chuyển camera
+    LEFT: T.MOUSE.ROTATE, // Chế độ xem: kéo chuột trái để xoay, click không kéo để chọn. Editor: camera-director tắt chuột trái
     MIDDLE: T.MOUSE.ROTATE, // Chuột giữa xoay góc nhìn tự do 360 độ
     RIGHT: T.MOUSE.PAN      // Giữ chuột phải kéo để di chuyển camera
   };
@@ -162,59 +162,6 @@ async function main() {
   renderer.domElement.addEventListener('pointerdown', e => {
     if (e.button === 1) e.preventDefault();
   });
-
-  // Điều khiển camera bằng bàn phím (Phím mũi tên & WASD)
-  const activeNavKeys = new Set();
-  window.addEventListener('keydown', e => {
-    const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-    // Điều khiển camera bằng phím mũi tên (WASD dành riêng để di chuyển vật thể)
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-      activeNavKeys.add(e.code);
-    }
-    if (e.key === 'Shift') activeNavKeys.add('Shift');
-  });
-
-  window.addEventListener('keyup', e => {
-    activeNavKeys.delete(e.code);
-    if (e.key === 'Shift') activeNavKeys.delete('Shift');
-  });
-
-  function updateCameraKeyboardNav() {
-    if (cutawayAnimator && cutawayAnimator.isInspecting) return;
-    if (activeNavKeys.size === 0) return;
-
-    const camForward = new T.Vector3();
-    camera.getWorldDirection(camForward);
-    camForward.y = 0;
-    if (camForward.lengthSq() < 0.0001) {
-      camForward.set(0, 0, -1);
-    } else {
-      camForward.normalize();
-    }
-
-    const camRight = new T.Vector3();
-    camRight.crossVectors(camForward, new T.Vector3(0, 1, 0)).normalize();
-
-    // Tốc độ di chuyển thích ứng theo độ zoom (span) và Shift tăng tốc
-    const speed = (span / 40) * (activeNavKeys.has('Shift') ? 2.5 : 1.0);
-    const move = new T.Vector3();
-
-    if (activeNavKeys.has('ArrowUp')) move.add(camForward);
-    if (activeNavKeys.has('ArrowDown')) move.sub(camForward);
-    if (activeNavKeys.has('ArrowLeft')) move.sub(camRight);
-    if (activeNavKeys.has('ArrowRight')) move.add(camRight);
-
-    if (move.lengthSq() > 0) {
-      move.normalize().multiplyScalar(speed);
-      camera.position.add(move);
-      controls.target.add(move);
-      controls.update();
-      report.camera = 'free-roam';
-    }
-  }
 
   let postPipeline = null;
   let span = 95, currentView = 'overview';
@@ -250,7 +197,7 @@ async function main() {
     internalLow: {pos:[58,12,-8],target:[34,4,-23],span:35},
     forecourt: {pos:[22,28,34],target:[0,6,7],span:28},
     overview: {pos: [92, 121, 153], target: [8, 5, 0], span: 79},
-    top: {pos: [-10, 190, -8], target: [-10, 0, -7], span: 118},
+    top: {pos: [-10, 190, -6], target: [-10, 0, -7], span: 118},
     arrival: {pos: [30, 42, 62], target: [0, 9, 12], span: 58},
     vistax: {pos: [-50, 38, 38], target: [-78, 4, 15], span: 40},
     uturn_top: {pos: [0, 52, 25.5], target: [0, 4.5, 25.0], span: 26},
@@ -270,17 +217,19 @@ async function main() {
     hqRearAngle: {pos: [-25, 42, -35], target: [0, 10, -5], span: 28}
   };
 
-  function view(k) {
+  const director = createCameraDirector({
+    camera, controls, domElement: renderer.domElement,
+    getSpan: () => span, setSpan,
+    keyboardEnabled: () => !(cutawayAnimator && cutawayAnimator.isInspecting),
+    leftDragRotates: () => !editor.isEditMode() || !!(cutawayAnimator && cutawayAnimator.isInspecting),
+    onUserMove: mode => { report.camera = mode; }
+  });
+
+  function view(k, {immediate = false} = {}) {
     const v = views[k];
     if (!v) return;
     currentView = k;
-    span = v.span;
-    camera.up.set(0, k === 'top' ? 0 : 1, k === 'top' ? -1 : 0);
-    camera.position.set(...v.pos);
-    controls.target.set(...v.target);
-    camera.lookAt(controls.target);
-    size();
-    controls.update();
+    director.flyTo({position: v.pos, target: v.target, span: v.span}, {immediate});
     report.camera = k;
     document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === k)));
     sync();
@@ -288,9 +237,11 @@ async function main() {
 
   window.setCameraSpan = setSpan;
   window.setCameraView = view;
+  window.cameraDirector = director;
 
   document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => view(b.dataset.view));
-  view(new URLSearchParams(location.search).get('view') || 'overview');
+  size();
+  view(new URLSearchParams(location.search).get('view') || 'overview', {immediate: true});
 
   const V23 = await fetchJSON('./assets-manifest.json?rev=local-v23');
   const A = createArchitecture(P), adapter = createAdapter(P), registry = createAssetRegistry(adapter, report);
@@ -915,7 +866,9 @@ async function main() {
   });
 
   function updateBiomeAnimations() {
+    let animating = false;
     for (const b of biomeControllers) {
+      if (Math.abs(b.targetOpacity - b.currentOpacity) > 0.002 || Math.abs(b.targetScale - b.currentScale) > 0.002) animating = true;
       b.currentOpacity += (b.targetOpacity - b.currentOpacity) * 0.14;
       b.currentScale += (b.targetScale - b.currentScale) * 0.14;
 
@@ -934,6 +887,7 @@ async function main() {
         b.label.scale.set(b.currentScale, b.currentScale, 1);
       }
     }
+    return animating;
   }
 
   // Schedule kiosk - Restored to compact original kiosk at [17, 31.5]
@@ -1024,7 +978,7 @@ async function main() {
 
   // Cockpit Command Engine (Spec Kit Integration)
   await dataConnector.load();
-  cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span);
+  cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
   cockpitHUD = new CockpitHUD(
@@ -1359,24 +1313,38 @@ async function main() {
   window.camera = camera;
   window.controls = controls;
 
+  // Render on demand: draw while something moves or the user is interacting,
+  // otherwise only a slow heartbeat so late-loading assets still show up.
+  const IDLE_RENDER_MS = 250, ACTIVE_AFTER_INPUT_MS = 1500, REPORT_MS = 500;
+  let activeUntil = 0, lastRender = 0, lastReport = 0;
+  const keepRendering = () => { activeUntil = performance.now() + ACTIVE_AFTER_INPUT_MS; };
+  ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'keydown', 'keyup', 'click', 'input', 'change', 'resize']
+    .forEach(type => addEventListener(type, keepRendering, {capture: true, passive: true}));
+  window.requestRender = keepRendering;
+  keepRendering();
+
   const frameTimes = [];
   let previous = performance.now();
   function frame(now) {
     requestAnimationFrame(frame);
-    updateCameraKeyboardNav();
-    controls.update();
+    const cameraMoving = director.update(now);
     if (cutawayAnimator) cutawayAnimator.update();
-    network?.tick(now * 0.001);
-    updateBiomeAnimations();
-    if (postPipeline) {
-      postPipeline.render();
-    } else {
-      renderer.render(scene, camera);
+    const networkMoving = network?.tick(now * 0.001) === true;
+    const biomesMoving = updateBiomeAnimations();
+    const active = cameraMoving || networkMoving || biomesMoving || now < activeUntil;
+    if (active || now - lastRender >= IDLE_RENDER_MS) {
+      lastRender = now;
+      if (postPipeline) {
+        postPipeline.render();
+      } else {
+        renderer.render(scene, camera);
+      }
     }
     frameTimes.push(now - previous);
     previous = now;
     if (frameTimes.length > 180) frameTimes.shift();
-    if (frameTimes.length % 30 === 0) {
+    if (now - lastReport >= REPORT_MS) {
+      lastReport = now;
       const f = [...frameTimes].sort((a, b) => a - b);
       report.textureMemory = {textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, note: 'GPU texture count; byte estimate not measured'};
       report.activeNPCs = 0;
@@ -1384,6 +1352,7 @@ async function main() {
       report.triangles = renderer.info.render.triangles;
       report.frameMedian = f[Math.floor(f.length / 2)];
       report.frameP95 = f[Math.floor(f.length * 0.95)];
+      report.rendering = active ? 'active' : 'idle';
       sync();
     }
   }
