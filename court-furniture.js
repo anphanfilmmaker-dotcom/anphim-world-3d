@@ -101,7 +101,7 @@ export function buildCourtFurniture(c, {roads, terrain, levelY, sampleY}) {
       for (let lx = hw - 1.3; lx >= 0 && trees.length < 8; lx -= .7)
         for (const sx of lx ? [-1, 1] : [1]) {
           const [x, z] = world(sx * lx, lz);
-          if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05, .85)) trees.push([x, z]);
+          if (trees.every(t => Math.hypot(x - t[0], z - t[1]) >= 4.2) && place(TREE_PLANTER, sx * lx, lz, trees.length, 1.05, 1.1)) trees.push([x, z]);
         }
     // Góc sân bo tròn: lùi đèn theo đường chéo để chân đèn (bán kính .2) luôn nằm trong mép sân
     const li = Math.max(.45, Math.min(c.r ?? 1.5, hw, hd) * .293 + .25);
