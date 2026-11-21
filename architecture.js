@@ -856,7 +856,7 @@ export function createArchitecture(P) {
 
     // 2. Fortified Plinth & Bunker Body (8.4m x 5.4m x 8.4m)
     box(g, 9.0, 0.45, 9.0, 0, 0, 0, M.stone);
-    box(g, 8.0, 4.8, 8.0, 0, 0.45, -0.2, M.metal);
+    box(g, 8.0, 4.8, 8.0, 0, 0.45, -0.2, M.cream); // thân kem theo ảnh tham chiếu; mặt cửa kho giữ tông tối
 
     // 3. 4 Heavy Corner Reinforcement Buttresses
     const buttressesG = new T.Group();
@@ -874,7 +874,7 @@ export function createArchitecture(P) {
     // 5. Massive Circular Vault Portal Structure
     const blastDoorG = new T.Group();
     blastDoorG.userData.toggleKey = 'blastDoor';
-    box(blastDoorG, 5.6, 4.2, 0.7, 0, 0.5, 3.9, M.stone);
+    box(blastDoorG, 5.6, 4.2, 0.7, 0, 0.5, 3.9, M.metal);
     const portal = new T.Mesh(new T.CylinderGeometry(2.1, 2.1, 0.55, 32), M.metal);
     portal.rotation.x = Math.PI / 2;
     portal.position.set(0, 2.7, 4.3);
