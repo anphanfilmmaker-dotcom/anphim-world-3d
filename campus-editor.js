@@ -59,6 +59,13 @@ export function createCampusEditor({
   const modifiedHeightIndices = new Set();
   const modifiedColorIndices = new Set();
 
+  // Sân sơn thẳng lên địa hình / thềm đá: kiểu sơn thuộc về thiết kế gốc, không nằm trong bản lưu của editor
+  function courtPaintMeta(c) {
+    const meta = {};
+    if (c.kind) meta.kind = c.kind;
+    if (c.useGroundTriangles) meta.useGroundTriangles = true;
+    return meta;
+  }
   // Baseline snapshot of native Orange Courts & Yellow Walkways (before any localStorage edits)
   const initialNativeCourts = (terrain && terrain.courts) ? terrain.courts.map(c => ({
     id: c.id,
@@ -68,7 +75,8 @@ export function createCampusEditor({
     d: c.d,
     r: c.r ?? 1.5,
     rotY: c.rotY || 0,
-    hidden: false
+    hidden: false,
+    ...courtPaintMeta(c)
   })) : [];
   const initialNativeWalks = (roads && roads.paths) ? roads.paths.filter(p => p.class === 1).map(p => ({
     id: p.id,
@@ -3796,7 +3804,8 @@ export function createCampusEditor({
             d: sc.d,
             r: sc.r ?? 1.5,
             rotY: sc.rotY || 0,
-            hidden: Boolean(sc.hidden)
+            hidden: Boolean(sc.hidden),
+            ...courtPaintMeta(initialNativeCourts.find(ic => ic.id === sc.id) || {})
           });
         }
       } else {
