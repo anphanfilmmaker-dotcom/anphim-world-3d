@@ -2559,6 +2559,52 @@ export function createCampusEditor({
     syncRoadMarkings(true);
   }
 
+  // Dựng lại mesh của một tuyến tự vẽ sau khi points đổi (ủi một khúc, undo)
+  function updateCustomRoadMesh(r) {
+    const clickIdx = r.mesh ? clickable.indexOf(r.mesh) : -1;
+    if (r.mesh) {
+      roadsGroup.remove(r.mesh);
+      r.mesh.traverse(o => { if (o.isMesh) o.geometry?.dispose(); });
+    }
+    r.mesh = generateRoadMesh(r.points, r.width, r.type);
+    if (r.mesh) {
+      r.mesh.userData.isCustomRoad = true;
+      r.mesh.userData.roadId = r.id;
+      roadsGroup.add(r.mesh);
+    }
+    if (clickIdx > -1) {
+      if (r.mesh) clickable[clickIdx] = r.mesh;
+      else clickable.splice(clickIdx, 1);
+    }
+    if (!customRoadsList.includes(r)) customRoadsList.push(r);
+    const path = roads?.paths?.find(x => x.id === r.id);
+    if (path) {
+      path.points = r.points.map(pt => [...pt]);
+      path.curve = new T.CatmullRomCurve3(path.points.map(pt => new T.Vector3(pt[0], 0, pt[1])), false, 'centripetal');
+      terrain.rebuild(roads.paths);
+    }
+    updateHierarchyUI();
+  }
+
+  function createCustomSplineRoad(points, width, type) {
+    const mesh = generateRoadMesh(points, width, type);
+    if (!mesh) return null;
+    const roadRecord = {
+      id: `road_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      name: (type === 'road_asphalt' || type === 'road_car') ? 'Đường xe chạy' : 'Lối đi bộ',
+      type,
+      width,
+      points: points.map(pt => [...pt]),
+      mesh
+    };
+    mesh.userData.isCustomRoad = true;
+    mesh.userData.roadId = roadRecord.id;
+    roadsGroup.add(mesh);
+    customRoadsList.push(roadRecord);
+    updateHierarchyUI();
+    return roadRecord;
+  }
+
   function deleteCustomRoad(roadId) {
     const idx = customRoadsList.findIndex(r => r.id === roadId);
     if (idx === -1) return false;
@@ -3706,6 +3752,8 @@ export function createCampusEditor({
           const mesh = generateRoadMesh(r.points, r.width || 6.0, r.type);
           if (mesh) {
             roadsGroup.add(mesh);
+            mesh.userData.isCustomRoad = true;
+            mesh.userData.roadId = r.id;
             customRoadsList.push({
               id: r.id || `road_${Date.now()}`,
               name: r.name || (r.type === 'road_car' ? 'Đường xe' : 'Lối đi bộ'),
@@ -4050,6 +4098,7 @@ export function createCampusEditor({
       const roadMesh = generateRoadMesh(points, width, type);
       if (!roadMesh) return { ok: false, error: 'Failed to generate road mesh' };
       roadsGroup.add(roadMesh);
+      roadMesh.userData.isCustomRoad = true;
 
       const roadRecord = {
         id: `road_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -4060,6 +4109,7 @@ export function createCampusEditor({
         mesh: roadMesh
       };
       customRoadsList.push(roadRecord);
+      roadMesh.userData.roadId = roadRecord.id;
       syncRoadMarkings();
 
       pushUndo({
@@ -5761,7 +5811,9 @@ export function createCampusEditor({
         let addedRoad = null;
 
         if (!pts || pts.length <= 2) {
-          deleteCustomRoad(r.id);
+          deleteCustomRoad(r.id); // tự ghi undo và báo toast
+          saveStudioState();
+          return true;
         } else if (i === 0) {
           r.points = pts.slice(1);
           updateCustomRoadMesh(r);
@@ -5773,18 +5825,20 @@ export function createCampusEditor({
           const branch2 = pts.slice(i + 1);
           r.points = branch1;
           updateCustomRoadMesh(r);
-          addedRoad = createCustomSplineRoad(branch2, r.width, r.roadType);
+          addedRoad = createCustomSplineRoad(branch2, r.width, r.type);
         }
 
         saveStudioState();
         pushUndo({
           type: 'bulldoze_custom_road_segment',
           undo: () => {
+            if (addedRoad) {
+              const k = customRoadsList.indexOf(addedRoad);
+              if (k > -1) customRoadsList.splice(k, 1);
+              if (addedRoad.mesh) roadsGroup.remove(addedRoad.mesh);
+            }
             r.points = oldPts;
             updateCustomRoadMesh(r);
-            if (addedRoad) {
-              deleteCustomRoad(addedRoad.id);
-            }
             saveStudioState();
           },
           redo: () => {
