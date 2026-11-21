@@ -89,7 +89,7 @@ body.bp-open #cockpit-hud-root{display:none!important}
 `;
 
 // A clicked object whose own entry is not listed (filtered out, past the cap) focuses the list it belongs to.
-const FOCUS_LIST = {agent: 'agents', project: 'projects', mission: 'missions', entry: 'ledger', post: 'posts'};
+const FOCUS_LIST = {agent: 'agents', project: 'projects', mission: 'missions', entry: 'ledger', post: 'posts', event: 'month'};
 
 export class BuildingPanels {
   /**
@@ -339,7 +339,7 @@ export class BuildingPanels {
       <div class="bp-cal">${['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map(n => `<span>${n}</span>`).join('')}${'<i></i>'.repeat(lead)}${s.days.map(d =>
         `<button data-set="day" data-val="${d.day}" data-today="${d.isToday}" aria-pressed="${st.day === d.day}">${d.day}<em>${d.events.slice(0, 4).map(e => `<i data-tone="${e.done ? 'idle' : (PRIORITY[e.priority] || PRIORITY.low).tone}"></i>`).join('')}</em></button>`).join('')}</div>` +
       (picked ? this.sec(`Ngày ${picked.day}/${s.month + 1}`, picked.events.length + ' việc') + (picked.events.map(event).join('') || '<div class="cf-empty">Không có lịch.</div>')
-        : this.sec('Sắp tới', '7 ngày tới') + (t.upcoming.map(e => `<div class="bp-rowbtn"><span class="cf-row"><span class="cf-fill">${esc(e.title)}${e.project ? ' (' + esc(e.project.name) + ')' : ''}</span><span class="cf-time">${esc(String(e.date).slice(0, 5))}</span></span></div>`).join('') || '<div class="cf-empty">Không có lịch trong 7 ngày tới.</div>')) +
+        : this.sec('Sắp tới', '7 ngày tới') + (t.upcoming.map(e => `<div class="bp-rowbtn" data-focus="event:${esc(e.id)}"><span class="cf-row"><span class="cf-fill">${esc(e.title)}${e.project ? ' (' + esc(e.project.name) + ')' : ''}</span><span class="cf-time">${esc(String(e.date).slice(0, 5))}</span></span></div>`).join('') || '<div class="cf-empty">Không có lịch trong 7 ngày tới.</div>')) +
       this.actions(this.open(v.page, 'Mở Lịch làm việc bên dashboard', true), this.open(v.page, 'Tạo lịch mới'));
     return [left, right];
   }
