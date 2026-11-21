@@ -5324,11 +5324,14 @@ export function createCampusEditor({
       if (c.isMesh && c.material) {
         // Clone shared material on first highlight so we don't turn all bushes/trees red at once
         if (highlight && !c.userData._matClonedForHighlight) {
-          if (Array.isArray(c.material)) {
-            c.material = c.material.map(m => m.clone());
-          } else {
-            c.material = c.material.clone();
-          }
+          // Material.clone() bỏ onBeforeCompile: giữ lại để bản sao vẫn có lưới gạch (paving-pattern.js)
+          const cloneKeepingShader = m => {
+            const k = m.clone();
+            k.onBeforeCompile = m.onBeforeCompile;
+            k.customProgramCacheKey = m.customProgramCacheKey;
+            return k;
+          };
+          c.material = Array.isArray(c.material) ? c.material.map(cloneKeepingShader) : cloneKeepingShader(c.material);
           c.userData._matClonedForHighlight = true;
         }
         const mats = Array.isArray(c.material) ? c.material : [c.material];
