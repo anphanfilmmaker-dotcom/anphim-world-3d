@@ -27,6 +27,7 @@ import {dataConnector} from './data-connector.js';
 import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
+import {createStateVisuals} from './state-visuals.js';
 
 window.THREE = T;
 
@@ -1012,6 +1013,10 @@ async function main() {
   });
   window.__cockpitFrame = cockpitFrame;
 
+  // Project state drawn on the building exteriors (scaffolding, crane, built height, DELAY sign)
+  const stateVisuals = createStateVisuals({scene, renderer, buildingObjects, dataConnector});
+  window.__stateVisuals = stateVisuals;
+
   // Chế độ click chọn tòa nhà (Cockpit / Cutaway)
   // Mặc định: BẬT, bấm vào tòa là bay vào bên trong; tắt trong "Công cụ" khi làm cảnh quan
   let buildingClickEnabled = true;
@@ -1356,7 +1361,8 @@ async function main() {
     if (cutawayAnimator) cutawayAnimator.update();
     const networkMoving = network?.tick(now * 0.001) === true;
     const biomesMoving = updateBiomeAnimations();
-    const active = cameraMoving || networkMoving || biomesMoving || now < activeUntil;
+    const statesMoving = stateVisuals.tick(now * 0.001);
+    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
       if (postPipeline) {
