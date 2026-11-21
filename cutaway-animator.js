@@ -5,7 +5,7 @@
  */
 
 import * as T from 'three';
-import { buildInterior, pickFocus } from './interior-builder.js?rev=interior_v2';
+import { buildInterior, pickFocus, roomSize } from './interior-builder.js?rev=interior_v2';
 import { disposeObject } from './dispose-helper.js';
 
 export class CutawayAnimator {
@@ -58,9 +58,9 @@ export class CutawayAnimator {
     const posZ = targetPos[2] || 0;
 
     // 2. Smooth Tween Camera & Orthographic Span (Zoom deeply from 95/115 -> 22)
-    const targetCamPos = new T.Vector3(posX + 14, posY + 16, posZ + 18);
+    const targetCamPos = new T.Vector3(posX + 16, posY + 16, posZ + 16);
     const targetLookAt = new T.Vector3(posX, posY + 1.2, posZ);
-    const targetSpan = 22; // Deep close-up zoom
+    const targetSpan = roomSize(bInfo.width)[0] * 1.3; // the room fills the space between the two panels
 
     // Lock controls to Orbit-only around inspected building (zero panning/drifting)
     this.controls.enablePan = false;
@@ -85,11 +85,12 @@ export class CutawayAnimator {
       }
     });
 
-    // 4. Build and stage 3D Interior (parquet floor, low cutaway walls, desks, glowing PCs, agents, plants)
-    // Nội thất dựng theo dữ liệu của tòa (bInfo.view từ dataConnector.getBuildingView)
+    // 4. Build the room from the building's data (bInfo.view comes from dataConnector.getBuildingView)
     this.interiorSize = [bInfo.width || 13, bInfo.depth || 10];
     this.interiorPos = [posX, posY + 0.02, posZ];
     this.buildInterior(bInfo.view || {type: null, id: buildingId, title: bInfo.name, connected: false, agents: []}, bInfo.mask);
+
+    this.hideClutter(posX, posZ);
 
     this.interiorLight = new T.PointLight(0xfff7ed, 4.0, 32);
     this.interiorLight.position.set(posX, posY + 4.5, posZ);
@@ -112,6 +113,41 @@ export class CutawayAnimator {
     return this.currentInterior ? pickFocus(this.currentInterior, raycaster) : undefined;
   }
 
+  /** Hides scenery (trees, shrubs, lamps) standing in the room or between it and the camera; the terrain, roads and buildings stay. */
+  hideClutter(x, z) {
+    const [w, d] = roomSize(...this.interiorSize);
+    const inFront = p => { const dx = p.x - x, dz = p.z - z; return dx > -w / 2 - 1 && dx < w / 2 + 6 && dz > -d / 2 - 1 && dz < d / 2 + 6; };
+    const m = new T.Matrix4(), p = new T.Vector3(), size = new T.Vector3(), box = new T.Box3(), zero = new T.Matrix4().makeScale(0, 0, 0);
+    this.hiddenInstances = [];
+    this.hiddenClutter = [];
+    const visit = o => {
+      if (o === this.currentInterior || o.userData?.isBuildingRoot || !o.visible) return;
+      if (o.isInstancedMesh) {
+        let touched = false;
+        for (let i = 0; i < o.count; i++) {
+          o.getMatrixAt(i, m);
+          if (!inFront(p.setFromMatrixPosition(m).applyMatrix4(o.matrixWorld))) continue;
+          this.hiddenInstances.push([o, i, m.clone()]);
+          o.setMatrixAt(i, zero);
+          touched = true;
+        }
+        if (touched) o.instanceMatrix.needsUpdate = true;
+      } else if (o.isMesh && o.geometry) {
+        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+        box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).getSize(size);
+        // Small enough to be a tree, a shrub, a lamp or a ground plate; larger meshes are terrain, roads and water.
+        const small = size.x < 12 && size.z < 12;
+        const over = (pad, front) => box.max.x > x - w / 2 - pad && box.min.x < x + w / 2 + front && box.max.z > z - d / 2 - pad && box.min.z < z + d / 2 + front;
+        if (small && (over(0, 0) || (size.y > 0.9 && over(0.5, 6)))) {
+          o.visible = false;
+          this.hiddenClutter.push(o);
+        }
+      }
+      for (const child of o.children) visit(child);
+    };
+    visit(this.scene);
+  }
+
   cleanupInterior() {
     if (this.currentInterior) {
       disposeObject(this.currentInterior);
@@ -121,6 +157,13 @@ export class CutawayAnimator {
       this.scene.remove(this.interiorLight);
       this.interiorLight = null;
     }
+    for (const [o, i, m] of this.hiddenInstances || []) {
+      o.setMatrixAt(i, m);
+      o.instanceMatrix.needsUpdate = true;
+    }
+    this.hiddenInstances = [];
+    for (const o of this.hiddenClutter || []) o.visible = true;
+    this.hiddenClutter = [];
     if (this.hiddenBuilding) {
       this.hiddenBuilding.visible = true;
       this.hiddenBuilding = null;

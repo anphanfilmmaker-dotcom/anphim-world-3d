@@ -38,6 +38,8 @@ const wrap = (ctx, text, max, maxLines = 3) => {
   return lines;
 };
 
+const clip = (text, n) => text.length > n ? text.slice(0, n - 1) + '…' : text;
+
 const rounded = (ctx, x, y, w, h, r) => {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
@@ -58,18 +60,24 @@ const tiles = (ctx, W, y, items) => {
     ctx.fillStyle = 'rgba(255,255,255,.06)'; rounded(ctx, x, y, tw, 190, 18); ctx.fill();
     ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.stroke();
     ctx.textAlign = 'center';
-    ctx.fillStyle = it.color || C.text; ctx.font = `800 84px ${FONT}`;
-    ctx.fillText(fit(ctx, it.value ?? '—', tw - 16), x + tw / 2, y + 108);
+    const value = String(it.value ?? '—');
+    let size = 84;
+    do ctx.font = `800 ${size}px ${FONT}`; while (ctx.measureText(value).width > tw - 24 && (size -= 4) > 28);
+    ctx.fillStyle = it.color || C.text;
+    ctx.fillText(fit(ctx, value, tw - 16), x + tw / 2, y + 108);
     ctx.fillStyle = C.mute; ctx.font = `700 22px ${FONT}`;
     ctx.fillText(fit(ctx, it.label.toUpperCase(), tw - 12), x + tw / 2, y + 160);
     ctx.textAlign = 'left';
   });
 };
 
+/** Rooms are never smaller than 13 x 10 so every approved layout fits, whatever the building's footprint. */
+export const roomSize = (width = 13, depth = 10) => [Math.max(13, width), Math.max(10, depth)];
+
 export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}) {
   const g = new T.Group();
   g.name = `interior_${view.id}`;
-  const w = Math.max(13, width), d = Math.max(10, depth);
+  const [w, d] = roomSize(width, depth);
   const anim = [];
   const mat = (color, o = {}) => new T.MeshStandardMaterial({color, roughness: 0.7, ...o});
   const lightFloor = view.type === 'project' || view.type === 'ai';
@@ -94,7 +102,7 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
   };
 
   // ---- vỏ phòng: sàn + hai tường sau (camera đứng ở góc +x, +z) ----
-  box(g, w + 3, 0.06, d + 3, mat(0x1d3a30, {roughness: 1}), 0, 0.0, 0).castShadow = false;
+  box(g, w + 0.9, 8, d + 0.9, mat(0x5b4a3a, {roughness: 1}), -0.2, -4.0, -0.2);
   box(g, w, FLOOR_Y, d, M.floor, 0, FLOOR_Y / 2, 0);
   box(g, 0.24, WALL_H, d, M.wall, -w / 2 - 0.12, WALL_H / 2, 0);
   box(g, w + 0.24, WALL_H, 0.24, M.wall, -0.12, WALL_H / 2, -d / 2 - 0.12);
@@ -154,7 +162,7 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
   }
 
   /** Bàn làm việc V2.5 + màn hình + người. Người và màn hình sáng chỉ khi agent đang chạy. */
-  function agentDesk(agent, x, z) {
+  function agentDesk(agent, x, z, compact = false) {
     const dg = new T.Group();
     dg.position.set(x, FLOOR_Y, z);
     dg.rotation.y = Math.PI / 4;
@@ -177,7 +185,7 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
     const sub = agent.active
       ? [agent.task, agent.loadPct != null ? agent.loadPct + '%' : null].filter(Boolean).join(' · ') || 'đang chạy'
       : 'chưa có dữ liệu';
-    label(x, 2.35, z, `${agent.name} · ${agent.role}`.slice(0, 42), sub, {muted: !agent.active, focus: dg.userData.focus});
+    label(x, 2.35, z, compact ? agent.name : clip(`${agent.name} · ${agent.role}`, 38), compact ? clip(sub, 30) : sub, {muted: !agent.active, focus: dg.userData.focus});
     return dg;
   }
 
@@ -210,7 +218,9 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
     hq() {
       const {open, done} = view.allMissions;
       board('left', `Mission hôm nay · ${open.length} việc`, C.ok, (ctx, W, H, y) => {
-        const rows = [...open, ...done].slice(0, Math.floor((H - y - 20) / 62));
+        const all = [...open, ...done], cap = Math.floor((H - y - 20) / 62);
+        const rows = all.length > cap ? all.slice(0, cap - 1) : all;
+        if (all.length > cap) { ctx.fillStyle = C.mute; ctx.font = `600 28px ${FONT}`; ctx.fillText(`+${all.length - rows.length} việc khác: xem bảng bên trái`, 40, y + 46 + rows.length * 62); }
         rows.forEach((m, i) => {
           const yy = y + 46 + i * 62, [pl, pc] = PRIORITY[m.priority] || PRIORITY.low;
           ctx.font = `800 26px ${FONT}`; ctx.fillStyle = m.done ? C.mute : pc; ctx.fillText(m.done ? 'XONG' : pl, 40, yy);
@@ -226,7 +236,9 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
       const ps = view.projects;
       board('right', `${ps.length} dự án đang chạy`, C.teal, (ctx, W, H, y) => {
         const per = Math.floor((H - y - 16) / 54), cw = (W - 100) / 2;
-        ps.slice(0, per * 2).forEach((p, i) => {
+        const shown = ps.length > per * 2 ? ps.slice(0, per * 2 - 1) : ps;
+        if (ps.length > shown.length) { ctx.fillStyle = C.mute; ctx.font = `600 28px ${FONT}`; ctx.fillText(`+${ps.length - shown.length} dự án khác: xem bảng bên phải`, 60 + cw, y + 40 + (per - 1) * 54); }
+        shown.forEach((p, i) => {
           const x = 40 + Math.floor(i / per) * (cw + 20), yy = y + 40 + (i % per) * 54;
           ctx.font = `600 28px ${FONT}`; ctx.fillStyle = C.text; ctx.fillText(fit(ctx, p.name, cw - 230), x, yy);
           if (p.progress != null) bar(ctx, x + cw - 210, yy - 16, 200, p.progress);
@@ -349,9 +361,10 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
       }, {section: 'payments'});
       // Mỗi mốc sản xuất là một khu trên sàn
       const cols = Math.ceil(Math.sqrt(ms.length || 1)), rows = Math.ceil(ms.length / cols);
-      const cw = Math.min(3.2, (w - 3.5) / cols), cd = Math.min(2.8, (d - 3.5) / rows);
+      const cw = Math.min(3.8, (w - 3.5) / cols), cd = Math.min(3.4, (d - 3.5) / rows);
+      const x0 = 0.6 - cols * cw / 2, z0 = 0.6 - rows * cd / 2;
       ms.forEach((m, i) => {
-        const x = -w / 2 + 2.6 + cw * (i % cols + 0.5), z = -d / 2 + 2.4 + cd * (Math.floor(i / cols) + 0.5);
+        const x = x0 + cw * (i % cols + 0.5), z = z0 + cd * (Math.floor(i / cols) + 0.5);
         const focus = {section: 'milestone', id: String(i)};
         const pad = box(g, cw - 0.5, 0.05, cd - 0.5, m.state === 'done' ? M.padDone : m.state === 'current' ? M.padNow : M.padTodo, x, FLOOR_Y + 0.03, z);
         pad.userData.focus = focus;
@@ -402,7 +415,21 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
           });
         });
       }, {section: 'month'});
-      agentsHere([[0.2, 0.8]], 'Bàn lịch: chưa có agent nào được gán');
+      // Mỗi việc của hôm nay là một bảng đứng giữa phòng: màu theo mức ưu tiên, xám khi đã xong
+      s.todayEvents.slice(0, 6).forEach((e, i) => {
+        const x = (i % 3 - 1) * 4.5 * w / 13, z = i < 3 ? -2.4 : 2.0, focus = {section: 'event', id: e.id};
+        const color = e.done ? 0x8b98a5 : {high: 0xff6a5a, medium: 0xffc440}[e.priority] || 0x6cb8ff;
+        const sg = new T.Group();
+        sg.position.set(x, FLOOR_Y, z); sg.rotation.y = Math.PI / 4; sg.userData.focus = focus;
+        box(sg, 0.12, 1.0, 0.12, M.dark, 0, 0.5, 0);
+        const card = box(sg, 1.5, 0.9, 0.1, mat(color, e.done ? {} : {emissive: color, emissiveIntensity: 0.3}), 0, 1.35, 0);
+        box(sg, 0.9, 0.06, 0.6, M.dark, 0, 0.03, 0);
+        g.add(sg);
+        if (!e.done) anim.push(t => { card.material.emissiveIntensity = 0.3 + (Math.sin(t * 2.4 + i) + 1) * 0.15; });
+        label(x, 2.45, z, (e.done ? '✓ ' : '') + (e.time || 'Cả ngày'), clip(e.title, 30), {muted: !!e.done, tone: C.accent, focus});
+      });
+      if (!s.todayEvents.length) label(0, 1.4, 0, 'Hôm nay không có lịch', null, {muted: true, focus: {section: 'today'}});
+      if (view.agents.length) agentsHere([[w / 2 - 2.6, d / 2 - 2.4]], '');
     },
 
     ai() {
@@ -423,11 +450,8 @@ export function buildInterior(view, width = 13, depth = 10, {mask = t => t} = {}
         ctx.fillStyle = C.ok; ctx.fillText(fit(ctx, 'Đang hoạt động: ' + (active.map(a => a.name).join(', ') || 'không có'), W - 80), 40, y + 110);
         ctx.fillStyle = C.mute; ctx.fillText(fit(ctx, 'Chưa có dữ liệu tải: ' + (idle.map(a => a.name).join(', ') || 'không có'), W - 80), 40, y + 170);
       }, {section: 'chat'});
-      const cols = Math.ceil(agents.length / 2) || 1;
-      agents.slice(0, 8).forEach((a, i) => {
-        const row = Math.floor(i / cols), col = i % cols;
-        agentDesk(a, -w / 2 + 3.4 + col * ((w - 5) / cols) + row * 1.2, -d / 2 + 3.6 + row * 3.6 - col * 0.5);
-      });
+      // Up to six desks on a 3 x 2 grid, spaced so the name tags never overlap from the fixed camera corner.
+      agents.slice(0, 6).forEach((a, i) => agentDesk(a, (i % 3 - 1) * 4.5 * w / 13, i < 3 ? -2.6 : 1.9, true));
     },
 
     marketing() {

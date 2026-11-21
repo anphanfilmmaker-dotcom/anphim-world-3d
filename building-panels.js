@@ -316,7 +316,7 @@ export class BuildingPanels {
     const event = e => {
       const pr = PRIORITY[e.priority] || PRIORITY.low;
       const b = e.project && this.frame.buildings.find(x => x.kind === 'project' && this.data.getProject(x.projectId) === e.project);
-      if (e.done) return `<div class="cf-done">${esc(e.title)}${e.project ? ' (' + esc(e.project.name) + ')' : ''}</div>`;
+      if (e.done) return `<div class="cf-done" data-focus="event:${esc(e.id)}">${esc(e.title)}${e.project ? ' (' + esc(e.project.name) + ')' : ''}</div>`;
       return `<button class="cf-mission" data-tone="${pr.tone}" ${b ? `data-enter="${esc(b.id)}"` : 'disabled'} data-focus="event:${esc(e.id)}">
         <span class="cf-row"><span class="cf-tag" data-tone="${pr.tone}">${pr.label}</span><span class="cf-proj cf-fill">${esc(e.project?.name || '')}</span><span class="cf-time">${esc(e.time || (e.dateEnd ? e.date.slice(0, 5) + '–' + e.dateEnd.slice(0, 5) : ''))}</span></span>
         <span class="cf-title">${esc(e.title)}</span>${b ? '<span class="cf-go">→ Đến tòa dự án</span>' : ''}</button>`;

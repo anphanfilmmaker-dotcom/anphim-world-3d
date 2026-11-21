@@ -28,6 +28,7 @@ import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v3';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
+import {roomSize} from './interior-builder.js?rev=interior_v2';
 
 window.THREE = T;
 
@@ -326,8 +327,14 @@ async function main() {
 
   async function inspector(b) {
     if (cutawayAnimator) {
-      const pos = b.position || [0, 0, 0];
       const g = (L && L.grades && L.grades[b.grade]) || [12, 5, 10];
+      // The room is wider than small buildings: stand it on the highest ground under it so the terrain never cuts through the floor.
+      const pos = [...(b.position || [0, 0, 0])];
+      const [rw, rd] = roomSize(g[0], g[2]);
+      const ground = terrain.surfaceHeight ? (x, z) => terrain.surfaceHeight(x, z) : (x, z) => terrain.height(x, z);
+      for (let i = 0; i <= 8; i++) for (let k = 0; k <= 8; k++) {
+        pos[1] = Math.max(pos[1], ground(pos[0] + (i / 8 - 0.5) * (rw + 1), pos[2] + (k / 8 - 0.5) * (rd + 1)) + 0.05);
+      }
       insideBuilding = b;
       cutawayAnimator.inspect(b.id, pos, {
         width: g[0], depth: g[2], height: g[1], name: b.name, hostId: b.hostId,
