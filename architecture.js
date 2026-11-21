@@ -100,7 +100,7 @@ export function createArchitecture(P) {
 
   function shell(g, w, h, d, rows = 2, cols = 4) {
     box(g, w, h, d, 0, 0, 0);
-    box(g, w + 0.3, 0.32, d + 0.3, 0, 0, 0, M.stone);
+    g.userData.shellFootprint = [w, d];
     front(g, w, h, d, rows, cols);
     windows(g, 0.07, h - 0.7, d - 0.5, w / 2 + 0.025, 0.3, 0, rows, cols);
     box(g, w + 0.25, 0.2, d + 0.25, 0, h, 0);
@@ -1211,6 +1211,8 @@ export function createArchitecture(P) {
       entry(g, 1.7, 2.5, 2);
     }
     const b = new T.Box3().setFromObject(g);
+    // Chân đế đá cho các tòa nhỏ; thêm sau cùng để partId (đánh theo thứ tự mesh) của các chi tiết cũ không đổi
+    if (g.userData.shellFootprint) box(g, g.userData.shellFootprint[0] + 0.3, 0.32, g.userData.shellFootprint[1] + 0.3, 0, 0, 0, M.stone);
     const socket = new T.Object3D();
     socket.name = 'entry-socket';
     socket.position.set(0, 0, b.max.z + 0.12);
@@ -1481,11 +1483,11 @@ export function createArchitecture(P) {
     box(g, 5.2, 1.2, 4.8, -1.2, 6.55, -0.6, M.metal);
     box(g, 9.0, 0.45, 0.1, 0, 6.55, 3.75, M.stone);
     for (const [rx, rz] of [[1.8, 1.2], [2.8, 1.2]]) cylinder(g, 0.4, 0.9, rx, 6.55, rz, M.dark);
-    // Lan can mái bao kín + vườn mái xanh (các tòa trong ảnh tham chiếu đều có mái hoàn thiện)
+    sign(g, 'AI INNOVATION HUB', 4.0, 0.65, 0, 2.7, 3.9);
+    // Lan can mái bao kín + vườn mái xanh (các tòa trong ảnh tham chiếu đều có mái hoàn thiện); thêm sau cùng để giữ partId cũ
     box(g, 9.0, 0.45, 0.1, 0, 6.55, -4.15, M.stone);
     for (const x of [-4.45, 4.45]) box(g, 0.1, 0.45, 8.0, x, 6.55, -0.2, M.stone);
     box(g, 2.6, 0.2, 3.6, 2.9, 6.55, -2.1, M.moss);
-    sign(g, 'AI INNOVATION HUB', 4.0, 0.65, 0, 2.7, 3.9);
     const socket = new T.Object3D();
     socket.name = 'entry-socket';
     socket.position.set(0, 0, 4.6);
@@ -1814,18 +1816,6 @@ export function createArchitecture(P) {
     box(orangeRoofG, 12.2, 0.04, 8.2, 0, 7.33, -0.66, M.orange);
     g.add(orangeRoofG);
 
-    // Sân mái trước khối kỹ thuật: lan can kem, dàn pin mặt trời và bồn cây (mái trong ảnh tham chiếu không để trống)
-    const roofDeckG = new T.Group();
-    roofDeckG.userData.toggleKey = 'roofEquipment';
-    box(roofDeckG, 12.4, 0.32, 0.16, 0, 7.37, 3.46, M.cream);
-    for (const x of [-6.12, 6.12]) box(roofDeckG, 0.16, 0.32, 8.4, x, 7.37, -0.66, M.cream);
-    roofKitbash(roofDeckG, 12.2, 8.2, 7.33, {
-      solarCount: 3, solarStartX: -4.4, solarZ: 2.0,
-      hvac: false,
-      planter: true, planterX: 3.9, planterZ: 2.1
-    });
-    g.add(roofDeckG);
-
     // Khối kỹ thuật giật cấp nhô cao phía sau mái (Penthouse Y = 6.95 -> 7.55m)
     const penthouseG = new T.Group();
     penthouseG.userData.toggleKey = 'penthouse';
@@ -1836,6 +1826,19 @@ export function createArchitecture(P) {
     cylinder(penthouseG, 0.40, 0.10, -2.4, 8.45, -1.9, M.dark, 16);
     cylinder(penthouseG, 0.40, 0.10, -1.2, 8.45, -1.9, M.dark, 16);
     g.add(penthouseG);
+
+    // Sân mái trước khối kỹ thuật: lan can kem, dàn pin mặt trời và bồn cây (mái trong ảnh tham chiếu không để trống).
+    // Thêm sau cùng: partId của Studio đánh theo thứ tự mesh, chi tiết mới không được chen vào giữa.
+    const roofDeckG = new T.Group();
+    roofDeckG.userData.toggleKey = 'roofEquipment';
+    box(roofDeckG, 12.4, 0.32, 0.16, 0, 7.37, 3.46, M.cream);
+    for (const x of [-6.12, 6.12]) box(roofDeckG, 0.16, 0.32, 8.4, x, 7.37, -0.66, M.cream);
+    roofKitbash(roofDeckG, 12.2, 8.2, 7.33, {
+      solarCount: 3, solarStartX: -4.4, solarZ: 2.0,
+      hvac: false,
+      planter: true, planterX: 3.9, planterZ: 2.1
+    });
+    g.add(roofDeckG);
 
     // Socket vị trí nhân vật bước vào sảnh
     const socket = new T.Object3D();
