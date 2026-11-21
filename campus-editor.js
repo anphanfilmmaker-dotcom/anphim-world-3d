@@ -2640,19 +2640,24 @@ export function createCampusEditor({
     if (idx === -1) return false;
     const roadRecord = customRoadsList.splice(idx, 1)[0];
     if (roadRecord.mesh) roadsGroup.remove(roadRecord.mesh);
-    if (roads && roads.paths) {
-      const pIdx = roads.paths.findIndex(p => p.id === roadId);
-      if (pIdx > -1) {
-        roads.paths.splice(pIdx, 1);
-        terrain.rebuild(roads.paths);
-      }
-    }
+    // Tuyến có đăng ký trong roads.paths (vẽ bằng chuột) thì đi cùng: xóa, undo, redo đều giữ đồng bộ
+    const path = roads?.paths?.find(p => p.id === roadId) || null;
+    const setPath = attached => {
+      if (!path) return;
+      const pIdx = roads.paths.indexOf(path);
+      if (attached && pIdx === -1) roads.paths.push(path);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      else return;
+      terrain.rebuild(roads.paths);
+    };
+    setPath(false);
 
     pushUndo({
       type: 'road_delete',
       undo: () => {
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
-        customRoadsList.push(roadRecord);
+        if (!customRoadsList.includes(roadRecord)) customRoadsList.push(roadRecord);
+        setPath(true);
         updateHierarchyUI();
         saveStudioState();
       },
@@ -2662,6 +2667,7 @@ export function createCampusEditor({
           customRoadsList.splice(i, 1);
           if (roadRecord.mesh) roadsGroup.remove(roadRecord.mesh);
         }
+        setPath(false);
         updateHierarchyUI();
         saveStudioState();
       }
