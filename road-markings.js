@@ -218,8 +218,8 @@ export function buildMarkingBoxes(net) {
         }
       }
       if (arm.stop) {
-        // Vạch dừng nằm ở làn bên phải của xe đang đi vào giao lộ
-        const p = at(r, arm.s + arm.dir * (arm.stop - arm.off)), rx = arm.dz, rz = -arm.dx, o = r.halfW / 2;
+        // Vạch dừng nằm ở làn bên phải của xe đang đi vào giao lộ, vuông góc với tuyến ngay tại đó (nhánh có thể cong)
+        const p = at(r, arm.s + arm.dir * (arm.stop - arm.off)), rx = p.tz * arm.dir, rz = -p.tx * arm.dir, o = r.halfW / 2;
         push(r, p.x + rx * o, p.z + rz * o, rx, rz, STOP_T, r.halfW - 0.3);
       }
     }

@@ -1,7 +1,7 @@
-import {createModularRoadSystem} from './modular-roads.js?rev=10';
+import {createModularRoadSystem} from './modular-roads.js?rev=11';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=120';
+import {createCampusEditor} from './campus-editor.js?rev=121';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
 import {createCampusGreenery} from './campus-greenery.js?rev=11';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -1010,11 +1010,20 @@ async function main() {
       ...gates.map(s => ({points: [s.ringXZ, s.gateXZ], halfW: half})),
       ...(plan.accessRoads || []).map(r => ({points: r.points, halfW: r.width / 2}))
     ];
-    roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(gates.map(s => ({
-      id: 'road:district-gate:' + s.id, districtGate: true, markings: false, halfW: half, signature: JSON.stringify([s.ringXZ, s.gateXZ]),
-      curve: new T.LineCurve3(new T.Vector3(s.ringXZ[0], 0, s.ringXZ[1]), new T.Vector3(s.gateXZ[0], 0, s.gateXZ[1])),
+    const polyline = pts => {
+      const path = new T.CurvePath();
+      for (let i = 0; i < pts.length - 1; i++)
+        path.add(new T.LineCurve3(new T.Vector3(pts[i][0], 0, pts[i][1]), new T.Vector3(pts[i + 1][0], 0, pts[i + 1][1])));
+      return path;
+    };
+    const districtDef = (id, pts, halfW) => ({
+      id, districtGate: true, markings: false, halfW, signature: JSON.stringify(pts), curve: polyline(pts),
       yAt: (x, z) => terrain.height(x, z) + 0.15
-    })));
+    });
+    roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(
+      gates.map(s => districtDef('road:district-gate:' + s.id, [s.ringXZ, s.gateXZ], half)),
+      (plan.accessRoads || []).map(r => districtDef(r.id, r.points, r.width / 2))
+    );
     roads.syncRoadNetwork?.();
   };
   syncDistrictRoads();
