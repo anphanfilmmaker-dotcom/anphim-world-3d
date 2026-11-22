@@ -402,7 +402,8 @@ export function createCampusEditor({
       w: gradeDims[0],
       d: gradeDims[2],
       grade: b.grade,
-      binding: b
+      binding: b,
+      lot: group.userData.lot || null
     });
   }
 
@@ -433,6 +434,19 @@ export function createCampusEditor({
     return turf.polygon([ring]);
   }
 
+  // Tòa có lô nới rộng (cánh chữ L) vượt ra ngoài ô hạng: đa giác lô thật theo vị trí và góc xoay hiện tại của tòa
+  function lotPolygon(data) {
+    const lot = data.lot, grp = data.group;
+    if (!lot || !grp) return null;
+    const cos = Math.cos(grp.rotation.y), sin = Math.sin(grp.rotation.y);
+    const ring = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => {
+      const lx = lot.x + sx * lot.w / 2, lz = lot.z + sz * lot.d / 2;
+      return [Number((grp.position.x + lx * cos + lz * sin).toFixed(3)), Number((grp.position.z - lx * sin + lz * cos).toFixed(3))];
+    });
+    ring.push([ring[0][0], ring[0][1]]);
+    return turf.polygon([ring]);
+  }
+
   function evaluateCollision(bldOrTarget) {
     if (!turf) return { state: 'UNKNOWN', msg: 'Turf.js chưa sẵn sàng', safe: true };
     const grp = bldOrTarget.group || bldOrTarget;
@@ -441,11 +455,11 @@ export function createCampusEditor({
     const rotY = grp.rotation.y;
     const w = bldOrTarget.w || 2.0;
     const d = bldOrTarget.d || 2.0;
-    const currentPoly = calcFootprintPolygon(x, z, w, d, rotY);
+    const currentPolys = [calcFootprintPolygon(x, z, w, d, rotY), lotPolygon(bldOrTarget)].filter(Boolean);
 
     for (const rBuf of roadBuffers) {
       try {
-        if (turf.booleanIntersects(currentPoly, rBuf.feature)) {
+        if (currentPolys.some(poly => turf.booleanIntersects(poly, rBuf.feature))) {
           return {
             state: 'ROAD_COLLISION',
             safe: false,
@@ -458,15 +472,15 @@ export function createCampusEditor({
 
     for (const [otherId, otherData] of buildingFootprints) {
       if (bldOrTarget.id && otherId === bldOrTarget.id) continue;
-      const otherPoly = calcFootprintPolygon(
+      const otherPolys = [calcFootprintPolygon(
         otherData.group.position.x,
         otherData.group.position.z,
         otherData.w,
         otherData.d,
         otherData.group.rotation.y
-      );
+      ), lotPolygon(otherData)].filter(Boolean);
       try {
-        if (turf.booleanIntersects(currentPoly, otherPoly)) {
+        if (currentPolys.some(poly => otherPolys.some(other => turf.booleanIntersects(poly, other)))) {
           return {
             state: 'BUILDING_COLLISION',
             safe: false,
@@ -557,7 +571,8 @@ export function createCampusEditor({
 
     if (grp.userData?.footprint) {
       grp.userData.footprint.position.set(x, y + 0.04, z);
-      grp.userData.footprint.rotation.z = -rotY;
+      // Khung nằm ngang (rotation.x = -PI/2) nên rotation.z = rotY mới xoay cùng chiều với tòa; -rotY cho khung soi gương, lộ rõ ở lô lệch tâm
+      grp.userData.footprint.rotation.z = rotY;
     }
 
     const coordsEl = document.querySelector('#edit-coords');

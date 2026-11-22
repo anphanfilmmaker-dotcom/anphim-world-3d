@@ -1,7 +1,7 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=121';
+import {createCampusEditor} from './campus-editor.js?rev=122';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
 import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -608,16 +608,27 @@ async function main() {
     allDoors.push({id: b.id, x: door.x, z: door.z});
 
     // Khung định vị phẳng sát mặt đất (Flat Ground Outlines - Không dùng Box3Helper 3D)
-    // Lô lệch tâm (tòa có cánh chữ L): khung lấy theo hộp bao thật của tòa sau khi xoay
-    const lotBox = offsetLot ? new T.Box3().setFromObject(g) : null;
-    // Cây và tiểu cảnh tự động (urban-planning-engine) tránh lô thật này; chỉ là dữ liệu lúc chạy, không ghi vào physical-topology.json
-    if (lotBox) (L.builtLots ||= {})[b.id] = {minX: lotBox.min.x, maxX: lotBox.max.x, minZ: lotBox.min.z, maxZ: lotBox.max.z};
-    const fpSize = lotBox ? lotBox.getSize(new T.Vector3()) : {x: bbox[0], z: bbox[2]};
-    const fpCenter = lotBox ? lotBox.getCenter(new T.Vector3()) : {x: b.position[0], z: b.position[2]};
-    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(fpSize.x, fpSize.z));
+    // Lô lệch tâm (tòa có cánh chữ L): lô thật ghi trong hệ tọa độ cục bộ của tòa (chưa xoay), để khung và kiểm tra va chạm của Studio
+    // đi theo khi tòa bị dời hoặc xoay.
+    let lot = null;
+    if (offsetLot) {
+      const rotation = g.rotation.y, box = new T.Box3();
+      g.rotation.y = 0;
+      g.updateMatrixWorld(true);
+      box.setFromObject(g);
+      lot = g.userData.lot = {x: (box.min.x + box.max.x) / 2 - g.position.x, z: (box.min.z + box.max.z) / 2 - g.position.z, w: box.max.x - box.min.x, d: box.max.z - box.min.z};
+      g.rotation.y = rotation;
+      g.updateMatrixWorld(true);
+      box.setFromObject(g);
+      // Cây và tiểu cảnh tự động (urban-planning-engine) tránh lô thật này; chỉ là dữ liệu lúc chạy, không ghi vào physical-topology.json
+      (L.builtLots ||= {})[b.id] = {minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z};
+    }
+    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(lot ? lot.w : bbox[0], lot ? lot.d : bbox[2]));
+    if (lot) fpGeo.translate(lot.x, -lot.z, 0);
     const footprint = new T.LineSegments(fpGeo, new T.LineBasicMaterial({color: P.colors.brandOrange, transparent: true, opacity: 0.85}));
     footprint.rotation.x = -Math.PI / 2;
-    footprint.position.set(fpCenter.x, b.position[1] + 0.04, fpCenter.z);
+    if (lot) footprint.rotation.z = g.rotation.y;
+    footprint.position.set(b.position[0], b.position[1] + 0.04, b.position[2]);
     footprint.userData.buildingId = b.id;
     footprint.userData.isFootprint = true;
     g.userData.footprint = footprint;
