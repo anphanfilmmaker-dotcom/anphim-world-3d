@@ -8,7 +8,7 @@ import * as T from 'three';
  * Không tuyến nào được vẽ vạch xuyên qua lòng giao lộ.
  */
 const ZEBRA_DEPTH = 2.2, ZEBRA_BAR = 0.45, ZEBRA_PITCH = 0.9, ZEBRA_SETBACK = 0.5;
-const STOP_GAP = 0.6, STOP_T = 0.32, LINK_SPARE = 4, MIN_HALF = 1.5, DASH = 2.0, DASH_GAP = 2.2, EDGE_INSET = 0.38;
+const STOP_GAP = 0.6, STOP_T = 0.32, LINK_SPARE = 4, MIN_HALF = 1.5, MERGE_SCAN = 24, DASH = 2.0, DASH_GAP = 2.2, EDGE_INSET = 0.38;
 
 function sampleRoad(def) {
   const len = def.curve.getLength(), n = Math.max(2, Math.round(len / 0.5)), pts = [];
@@ -105,6 +105,20 @@ export function analyseRoadNetwork(defs) {
       arm.clear = clear + 0.3; // từ tâm giao lộ tới chỗ nhánh này rời khỏi lòng giao lộ
       arm.avail = arm.road.closed ? Infinity : (arm.dir > 0 ? arm.road.len - arm.s : arm.s) + arm.off;
     }
+    // Nhập làn góc nhỏ: hai mặt nhựa còn chồng nhau xa hơn ước lượng theo góc ở tâm. Vạch qua đường của một nhánh
+    // chỉ được nằm ở chỗ cả hai mép của nó đã ra khỏi mặt nhựa các tuyến khác; không tìm được chỗ như vậy thì bỏ vạch.
+    for (const arm of j.arms) {
+      const r = arm.road, others = [...new Set(j.arms.filter(o => o.road !== r).map(o => o.road))];
+      const overlaps = t => {
+        const p = at(r, arm.s + arm.dir * (t - arm.off));
+        return [1, -1].some(side => others.some(o => nearest(o, p.x - p.tz * side * (r.halfW - 0.1), p.z + p.tx * side * (r.halfW - 0.1)).d < o.halfW));
+      };
+      let t = arm.clear;
+      const limit = Math.min(arm.clear + MERGE_SCAN, arm.avail);
+      while (t < limit && (overlaps(t + ZEBRA_SETBACK) || overlaps(t + ZEBRA_SETBACK + ZEBRA_DEPTH))) t += 0.5;
+      arm.zclear = t;
+      arm.merged = t >= limit && t > arm.clear;
+    }
   }
   // Hai giao lộ sát nhau trên cùng một tuyến (vd. hai miệng đường vòng chữ U) được coi là một cụm: không kẻ vạch qua đường ở giữa
   for (const j of junctions) for (const arm of j.arms) {
@@ -113,13 +127,13 @@ export function analyseRoadNetwork(defs) {
       let delta = (o.s - arm.s) * arm.dir;
       if (r.closed) delta = ((delta % r.len) + r.len) % r.len;
       // "Sát nhau" = khoảng giữa hai lòng giao lộ không đủ chỗ cho hai vạch qua đường, hai vạch dừng và một đoạn vạch tim
-      const need = arm.clear + o.clear + 2 * (ZEBRA_SETBACK + ZEBRA_DEPTH + STOP_GAP + STOP_T) + LINK_SPARE;
+      const need = arm.zclear + o.zclear + 2 * (ZEBRA_SETBACK + ZEBRA_DEPTH + STOP_GAP + STOP_T) + LINK_SPARE;
       if (delta > 0.5 && delta < need && !(arm.linked < delta)) arm.linked = delta;
     }
-    const z0 = arm.clear + ZEBRA_SETBACK, z1 = z0 + ZEBRA_DEPTH;
-    arm.zebra = !arm.linked && arm.avail >= z1 + 0.3 ? [z0, z1] : null;
+    const z0 = arm.zclear + ZEBRA_SETBACK, z1 = z0 + ZEBRA_DEPTH;
+    arm.zebra = !arm.linked && !arm.merged && arm.avail >= z1 + 0.3 ? [z0, z1] : null;
     arm.stop = arm.zebra && arm.avail >= z1 + STOP_GAP + STOP_T + 0.4 ? z1 + STOP_GAP : null;
-    arm.quiet = arm.zebra ? (arm.stop ? arm.stop + STOP_T / 2 + 0.5 : z1 + 0.4) : arm.linked ? arm.linked / 2 + 0.01 : arm.clear + 0.4;
+    arm.quiet = arm.zebra ? (arm.stop ? arm.stop + STOP_T / 2 + 0.5 : z1 + 0.4) : arm.linked ? arm.linked / 2 + 0.01 : arm.zclear + 0.4;
   }
   return {roads, junctions};
 }
