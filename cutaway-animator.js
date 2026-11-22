@@ -320,12 +320,14 @@ export class CutawayAnimator {
       renderer.autoClear = false;
       scene.background = scene.fog = null;
       camera.layers.set(ROOM_LAYER);
+      this.dayNight?.roomLight(true);
       if (this.sunLight) this.sunLight.intensity = ROOM_SUN;
       if (this.hemiLight) this.hemiLight.intensity = ROOM_SKY;
       renderer.clearDepth();
       renderer.render(scene, camera);
       if (this.sunLight) this.sunLight.intensity = sun;
       if (this.hemiLight) this.hemiLight.intensity = sky;
+      this.dayNight?.roomLight(false);
       camera.layers.mask = mask;
       scene.background = background;
       scene.fog = fog;
