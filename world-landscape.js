@@ -210,6 +210,11 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       nearest = Math.min(nearest, d);
       beds.push(d, g.a[2] + (g.b[2] - g.a[2]) * t);
     }
+    // A district's own ground is level right up to its gate: the road bed stops at the edge of the plot.
+    if (cut) for (const s of slots) {
+      const d = rectGap(x, z, s.core);
+      if (d < 4) cut *= smooth(d / 4);
+    }
     if (!cut) return y;
     let level = 0, total = 0;
     for (let i = 0; i < beds.length; i += 2) {
