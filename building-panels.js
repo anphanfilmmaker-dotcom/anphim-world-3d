@@ -30,6 +30,7 @@ const STYLE = `
 &.bp-open .bp-side{opacity:1;pointer-events:auto;transform:none}
 &.bp-open>.cf-left,&.bp-open>.cf-right,&.cf-building .bp-side{opacity:0;pointer-events:none}
 &.bp-open>.cf-left *{pointer-events:none}
+&:not(.bp-open) .bp-side *{pointer-events:none}
 .bp-side .cf-panel{flex:0 1 auto;overflow:hidden}
 .bp-title{margin:0;font-size:17px;font-weight:900;line-height:1.2;text-transform:uppercase;letter-spacing:.02em}
 .bp-subtitle{color:var(--cf-mute);font-size:11px;margin:2px 0 4px}
@@ -121,6 +122,7 @@ export class BuildingPanels {
       el.addEventListener('click', e => this.onClick(e));
       el.addEventListener('change', e => this.onChange(e));
     }
+    this.setOpen(false);
   }
 
   /** Opens the panels for a building; returns false (panels closed) when it has no approved interior. */
@@ -132,14 +134,19 @@ export class BuildingPanels {
 
   hide() {
     this.building = null;
-    this.frame.root.classList.remove('bp-open');
-    document.body.classList.remove('bp-open');
+    this.setOpen(false);
+  }
+
+  /** Closed panels stay in the page for the slide animation, so they must not take clicks or focus. */
+  setOpen(open) {
+    this.frame.root.classList.toggle('bp-open', open);
+    document.body.classList.toggle('bp-open', open);
+    for (const el of [this.left, this.right]) el.closest('.bp-side').inert = !open;
   }
 
   render() {
     const v = this.building && this.data.getBuildingView(this.building);
-    this.frame.root.classList.toggle('bp-open', !!v);
-    document.body.classList.toggle('bp-open', !!v);
+    this.setOpen(!!v);
     if (!v) return false;
     this.view = v;
     const keep = [this.left.scrollTop, this.right.scrollTop];
