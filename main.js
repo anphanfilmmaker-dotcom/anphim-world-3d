@@ -16,7 +16,7 @@ import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v42';
-import {createAdapter} from './materials.js?rev=10';
+import {createAdapter, nightWindowGlow} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq18';
 import {createRoads} from './roads.js?rev=8';
@@ -1176,7 +1176,7 @@ async function main() {
 
   // Day and night: sky, sun and sky light, lamps and windows (day-night.js); switched from the cockpit frame
   const dayNight = createDayNight({
-    scene, sun, hemi, palette: P, groundHeight: terrain.height,
+    scene, sun, hemi, palette: P, groundHeight: terrain.height, windowGlow: nightWindowGlow,
     onChange: () => { report.dayNight = dayNight.mode; cockpitFrame?.renderDayNight(); window.requestRender?.(); sync(); }
   });
   report.dayNight = dayNight.mode;

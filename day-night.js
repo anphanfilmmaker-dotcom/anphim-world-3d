@@ -6,7 +6,6 @@
  * so k = 0 is exactly the daylight scene.
  */
 import * as T from 'three';
-import {nightWindowGlow} from './materials.js';
 
 const STORE_KEY = 'anphim.world.dayNight';
 const MODES = ['day', 'night', 'auto'];
@@ -53,7 +52,7 @@ function glowTexture() {
  * @param {(x: number, z: number) => number} o.groundHeight
  * @param {() => void} [o.onChange]  mode or day/night changed
  */
-export function createDayNight({scene, sun, hemi, palette, groundHeight, onChange}) {
+export function createDayNight({scene, sun, hemi, palette, groundHeight, windowGlow, onChange}) {
   const C = v => new T.Color(v);
   // The animator takes the background and fog off the scene while it draws a room, so hold the objects themselves.
   const background = scene.background, fog = scene.fog;
@@ -194,7 +193,7 @@ export function createDayNight({scene, sun, hemi, palette, groundHeight, onChang
         m.emissiveIntensity = T.MathUtils.lerp(was.intensity, NIGHT.windowIntensity, on);
       }
     }
-    nightWindowGlow.value.copy(windowColor).multiplyScalar(on * NIGHT.windowIntensity);
+    windowGlow.value.copy(windowColor).multiplyScalar(on * NIGHT.windowIntensity);
     poolMaterial.opacity = on * NIGHT.poolOpacity;
     haloMaterial.uniforms.opacity.value = on * NIGHT.haloOpacity;
     group.visible = on > 0;
