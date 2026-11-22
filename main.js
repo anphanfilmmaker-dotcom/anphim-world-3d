@@ -1,4 +1,4 @@
-import {createModularRoadSystem} from './modular-roads.js?rev=11';
+import {createModularRoadSystem} from './modular-roads.js?rev=12';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createCampusEditor} from './campus-editor.js?rev=121';

@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
-import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=7';
+import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=8';
 
 /**
  * AN PHIM HIGH-FIDELITY UNIFIED ROAD NETWORK
