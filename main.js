@@ -8,7 +8,7 @@ import {createCampusGreenery} from './campus-greenery.js?rev=10';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
-import {getStudioModelById, preloadAllStudioPacks} from './asset-pack-extractor.js?rev=146';
+import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
 import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v7';
@@ -24,7 +24,7 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v5';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
@@ -1231,11 +1231,7 @@ async function main() {
 
   document.querySelector('#photo').onclick = () => {
     renderer.setPixelRatio(2);
-    if (postPipeline) {
-      postPipeline.render();
-    } else {
-      renderer.render(scene, camera);
-    }
+    drawFrame();
     report.drawCalls = renderer.info.render.calls;
     report.triangles = renderer.info.render.triangles;
     report.exportPixels = [renderer.domElement.width, renderer.domElement.height];
@@ -1401,6 +1397,9 @@ async function main() {
 
   const frameTimes = [];
   let previous = performance.now();
+  const drawCampus = () => postPipeline ? postPipeline.render() : renderer.render(scene, camera);
+  // While a building is open the animator draws the frame: the campus as a sketch, the room on top
+  const drawFrame = () => { if (!cutawayAnimator?.render(renderer, drawCampus)) drawCampus(); };
   function frame(now) {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
@@ -1412,11 +1411,7 @@ async function main() {
     const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
-      if (postPipeline) {
-        postPipeline.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+      drawFrame();
     }
     frameTimes.push(now - previous);
     previous = now;
