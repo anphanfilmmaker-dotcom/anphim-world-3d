@@ -235,7 +235,7 @@ export function createDayNight({scene, sun, hemi, palette, groundHeight, windowG
         if (to !== before) onChange?.();
       }
       const moving = k !== to;
-      if (moving) k = T.MathUtils.lerp(from, to, Math.min(1, (now - startedAt) / TRANSITION_MS));
+      if (moving) k = T.MathUtils.lerp(from, to, T.MathUtils.clamp((now - startedAt) / TRANSITION_MS, 0, 1));
       const rescan = (k > 0 || to > 0) && now - lastScan > RESCAN_MS;
       if (rescan) { lastScan = now; scan(); }
       if (moving || rescan) apply();
