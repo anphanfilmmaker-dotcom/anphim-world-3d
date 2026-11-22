@@ -316,7 +316,9 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
 
   /** What grows at a point: {kind, density, colors} of the strongest landscape there, or null. */
   function growth(x, z) {
-    const land = LAND[anchors[blend(x, z)].land];
+    // The ridge around a closed valley grows what the valley grows.
+    const ring = slots.find(s => LAND[s.land].closed && rectGap(x, z, s.pad) < 26);
+    const land = LAND[ring ? ring.land : anchors[blend(x, z)].land];
     return land.trees ? {kind: land.trees[0], density: land.trees[1], colors: land.trees[2]} : null;
   }
   const onPad = (x, z, margin = 0) => slots.some(s => rectGap(x, z, s.pad) <= margin);
