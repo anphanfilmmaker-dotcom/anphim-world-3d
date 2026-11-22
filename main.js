@@ -10,12 +10,12 @@ import {runSpatialLint} from './spatial-lint.js?rev=1';
 import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
-import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v7';
+import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v8';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v40';
+import {createArchitecture} from './architecture.js?rev=v42';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq18';
@@ -91,7 +91,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV5')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV6')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
@@ -286,9 +286,50 @@ async function main() {
     if (!gradientMaterials.has(mat)) {
       const m = mat.clone();
       m.vertexColors = true;
+      paintedWash(m, mat.metalness > 0.05); // chỉ vật liệu kính có metalness
       gradientMaterials.set(mat, m);
     }
     return gradientMaterials.get(mat);
+  }
+  // Nét vẽ tay trên mặt nhà (lighting.paintedWash trong campus-palette.json, strength 0 = tắt): mặt đón nắng ngả ấm, mặt khuất nắng ngả lạnh,
+  // loang màu tần số thấp theo toạ độ world như nét cọ, và vệt sáng chéo trên kính. Chỉ đổi màu nền (albedo), không đụng tới đèn.
+  const WASH = {strength: 1, warmCool: 0.07, blotch: 0.06, glassSheen: 0.14, ...(P.lighting.paintedWash || {})};
+  const sunDir = new T.Vector3(...P.lighting.sunPosition).normalize();
+  function paintedWash(material, glass) {
+    if (!(WASH.strength > 0)) return;
+    const k = WASH.strength, f = v => (v * k).toFixed(4);
+    const prev = material.onBeforeCompile;
+    material.onBeforeCompile = (shader, renderer) => {
+      prev?.call(material, shader, renderer);
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vWashPos;\nvarying vec3 vWashNormal;')
+        .replace('#include <project_vertex>', '#include <project_vertex>\nvWashPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWashNormal = normalize(mat3(modelMatrix) * objectNormal);');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>
+          varying vec3 vWashPos;
+          varying vec3 vWashNormal;
+          float washHash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+          float washNoise(vec3 p) {
+            vec3 i = floor(p), u = fract(p); u = u * u * (3.0 - 2.0 * u);
+            return mix(mix(mix(washHash(i), washHash(i + vec3(1, 0, 0)), u.x), mix(washHash(i + vec3(0, 1, 0)), washHash(i + vec3(1, 1, 0)), u.x), u.y),
+                       mix(mix(washHash(i + vec3(0, 0, 1)), washHash(i + vec3(1, 0, 1)), u.x), mix(washHash(i + vec3(0, 1, 1)), washHash(i + vec3(1, 1, 1)), u.x), u.y), u.z);
+          }`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          {
+            vec3 wn = normalize(vWashNormal);
+            float lit = dot(wn, vec3(${sunDir.x.toFixed(4)}, ${sunDir.y.toFixed(4)}, ${sunDir.z.toFixed(4)}));
+            float side = 1.0 - abs(wn.y);
+            vec3 warm = vec3(1.0 + ${f(WASH.warmCool)}, 1.0 + ${f(WASH.warmCool * 0.35)}, 1.0 - ${f(WASH.warmCool * 0.9)});
+            vec3 cool = vec3(1.0 - ${f(WASH.warmCool * 1.1)}, 1.0 - ${f(WASH.warmCool * 0.2)}, 1.0 + ${f(WASH.warmCool * 0.9)});
+            diffuseColor.rgb *= mix(vec3(1.0), mix(cool, warm, smoothstep(-0.25, 0.45, lit)), 0.35 + 0.65 * side);
+            float blotch = washNoise(vWashPos * vec3(0.42, 0.3, 0.42)) * 0.65 + washNoise(vWashPos * 1.15 + 17.0) * 0.35;
+            diffuseColor.rgb *= 1.0 + ${f(WASH.blotch)} * (blotch - 0.5) * 2.0;
+            ${glass ? `float streak = sin((vWashPos.x + vWashPos.z) * 0.55 + vWashPos.y * 1.15);
+            diffuseColor.rgb += ${f(WASH.glassSheen)} * side * (smoothstep(0.72, 0.95, streak) + 0.5 * smoothstep(0.9, 0.99, sin((vWashPos.x + vWashPos.z) * 0.55 + vWashPos.y * 1.15 + 1.1)));` : ''}
+          }`);
+    };
+    material.customProgramCacheKey = () => 'painted-wash-' + glass + '-' + JSON.stringify(WASH);
+    material.needsUpdate = true;
   }
   function paintFaceGradient(geo, y0, height) {
     const p = geo.attributes.position, c = new Float32Array(p.count * 3);

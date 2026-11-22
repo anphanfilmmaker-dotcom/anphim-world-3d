@@ -92,6 +92,12 @@
     "sunIntensity": 4.3,
     "hemisphereIntensity": 1.3,
     "faceGradient": 0.24,
+    "paintedWash": {
+      "strength": 1,
+      "warmCool": 0.1,
+      "blotch": 0.09,
+      "glassSheen": 0.16
+    },
     "toneMapping": "Neutral",
     "exposure": 1.0,
     "shadowType": "PCF",
