@@ -2049,7 +2049,7 @@ export function createArchitecture(P) {
       wing: {side: 1, len: 4.8, d: 4.2, at: 'front', floors: 2, fh: 2.1, cols: 3, roof: 'solar'}, plot: [8.2, 7.2], plotHeight: 8.2, front: 2.5},
     proj_24: {w: 5.6, d: 5.0, fh: 2.3, cols: 2, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [6.2, 5.77], plotHeight: 8.4},
     proj_25: {w: 5.6, d: 4.2, fh: 2.3, cols: 3, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4], plotHeight: 5.6},
-    proj_05: {w: 3.4, d: 3.0, fh: 2.0, cols: 2, podium: 2, roof: 'crown', plot: [3.0, 3.29], plotHeight: 5.6},
+    proj_05: {w: 3.4, d: 2.8, fh: 2.0, cols: 2, podium: 2, roof: 'crown', plot: [3.0, 3.29], plotHeight: 5.6},
     other: {w: 4.8, d: 4.6, cols: 3, podium: 2, roof: 'garden', plot: [4.4, 4.4]}
   };
   const smallBuildingSpec = kind => SMALL_BUILDINGS[kind] || SMALL_BUILDINGS.other;

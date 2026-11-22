@@ -2,14 +2,15 @@ import * as T from 'three';
 export async function createEcosystemDesign(scene,P,L,terrain,roads,registry,layers,report,A){
  const courts=[
     ['HQ Forecourt',0,6.1,23,8.2,0.6],
-    ['Central Commons',0,-21,17,8,2],
-    ['Administration',-23,-18,7,8,1.5],
+    ['Central Commons',0,-21,21,9,2],
+    ['Administration',-21.75,-18,9.5,9,1.5],
     ['Finance',-25,15.85,13,4.1,0.65],
     ['IT Technical Court',32.5,15,19,4,1.2],
-    ['Finance Plaza',-30.2,20.9,9.5,5.2,1.2],
+    ['IT Link',31.5,8.4,3.2,9.6,0.8],
+    ['Finance Plaza',-30.5,21.2,11.5,6.4,1.2],
     ['Internal Upper',24,-20,9,3,1],
     ['Internal Middle',36,-24,7,3,1],
-    ['Internal Lower',30,-12,21,3,1],
+    ['Internal Lower',30,-11,21,5,1],
     ['Internal Level 1',47,-18,7,3,1]
   ];
  for(const [id,x,z,w,d,r]of courts)terrain.courts.push({id,x,z,w,d,r,useGroundTriangles:id==='Finance'});
