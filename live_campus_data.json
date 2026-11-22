@@ -12,12 +12,65 @@
     "estimatedProfitFormatted": "86.200.000 đ",
     "invoicesPendingCount": 2
   },
+  "clients": [
+    {
+      "id": "vistax",
+      "name": "VistaX",
+      "kind": "client"
+    },
+    {
+      "id": "k87k",
+      "name": "K87K",
+      "aliases": [
+        "Winterland87",
+        "Winterland"
+      ],
+      "kind": "client"
+    },
+    {
+      "id": "9kolor",
+      "name": "9KOLOR",
+      "kind": "client"
+    },
+    {
+      "id": "clevergroup",
+      "name": "Clevergroup",
+      "kind": "client"
+    },
+    {
+      "id": "inverse",
+      "name": "Inverse",
+      "kind": "client"
+    },
+    {
+      "id": "f35story",
+      "name": "F35Story",
+      "kind": "client"
+    },
+    {
+      "id": "film-studio",
+      "name": "Film studio",
+      "aliases": [
+        "PHIM AI"
+      ],
+      "kind": "client"
+    },
+    {
+      "id": "internal",
+      "name": "Internal",
+      "aliases": [
+        "AN PHIM",
+        "Nội bộ"
+      ],
+      "kind": "internal"
+    }
+  ],
   "projects": [
     {
       "id": "proj_1",
-      "name": "Brand Identity 3D",
-      "client": "Alpha Media",
-      "type": "Graphic",
+      "name": "AI_ATERA CENTRAL",
+      "client": "VistaX",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 45000000.0,
       "budgetFormatted": "45.000.000 đ",
@@ -66,9 +119,9 @@
     },
     {
       "id": "proj_2",
-      "name": "Cinematic Film Trailer",
-      "client": "Creative Studio",
-      "type": "Video",
+      "name": "AI_DONG THANG LONG",
+      "client": "VistaX",
+      "type": "AI Film",
       "status": "Chờ feedback",
       "budget": 50000000.0,
       "budgetFormatted": "50.000.000 đ",
@@ -117,9 +170,9 @@
     },
     {
       "id": "proj_3",
-      "name": "Campus WebGL Diorama",
-      "client": "Global Tech",
-      "type": "Graphic",
+      "name": "AI_KHAISON",
+      "client": "VistaX",
+      "type": "AI Film",
       "status": "Đang làm",
       "budget": 55000000.0,
       "budgetFormatted": "55.000.000 đ",
@@ -168,8 +221,8 @@
     },
     {
       "id": "proj_4",
-      "name": "Commercial Spot VFX",
-      "client": "Starlight Film",
+      "name": "Cát Bà - The Marina",
+      "client": "VistaX",
       "type": "Video",
       "status": "Hoàn thành",
       "budget": 60000000.0,
@@ -219,8 +272,8 @@
     },
     {
       "id": "proj_5",
-      "name": "Feature Animation Pre-Viz",
-      "client": "Nexus Entertainment",
+      "name": "Phim lịch sử",
+      "client": "Internal",
       "type": "AI Film",
       "status": "Đang làm",
       "budget": 65000000.0,
@@ -270,8 +323,8 @@
     },
     {
       "id": "proj_6",
-      "name": "Interactive 3D Web",
-      "client": "Vanguard Studio",
+      "name": "Cityon",
+      "client": "VistaX",
       "type": "Graphic",
       "status": "Cần revise",
       "budget": 70000000.0,
@@ -321,8 +374,8 @@
     },
     {
       "id": "proj_7",
-      "name": "Music Video Post-Production",
-      "client": "Alpha Media",
+      "name": "CT_05_Masteri",
+      "client": "VistaX",
       "type": "Video",
       "status": "Đang làm",
       "budget": 75000000.0,
@@ -372,8 +425,8 @@
     },
     {
       "id": "proj_8",
-      "name": "Corporate Brand Film",
-      "client": "Creative Studio",
+      "name": "Event Magnolia",
+      "client": "VistaX",
       "type": "Video",
       "status": "Tạm dừng",
       "budget": 80000000.0,
@@ -423,8 +476,8 @@
     },
     {
       "id": "proj_9",
-      "name": "Documentary Color Grading",
-      "client": "Global Tech",
+      "name": "Gamuda Park_Brighton",
+      "client": "VistaX",
       "type": "Video",
       "status": "Đang làm",
       "budget": 85000000.0,
@@ -474,8 +527,8 @@
     },
     {
       "id": "proj_10",
-      "name": "Motion Graphics Identity",
-      "client": "Starlight Film",
+      "name": "Nexus",
+      "client": "VistaX",
       "type": "Graphic",
       "status": "Chờ feedback",
       "budget": 90000000.0,
@@ -525,8 +578,8 @@
     },
     {
       "id": "proj_11",
-      "name": "Virtual Studio Environment",
-      "client": "Nexus Entertainment",
+      "name": "The Wincity",
+      "client": "VistaX",
       "type": "AI Film",
       "status": "Đang làm",
       "budget": 95000000.0,
@@ -576,8 +629,8 @@
     },
     {
       "id": "proj_12",
-      "name": "Title Sequence Design",
-      "client": "Vanguard Studio",
+      "name": "VR Render",
+      "client": "VistaX",
       "type": "Graphic",
       "status": "Hoàn thành",
       "budget": 100000000.0,
@@ -627,8 +680,8 @@
     },
     {
       "id": "proj_13",
-      "name": "Brand Identity 3D #13",
-      "client": "Alpha Media",
+      "name": "Ensure Drama",
+      "client": "Inverse",
       "type": "Graphic",
       "status": "Đang làm",
       "budget": 105000000.0,
@@ -678,8 +731,8 @@
     },
     {
       "id": "proj_14",
-      "name": "Cinematic Film Trailer #14",
-      "client": "Creative Studio",
+      "name": "Glucerna Drama",
+      "client": "Inverse",
       "type": "Video",
       "status": "Cần revise",
       "budget": 110000000.0,
@@ -729,8 +782,8 @@
     },
     {
       "id": "proj_15",
-      "name": "Campus WebGL Diorama #15",
-      "client": "Global Tech",
+      "name": "Pediasure Social",
+      "client": "Inverse",
       "type": "Graphic",
       "status": "Đang làm",
       "budget": 115000000.0,
@@ -780,9 +833,9 @@
     },
     {
       "id": "proj_16",
-      "name": "Commercial Spot VFX #16",
-      "client": "Starlight Film",
-      "type": "Video",
+      "name": "PHIM CYBERPUNK MẸ",
+      "client": "Film studio",
+      "type": "AI Film",
       "status": "Tạm dừng",
       "budget": 120000000.0,
       "budgetFormatted": "120.000.000 đ",
@@ -831,8 +884,8 @@
     },
     {
       "id": "proj_17",
-      "name": "Feature Animation Pre-Viz #17",
-      "client": "Nexus Entertainment",
+      "name": "K87K · Dự án mẫu 1",
+      "client": "K87K",
       "type": "AI Film",
       "status": "Đang làm",
       "budget": 125000000.0,
@@ -882,8 +935,8 @@
     },
     {
       "id": "proj_18",
-      "name": "Interactive 3D Web #18",
-      "client": "Vanguard Studio",
+      "name": "K87K · Dự án mẫu 2",
+      "client": "K87K",
       "type": "Graphic",
       "status": "Chờ feedback",
       "budget": 130000000.0,
@@ -933,8 +986,8 @@
     },
     {
       "id": "proj_19",
-      "name": "Music Video Post-Production #19",
-      "client": "Alpha Media",
+      "name": "K87K · Dự án mẫu 3",
+      "client": "K87K",
       "type": "Video",
       "status": "Đang làm",
       "budget": 135000000.0,
@@ -984,8 +1037,8 @@
     },
     {
       "id": "proj_20",
-      "name": "Corporate Brand Film #20",
-      "client": "Creative Studio",
+      "name": "9KOLOR · Dự án mẫu 1",
+      "client": "9KOLOR",
       "type": "Video",
       "status": "Hoàn thành",
       "budget": 140000000.0,
@@ -1035,8 +1088,8 @@
     },
     {
       "id": "proj_21",
-      "name": "Documentary Color Grading #21",
-      "client": "Global Tech",
+      "name": "9KOLOR · Dự án mẫu 2",
+      "client": "9KOLOR",
       "type": "Video",
       "status": "Đang làm",
       "budget": 145000000.0,
@@ -1086,8 +1139,8 @@
     },
     {
       "id": "proj_22",
-      "name": "Motion Graphics Identity #22",
-      "client": "Starlight Film",
+      "name": "9KOLOR · Dự án mẫu 3",
+      "client": "9KOLOR",
       "type": "Graphic",
       "status": "Cần revise",
       "budget": 150000000.0,
@@ -1137,8 +1190,8 @@
     },
     {
       "id": "proj_23",
-      "name": "Virtual Studio Environment #23",
-      "client": "Nexus Entertainment",
+      "name": "Clevergroup · Dự án mẫu 1",
+      "client": "Clevergroup",
       "type": "AI Film",
       "status": "Đang làm",
       "budget": 155000000.0,
@@ -1188,8 +1241,8 @@
     },
     {
       "id": "proj_24",
-      "name": "Title Sequence Design #24",
-      "client": "Vanguard Studio",
+      "name": "AN PHIM Website 2027",
+      "client": "Internal",
       "type": "Graphic",
       "status": "Tạm dừng",
       "budget": 160000000.0,
@@ -1239,8 +1292,8 @@
     },
     {
       "id": "proj_25",
-      "name": "Brand Identity 3D #25",
-      "client": "Alpha Media",
+      "name": "AN PHIM Trailer",
+      "client": "Internal",
       "type": "Graphic",
       "status": "Đang làm",
       "budget": 165000000.0,
@@ -1290,8 +1343,8 @@
     },
     {
       "id": "proj_26",
-      "name": "Cinematic Film Trailer #26",
-      "client": "Creative Studio",
+      "name": "Clevergroup · Dự án mẫu 2",
+      "client": "Clevergroup",
       "type": "Video",
       "status": "Chờ feedback",
       "budget": 170000000.0,
@@ -1341,8 +1394,8 @@
     },
     {
       "id": "proj_27",
-      "name": "Campus WebGL Diorama #27",
-      "client": "Global Tech",
+      "name": "Clevergroup · Dự án mẫu 3",
+      "client": "Clevergroup",
       "type": "Graphic",
       "status": "Đang làm",
       "budget": 175000000.0,
@@ -1392,8 +1445,8 @@
     },
     {
       "id": "proj_28",
-      "name": "Commercial Spot VFX #28",
-      "client": "Starlight Film",
+      "name": "F35Story · Dự án mẫu 1",
+      "client": "F35Story",
       "type": "Video",
       "status": "Hoàn thành",
       "budget": 180000000.0,
@@ -1443,8 +1496,8 @@
     },
     {
       "id": "proj_29",
-      "name": "Feature Animation Pre-Viz #29",
-      "client": "Nexus Entertainment",
+      "name": "F35Story · Dự án mẫu 2",
+      "client": "F35Story",
       "type": "AI Film",
       "status": "Đang làm",
       "budget": 185000000.0,
@@ -1560,7 +1613,7 @@
   "allIncomes": [
     {
       "id": "inc_1",
-      "description": "Milestone 1 Payment - Film Trailer",
+      "description": "Milestone 1 Payment - AI_DONG THANG LONG",
       "amount": 60000000,
       "amountFormatted": "60.000.000 đ",
       "date": "19/11/2026",
@@ -1570,7 +1623,7 @@
     },
     {
       "id": "inc_2",
-      "description": "Deposit - Brand Identity 3D",
+      "description": "Deposit - AI_ATERA CENTRAL",
       "amount": 42500000,
       "amountFormatted": "42.500.000 đ",
       "date": "10/11/2026",
@@ -1593,10 +1646,10 @@
       "activeProjectsSummary": "Đang có 15 dự án đang chạy tiến độ.",
       "pendingActionsSummary": "1 việc cần Sếp ra quyết định.",
       "highlights": [
-        "Brand Identity 3D: Đang làm (Hạn: 15/12/2026)",
-        "Cinematic Film Trailer: Chờ feedback (Hạn: 25/11/2026)",
-        "Campus WebGL Diorama: Đang làm (Hạn: 30/11/2026)",
-        "Commercial Spot VFX: Đang làm (Hạn: 10/12/2026)"
+        "AI_ATERA CENTRAL: Đang làm (Hạn: 15/12/2026)",
+        "AI_DONG THANG LONG: Chờ feedback (Hạn: 25/11/2026)",
+        "AI_KHAISON: Đang làm (Hạn: 30/11/2026)",
+        "Cát Bà - The Marina: Đang làm (Hạn: 10/12/2026)"
       ]
     },
     "hermes": {
@@ -1688,7 +1741,7 @@
       "id": "ntf_2",
       "type": "deadline",
       "level": "alert",
-      "text": "Sắp deadline: Cinematic Film Trailer, bàn giao bản dựng (25/11)",
+      "text": "Sắp deadline: AI_DONG THANG LONG, bàn giao bản dựng (25/11)",
       "time": "25/11/2026",
       "projectId": "proj_2",
       "buildingId": "bld:facility:hq"

@@ -170,6 +170,43 @@ export class DataConnector {
     return this.getProjects().find(p => p.id === id || (n !== null && projectNumber(p.id) === n)) || null;
   }
 
+  /**
+   * Clients, one district each: {id, name, aliases, kind}. kind 'internal' is AN PHIM
+   * itself, whose projects stay in the main campus. A client that only appears as text on a
+   * project is listed too, after the declared ones, so a new client needs no code change.
+   */
+  getClients() {
+    const out = (this.cache?.clients || []).map(c => ({aliases: [], kind: 'client', ...c}));
+    const known = c => out.some(x => [x.id, x.name, ...x.aliases].some(n => plain(n) === plain(c)));
+    for (const p of this.getProjects()) {
+      if (p.client && !known(p.client)) {
+        const base = plain(p.client).replace(/[^a-z0-9]+/g, '-');
+        let id = base;
+        for (let n = 2; out.some(x => x.id === id); n++) id = base + '-' + n;
+        out.push({id, name: p.client, aliases: [], kind: 'client'});
+      }
+    }
+    return out;
+  }
+
+  /** A client by id, name or alias ("Winterland87" finds K87K). */
+  getClient(key) {
+    const k = plain(key);
+    if (!k) return null;
+    return this.getClients().find(c => [c.id, c.name, ...c.aliases].some(n => plain(n) === k)) || null;
+  }
+
+  getProjectClient(project) {
+    return this.getClient(project?.client);
+  }
+
+  /** A client's projects in data order, which is the order they take lots in the district. */
+  getClientProjects(key) {
+    const client = this.getClient(key);
+    if (!client) return [];
+    return this.getProjects().filter(p => this.getProjectClient(p)?.id === client.id);
+  }
+
   /** Share of production milestones done, 0-100, or null when the project has none. */
   getProjectProgress(project) {
     const ms = project?.milestones || [];
@@ -595,7 +632,7 @@ export class DataConnector {
     const hit = (...texts) => texts.some(t => String(t || '').toLowerCase().includes(q));
     const out = [];
     for (const p of this.getProjects()) {
-      if (hit(p.name, p.client)) out.push({type: 'project', label: p.name, sub: p.client + ' · ' + p.status, projectId: p.id});
+      if (hit(p.name, p.client, ...(this.getProjectClient(p)?.aliases || []))) out.push({type: 'project', label: p.name, sub: p.client + ' · ' + p.status, projectId: p.id});
       for (const doc of p.documents || []) {
         if (hit(doc.title)) out.push({type: 'document', label: doc.title, sub: p.name + ' · ' + doc.status, projectId: p.id});
       }
