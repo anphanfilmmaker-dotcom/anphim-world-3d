@@ -513,6 +513,271 @@
         "active": false
       }
     ],
+    "clientDistricts": {
+      "template": {
+        "width": 48,
+        "gatePlaza": [
+          1,
+          11.5
+        ],
+        "roadWidth": 6,
+        "sidewalkWidth": 2,
+        "firstLotAt": 12,
+        "lotPitch": 10,
+        "lotSize": [
+          8.4,
+          10.5
+        ],
+        "lotSetback": 6,
+        "walkLoopOffset": 18,
+        "turnaroundRadius": 5.2,
+        "openLots": 8
+      },
+      "slots": [
+        {
+          "id": "district:W1",
+          "label": "W1",
+          "side": "W",
+          "gateXZ": [
+            -60,
+            15
+          ],
+          "depth": 120,
+          "groundY": 2.2,
+          "lots": 20,
+          "ringXZ": [
+            -52,
+            15
+          ],
+          "openLots": 14,
+          "landscape": "grassland",
+          "clientId": "vistax"
+        },
+        {
+          "id": "district:W2",
+          "label": "W2",
+          "side": "W",
+          "gateXZ": [
+            -60,
+            -50
+          ],
+          "depth": 90,
+          "groundY": 2.0,
+          "lots": 14,
+          "ringXZ": [
+            -48.5,
+            -50
+          ],
+          "landscape": "flower-hills",
+          "clientId": "9kolor"
+        },
+        {
+          "id": "district:W3",
+          "label": "W3",
+          "side": "W",
+          "gateXZ": [
+            -60,
+            -115
+          ],
+          "depth": 90,
+          "groundY": 1.6,
+          "lots": 14,
+          "landscape": "snow-mountain",
+          "clientId": "k87k"
+        },
+        {
+          "id": "district:N1",
+          "label": "N1",
+          "side": "N",
+          "gateXZ": [
+            -24,
+            -64
+          ],
+          "depth": 90,
+          "groundY": 2.0,
+          "lots": 14,
+          "ringXZ": [
+            -24,
+            -56
+          ],
+          "landscape": "film-set",
+          "clientId": "film-studio"
+        },
+        {
+          "id": "district:N2",
+          "label": "N2",
+          "side": "N",
+          "gateXZ": [
+            30,
+            -64
+          ],
+          "depth": 90,
+          "groundY": 1.5,
+          "lots": 14,
+          "ringXZ": [
+            30,
+            -56
+          ],
+          "landscape": "pine-forest",
+          "clientId": "clevergroup"
+        },
+        {
+          "id": "district:E3",
+          "label": "E3",
+          "side": "E",
+          "gateXZ": [
+            66,
+            -115
+          ],
+          "depth": 90,
+          "groundY": 3.2,
+          "lots": 14,
+          "landscape": "red-canyon",
+          "clientId": "f35story"
+        },
+        {
+          "id": "district:E2",
+          "label": "E2",
+          "side": "E",
+          "gateXZ": [
+            66,
+            -50
+          ],
+          "depth": 90,
+          "groundY": 2.3,
+          "lots": 14,
+          "ringXZ": [
+            54.5,
+            -50
+          ],
+          "landscape": null,
+          "clientId": null
+        },
+        {
+          "id": "district:E1",
+          "label": "E1",
+          "side": "E",
+          "gateXZ": [
+            66,
+            15
+          ],
+          "depth": 90,
+          "groundY": 1.8,
+          "lots": 14,
+          "ringXZ": [
+            58,
+            15
+          ],
+          "landscape": "tropical-beach",
+          "clientId": "inverse"
+        },
+        {
+          "id": "district:S1",
+          "label": "S1",
+          "side": "S",
+          "gateXZ": [
+            -60,
+            84
+          ],
+          "depth": 84,
+          "groundY": 0.7,
+          "lots": 12,
+          "landscape": null,
+          "clientId": null
+        },
+        {
+          "id": "district:S2",
+          "label": "S2",
+          "side": "S",
+          "gateXZ": [
+            3,
+            84
+          ],
+          "depth": 84,
+          "groundY": 0.7,
+          "lots": 12,
+          "landscape": null,
+          "clientId": null
+        },
+        {
+          "id": "district:S3",
+          "label": "S3",
+          "side": "S",
+          "gateXZ": [
+            66,
+            84
+          ],
+          "depth": 84,
+          "groundY": 0.7,
+          "lots": 12,
+          "landscape": null,
+          "clientId": null
+        }
+      ],
+      "accessRoads": [
+        {
+          "id": "road:district-branch-northwest",
+          "width": 6,
+          "points": [
+            [
+              -52,
+              -36
+            ],
+            [
+              -54,
+              -64
+            ],
+            [
+              -54,
+              -109
+            ],
+            [
+              -54.8,
+              -112
+            ],
+            [
+              -57,
+              -114.2
+            ],
+            [
+              -60,
+              -115
+            ]
+          ]
+        },
+        {
+          "id": "road:district-branch-northeast",
+          "width": 6,
+          "points": [
+            [
+              58,
+              -36
+            ],
+            [
+              60,
+              -64
+            ],
+            [
+              60,
+              -109
+            ],
+            [
+              60.8,
+              -112
+            ],
+            [
+              63,
+              -114.2
+            ],
+            [
+              66,
+              -115
+            ]
+          ]
+        }
+      ],
+      "allocation": "one client per slot; a project takes the lowest free lot number of its client's slot and keeps it; a new client takes the first slot whose clientId is null; slots without ringXZ or an access road wait for a bridge"
+    },
     "allocation": "append stable parcel binding; never reshuffle old building IDs; reserve is not a new project"
   },
   "departments": [

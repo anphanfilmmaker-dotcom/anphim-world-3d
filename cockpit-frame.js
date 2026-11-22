@@ -169,7 +169,8 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-bottom .cf-btn[aria-pressed=true]{background:var(--cf-accent);color:#1b2428}
 .cf-badge{min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--cf-alert);color:#fff;font-size:10px;font-weight:900;display:inline-grid;place-items:center}
 .cf-menu{position:relative}
-.cf-menu-list{position:absolute;bottom:calc(100% + 12px);right:0;min-width:230px;padding:6px;display:none}
+.cf-menu-list{position:absolute;bottom:calc(100% + 12px);right:0;min-width:230px;max-height:min(62vh,560px);overflow-y:auto;padding:6px;display:none}
+.cf-menu-list small{display:block;padding:8px 10px 3px;color:var(--cf-mute);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .cf-menu.cf-open .cf-menu-list{display:block}
 .cf-menu-list button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:7px 10px;border-radius:10px;font-size:12px;font-weight:700}
 .cf-menu-list button:hover{background:var(--cf-bg2)}
@@ -212,9 +213,13 @@ export class CockpitFrame {
    * @param {(b: object) => void} o.onEnterBuilding  fly inside a building
    * @param {() => void} o.onOverview  back to the whole-campus view
    * @param {() => void} [o.onMoneyToggle]  the "hide money" switch changed
+   * @param {() => object[]} [o.getDistricts]  client districts ({id, client, landscape, projects, lots})
+   * @param {(d: object) => void} [o.onEnterDistrict]  fly to a client district
    */
-  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle}) {
+  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle, getDistricts, onEnterDistrict}) {
     this.onMoneyToggle = onMoneyToggle;
+    this.getDistricts = getDistricts || (() => []);
+    this.onEnterDistrict = onEnterDistrict;
     this.data = dataConnector;
     this.buildings = buildings;
     this.byId = new Map(buildings.map(b => [b.id, b]));
@@ -304,6 +309,13 @@ export class CockpitFrame {
   }
 
   /** Building the camera is inside (topology entry) or null for the campus view. */
+  /** Replace the building list, when project buildings were added or removed. */
+  setBuildings(buildings) {
+    this.buildings = buildings;
+    this.byId = new Map(buildings.map(b => [b.id, b]));
+    this.render();
+  }
+
   setInside(building) {
     this.inside = building ? (this.byId.get(building.id) || building) : null;
     this.root.classList.toggle('cf-inside', !!this.inside);
@@ -518,7 +530,14 @@ export class CockpitFrame {
     const badge = id => counts.get(id) ? `<i class="cf-badge" title="${counts.get(id)} việc chờ anh">${counts.get(id)}</i>` : '';
     const pressed = id => String(this.inside?.id === id);
     const main = MAIN_JUMPS.map(id => this.byId.get(id)).filter(Boolean);
-    const projects = this.buildings.filter(b => b.kind === 'project');
+    const districts = this.getDistricts().filter(d => d.client);
+    // Projects are listed under their client, in the order of the client list.
+    const clientOf = b => this.data.getProjectClient(this.data.getProject(b.projectId));
+    const order = this.data.getClients().map(c => c.id);
+    const projects = this.buildings.filter(b => b.kind === 'project')
+      .map((b, i) => ({b, i, c: clientOf(b)}))
+      .sort((x, y) => (order.indexOf(x.c?.id) - order.indexOf(y.c?.id)) || x.i - y.i);
+    const projectRows = projects.map(({b, c}, i) => `${c && c.id !== projects[i - 1]?.c?.id ? `<small>${esc(c.name)}</small>` : ''}<button data-enter="${esc(b.id)}">${esc(this.label(b))}<span>${esc(this.data.getProject(b.projectId)?.status || '')}${badge(b.id)}</span></button>`).join('');
     const infra = this.buildings.filter(b => b.kind !== 'project' && !MAIN_JUMPS.includes(b.id));
     const marketing = this.data.getWorkspacePage('marketing');
     const menu = (key, title, list, sub) => !list.length ? '' : `<div class="cf-menu" data-menu="${key}">
@@ -529,7 +548,14 @@ export class CockpitFrame {
       <button class="cf-btn" data-act="overview" aria-pressed="${!this.inside}">Toàn cảnh</button>
       ${main.map(b => `<button class="cf-btn" data-enter="${esc(b.id)}" aria-pressed="${pressed(b.id)}">${esc(b.name)}${badge(b.id)}</button>`).join('')}
       ${marketing && !this.byId.has('bld:facility:marketing') ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
-      ${menu('projects', 'Dự án', projects, b => esc(this.data.getProject(b.projectId)?.status || ''))}
+      ${!districts.length ? '' : `<div class="cf-menu" data-menu="districts">
+        <button class="cf-btn" data-act="menu" aria-haspopup="true">Quận ${icon('chevron', 13)}</button>
+        <div class="cf-chip cf-menu-list">${districts.map(d => `<button data-district="${esc(d.id)}">${esc(d.client.name)}<span>${esc(d.landscape || '')} · ${d.projects}/${d.lots} lô</span></button>`).join('')}</div>
+      </div>`}
+      ${!projects.length ? '' : `<div class="cf-menu" data-menu="projects">
+        <button class="cf-btn" data-act="menu" aria-haspopup="true" aria-pressed="${projects.some(({b}) => b.id === this.inside?.id)}">Dự án ${icon('chevron', 13)}</button>
+        <div class="cf-chip cf-menu-list">${projectRows}</div>
+      </div>`}
       ${menu('infra', 'Hạ tầng', infra, b => esc(this.data.getBuildingSummary(b)?.status?.label || 'Chưa kết nối'))}
       ${this.inside ? `<button class="cf-btn" data-act="overview" title="Esc">${icon('close', 13)} Thoát</button>` : ''}`;
   }
@@ -560,6 +586,13 @@ export class CockpitFrame {
       this.closeMenus();
       if (this.query) { this.root.querySelector('[data-search]').value = this.query = ''; this.renderResults(); }
       if (b) this.onEnterBuilding(b);
+      return;
+    }
+    const district = e.target.closest('[data-district]');
+    if (district) {
+      const d = this.getDistricts().find(x => x.id === district.dataset.district);
+      this.closeMenus();
+      if (d) this.onEnterDistrict?.(d);
       return;
     }
     const dismiss = e.target.closest('[data-dismiss]');

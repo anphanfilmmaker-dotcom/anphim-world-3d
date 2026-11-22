@@ -4,10 +4,12 @@ export function createTerrain(scene,P,L){
  const riverZ=x=>67+5.2*Math.sin(x*.027)+1.5*Math.sin(x*.072),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
  const pads=L.buildings.map(b=>({id:b.id,x:b.position[0],z:b.position[2],y:b.position[1],hx:L.grades[b.grade][0]/2+.4,hz:L.grades[b.grade][2]/2+.4}));
  if(L.schedule) pads.push({id:L.schedule.id,x:17,z:31.5,y:3.8,hx:2.2,hz:.8,feather:1.0});
+ const districtPads=districtGroundPads(L);
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
  const zones=[{id:'forecourt',x:0,z:6,hx:8,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-24,z:-19,hx:9,hz:10,y:4},{id:'finance',x:-27,z:14,hx:8.5,hz:9,y:4},{id:'it',x:32.5,z:14,hx:10.5,hz:9.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
+ for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10)y=T.MathUtils.lerp(y,p.y,1-smooth(d/10));}
  // Four continuous working terraces, stitched to existing fixed building platforms.
  if(x>15&&x<57&&z>-35&&z<-11){let ty=5.2-.7*smooth((x-29)/3)-.7*smooth((x-40)/3)-.7*smooth((x-50)/3);const w=(1-smooth(Math.max(0,Math.abs(z+24)-7)/6))*(1-smooth(Math.max(0,Math.abs(x-36)-17)/5)); y=T.MathUtils.lerp(y,ty,w);}
  // A broad longitudinal grading corridor, not a raised road extrusion.
@@ -87,3 +89,4 @@ export function createTerrain(scene,P,L){
  return {height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
+import {districtGroundPads} from './district-layout.js';

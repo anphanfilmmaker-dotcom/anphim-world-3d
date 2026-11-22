@@ -1,4 +1,3 @@
-import {createVistaXDistrict} from './district-vistax.js?rev=11';
 import {createModularRoadSystem} from './modular-roads.js?rev=1';
 import {createHQGardens} from './hq-gardens.js?rev=61';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
@@ -28,6 +27,7 @@ import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
+import {createClientDistricts} from './client-districts.js';
 
 window.THREE = T;
 
@@ -934,7 +934,6 @@ async function main() {
   console.log('[STEP 6] ecosystem design created');
   await createLandscapePolish(scene, P, L, terrain, roads, registry, layers, report, A);
   await createHQGardens(scene,terrain,roads,L,report);
-  await createVistaXDistrict(scene, terrain, roads, registry, P);
   await createModularRoadSystem(scene, terrain, roads);
   console.log('[STEP 6.5] HQ gardens created');
   scene.traverse(o => {
@@ -990,6 +989,9 @@ async function main() {
 
   // Cockpit Command Engine (Spec Kit Integration)
   await dataConnector.load();
+  // Client districts around the ring road: land from the topology, clients and projects from the data.
+  const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
+  window.__clientDistricts = clientDistricts;
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
@@ -1028,11 +1030,19 @@ async function main() {
   dataConnector.subscribe(refreshInside);
 
   // Campus-view frame: resource bar, missions, hovered building, quick jump
+  const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
+  clientDistricts.onChange = () => cockpitFrame.setBuildings(frameBuildings());
   cockpitFrame = new CockpitFrame({
     dataConnector,
-    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom],
+    buildings: frameBuildings(),
     onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
+    getDistricts: () => clientDistricts.districts,
+    onEnterDistrict: d => {
+      if (cutawayAnimator.isInspecting) exitInspect();
+      const [x, y, z] = d.center;
+      director.flyTo({target: [x, y + 1, z], position: [x + 70, y + 86, z + 94], span: Math.max(d.depth, 60) * 1.05});
+    },
     onOverview: () => {
       if (cutawayAnimator.isInspecting) exitInspect();
       else view('overview');
