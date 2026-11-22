@@ -91,7 +91,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV5')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV6')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
