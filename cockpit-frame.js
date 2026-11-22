@@ -485,6 +485,7 @@ export class CockpitFrame {
       ? `<a class="cf-ib" href="${esc(page.url)}" target="_blank" rel="noopener" title="Mở dashboard" aria-label="Mở dashboard">${icon('chart', 20)}</a>`
       : `<span class="cf-ib" aria-disabled="true" title="Mở dashboard: chưa có địa chỉ AN PHIM Workspace (workspace.baseUrl trong dữ liệu)">${icon('chart', 20)}</span>`;
     this.slot.missions.parentElement.classList.toggle('cf-open', this.missionsOpen);
+    this.slot.missions.parentElement.inert = !this.missionsOpen;
   }
 
   renderControls() {
