@@ -41,27 +41,74 @@ function ridged(x, z, octaves = 4) {
 }
 const rectGap = (x, z, r) => Math.hypot(Math.max(r[0] - x, 0, x - r[2]), Math.max(r[1] - z, 0, z - r[3]));
 
-export const SEA_LEVEL = 0.12;
+export const SEA_LEVEL = 0.18;
+
+// The far land is drawn on a grid of about this size where it meets the campus ground.
+const SEAM_STEP = 4;
+
+/**
+ * Where the campus ground (a fine grid over `rect` [x0, z0, x1, z1]) meets the far land (a coarse grid).
+ * Within `band` of the border both take their height and their shading from one shared lattice of
+ * SEAM_STEP, so a slope or a cliff crosses the border without teeth, a gap or a line of light.
+ */
+export function createSeam(height, rect, band = 14) {
+  const [x0, z0, x1, z1] = rect, nx = Math.round((x1 - x0) / SEAM_STEP), nz = Math.round((z1 - z0) / SEAM_STEP), sx = (x1 - x0) / nx, sz = (z1 - z0) / nz;
+  const cache = new Map();
+  const node = (i, j) => {
+    const key = (i + 2048) * 8192 + j + 2048;
+    let h = cache.get(key);
+    if (h === undefined) cache.set(key, h = height(x0 + i * sx, z0 + j * sz));
+    return h;
+  };
+  // Distance inside the border; negative outside it.
+  const inside = (x, z) => Math.min(x - x0, x1 - x, z - z0, z1 - z);
+  const cell = (x, z) => { const i = Math.floor((x - x0) / sx + 1e-6), j = Math.floor((z - z0) / sz + 1e-6); return [i, j, (x - x0) / sx - i, (z - z0) / sz - j]; };
+  /** Height of the campus ground: `height` inside, the lattice on the border. */
+  function heightAt(x, z) {
+    const d = inside(x, z);
+    if (d >= band) return height(x, z);
+    const [i, j, u, v] = cell(x, z), coarse = (node(i, j) * (1 - u) + node(i + 1, j) * u) * (1 - v) + (node(i, j + 1) * (1 - u) + node(i + 1, j + 1) * u) * v, k = smooth(d / band);
+    return k > 0 ? coarse + (height(x, z) - coarse) * k : coarse;
+  }
+  const slopeX = (i, j) => (node(i + 1, j) - node(i - 1, j)) / (2 * sx), slopeZ = (i, j) => (node(i, j + 1) - node(i, j - 1)) / (2 * sz);
+  /** Turn the normals of a mesh towards the lattice's own as its vertices near the border, from either side. */
+  function shade(position, normal) {
+    for (let n = 0; n < position.count; n++) {
+      const x = position.getX(n), z = position.getZ(n), w = 1 - smooth(Math.abs(inside(x, z)) / band);
+      if (w <= 0) continue;
+      const [i, j, u, v] = cell(x, z);
+      const gx = (slopeX(i, j) * (1 - u) + slopeX(i + 1, j) * u) * (1 - v) + (slopeX(i, j + 1) * (1 - u) + slopeX(i + 1, j + 1) * u) * v;
+      const gz = (slopeZ(i, j) * (1 - u) + slopeZ(i + 1, j) * u) * (1 - v) + (slopeZ(i, j + 1) * (1 - u) + slopeZ(i + 1, j + 1) * u) * v;
+      const len = Math.hypot(gx, 1, gz), ax = normal.getX(n) * (1 - w) - gx / len * w, ay = normal.getY(n) * (1 - w) + w / len, az = normal.getZ(n) * (1 - w) - gz / len * w, l = Math.hypot(ax, ay, az) || 1;
+      normal.setXYZ(n, ax / l, ay / l, az / l);
+    }
+    normal.needsUpdate = true;
+  }
+  const line = (lo, step, count) => Array.from({length: count + 1}, (_, k) => lo + step * k);
+  return {height: heightAt, shade, xs: line(x0, sx, nx), zs: line(z0, sz, nz)};
+}
 
 /**
  * Landscapes by the `landscape` id of a topology slot. `pad` is the ground inside the district,
  * `wild` the land around it, `rise(x, z)` its height above the plain, `rim` a ridge closing the
- * district in on the sides away from its gate, `trees` what grows there.
+ * district in on the sides away from its gate (`closed`: on every side, the road comes in over a pass),
+ * `trees` what grows there.
  */
 const LAND = {
   plain: {rise: () => 0},
   meadow: {rise: (x, z) => 1 + 4 * fbm(x / 70, z / 70), trees: ['round', 0.1, [0x4f9c46, 0x6bb04f]]},
   grassland: {pad: 0x9ccb6b, wild: 0x93c665, rise: (x, z) => 1 + 6 * fbm(x / 85, z / 85), trees: ['round', 0.07, [0x5aa64a, 0x77b955]]},
   'flower-hills': {pad: 0xc9dd9c, wild: 0xb4d28a, rise: (x, z) => 1.5 + 11 * Math.pow(fbm(x / 34, z / 34, 2), 1.4), trees: ['round', 0.14, [0xf3a6c4, 0xf7c1d6, 0xe98bb2]]},
-  'snow-mountain': {pad: 0xeef4f9, wild: 0xeef4f9, rim: 13, rise: (x, z) => 9 + 58 * Math.pow(ridged(x / 62, z / 62), 1.25), trees: ['conifer', 0.3, [0x2f5d4a, 0x3b6b58, 0xdfeaf0]]},
+  'snow-mountain': {pad: 0xeef4f9, wild: 0xeef4f9, rim: 15, closed: true, rise: (x, z) => 9 + 58 * Math.pow(ridged(x / 62, z / 62), 1.25), trees: ['conifer', 0.3, [0x2f5d4a, 0x3b6b58, 0xdfeaf0]]},
   'film-set': {pad: 0xb9b2a6, wild: 0xc7bd7c, rise: (x, z) => 3 + 11 * fbm(x / 52, z / 52), trees: ['round', 0.1, [0x7f9a4a, 0x93a655]]},
   'pine-forest': {pad: 0x5f8f57, wild: 0x4f7f4b, rise: (x, z) => 4 + 15 * fbm(x / 55, z / 55), trees: ['conifer', 0.85, [0x2e6140, 0x3a7049, 0x285538]]},
   'red-canyon': {pad: 0xdfa46e, wild: 0xd98050, rim: 9, rise: (x, z) => {
     const t = (5 + 30 * fbm(x / 68, z / 68)) / 7, f = Math.floor(t);
-    return 7 * (f + smooth((t - f - 0.7) / 0.3));
+    return 7 * (f + smooth((t - f - 0.55) / 0.45));
   }, trees: ['round', 0.03, [0x8a9a4c]]},
   'tropical-beach': {pad: 0xf0deb0, wild: 0xead9a6, rise: (x, z) => 0.4 + 1.2 * fbm(x / 30, z / 30), trees: ['round', 0.1, [0x3fa05a, 0x4fb267]]},
-  highland: {wild: 0x5f9a56, rise: (x, z) => 5 + 22 * fbm(x / 120, z / 120) + 20 * ridged(x / 190, z / 190, 3), trees: ['conifer', 0.5, [0x356b45, 0x437a4f]]},
+  // Rolling ground near the districts, growing into mountains towards the horizon.
+  highland: {wild: 0x5f9a56, rise: (x, z) => 4 + (22 * fbm(x / 120, z / 120) + 20 * ridged(x / 190, z / 190, 3)) * smooth((Math.hypot(x, z) - 170) / 260), trees: ['conifer', 0.5, [0x356b45, 0x437a4f]]},
   sea: {rise: () => -7}
 };
 // Beyond the campus ground: [landscape, x0, z0, x1, z1].
@@ -85,7 +132,9 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   const slots = (plan?.slots || []).map(slot => {
     const f = slotFrame(slot, tpl), [cx, cz] = f.center, [hx, hz] = f.halfExtent;
     const cos = Math.round(Math.cos(f.rotY)), sin = Math.round(Math.sin(f.rotY)), [gx, gz] = slot.gateXZ;
-    return {land: LAND[slot.landscape] ? slot.landscape : 'meadow', named: !!LAND[slot.landscape], rect: [cx - hx, cz - hz, cx + hx, cz + hz], pad: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], u: (x, z) => (x - gx) * cos - (z - gz) * sin};
+    // A closed valley takes the mountains around it into its own landscape.
+    const land = LAND[slot.landscape] ? slot.landscape : 'meadow', out = LAND[land].closed ? 24 : 0;
+    return {land, named: !!LAND[slot.landscape], core: [cx - hx, cz - hz, cx + hx, cz + hz], rect: [cx - hx - out, cz - hz - out, cx + hx + out, cz + hz + out], pad: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, u: (x, z) => (x - gx) * cos - (z - gz) * sin};
   });
   const anchors = [{land: 'plain', rect: CAMPUS}, ...slots, ...FAR.map(([land, ...rect]) => ({land, rect}))];
   // Roads that climb: points given as [x, z, y] set the grade the ground is cut to.
@@ -113,36 +162,40 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   }
   // The level ground of a district runs a little past its plot, by a different amount all round, so no valley is a rectangle.
   const edge = (x, z) => 11 * fbm(x / 21 + 5, z / 21 + 9, 2);
-  const padMask = (x, z) => {
-    let m = 1;
-    for (const s of slots) {
-      const d = rectGap(x, z, s.pad);
-      if (d < 34) m *= smooth((d - 1 - edge(x, z)) / 22);
-    }
-    return m;
-  };
 
   /** Height of the land once the landscapes are added to the ground `y` the terrain already has. */
   function shape(x, z, y) {
     const open = smooth((rectGap(x, z, CAMPUS) - 6) / 45);
     if (open > 0) {
-      const mask = padMask(x, z);
-      if (mask > 0) {
-        blend(x, z);
-        let lift = 0;
-        for (let k = 0; k < anchors.length; k++) if (weights[k] > 0.01) lift += weights[k] * LAND[anchors[k].land].rise(x, z);
-        if (lift > 0) {
-          const far = 1 + 1.5 * smooth((Math.hypot(x, z) - 260) / 380);
-          lift *= far * smooth((Math.abs(z - riverZ(x)) - 9) / 60);
-        }
-        y += open * mask * lift;
+      blend(x, z);
+      // Hills stand back from the river, which keeps a flat valley; the sea bed does not, so the river runs out into open water.
+      let hills = 0, deep = 0;
+      for (let k = 0; k < anchors.length; k++) {
+        if (weights[k] <= 0.01) continue;
+        const rise = weights[k] * LAND[anchors[k].land].rise(x, z);
+        if (rise > 0) hills += rise; else deep += rise;
       }
-      // A ridge around the districts that lie in a valley or a canyon, open towards the gate.
+      y += open * (hills * (1 + 1.5 * smooth((Math.hypot(x, z) - 260) / 380)) * smooth((Math.abs(z - riverZ(x)) - 9) / 60) + deep);
+      // Each district keeps its own level, and the land eases from that level into the landscape around it.
+      let wild = 1, level = 0, share = 0;
       for (const s of slots) {
-        const rim = LAND[s.land].rim;
-        if (!rim) continue;
         const d = rectGap(x, z, s.pad);
-        if (d > 0 && d < 42) y += open * rim * Math.exp(-(((d - 13 - edge(x, z)) / 7) ** 2)) * smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
+        if (d >= 34) continue;
+        const k = smooth((d - 1 - edge(x, z)) / 22);
+        wild *= k;
+        level += (1 - k) * s.y;
+        share += 1 - k;
+      }
+      if (share > 0) y = wild * y + (1 - wild) * level / share;
+      // A ridge around the districts that lie in a valley or a canyon: open towards the gate, or closed all round.
+      for (const s of slots) {
+        const land = LAND[s.land];
+        if (!land.rim) continue;
+        const d = rectGap(x, z, s.pad);
+        if (d <= 0 || d >= 62) continue;
+        // A closed valley is walled highest at the back; the sides towards the campus stay low enough to look in over.
+        const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.pad[3] + 10) / 20), smooth((x - s.pad[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
+        y += open * land.rim * Math.exp(-(((d - 14 - edge(x, z) * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
       }
     }
     // The road bed: the grade of the nearest stretch of road, passing smoothly from one stretch to the next.
@@ -173,15 +226,16 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
    * `col` holds multipliers of the grass colour `base` and is updated in place.
    */
   function paint(pos, col, row, base) {
-    const n = pos.length / 3, c = new T.Color(), t = new T.Color(), b = lin(base);
+    const n = pos.length / 3, c = new T.Color(), t = new T.Color(), s1 = new T.Color(), b = lin(base);
     const colour = Object.fromEntries(Object.entries(LAND).map(([k, v]) => [k, {pad: v.pad != null ? lin(v.pad) : null, wild: v.wild != null ? lin(v.wild) : null}]));
     const rock = lin(0x8b97a6), snow = lin(0xf4f8fb), sand = lin(0xf0deb0), seabed = lin(0xcbbd8a), cliff = lin(0x8a8f86), strata = STRATA.map(lin), flowers = FLOWERS.map(lin), gold = lin(0xd8d27a), mesaTop = lin(0xe6b584);
     for (let i = 0; i < n; i++) {
       const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
       const open = smooth(rectGap(x, z, CAMPUS) / 22);
       if (open <= 0) continue;
-      const l = i % row ? i - 1 : i + 1, u = i >= row ? i - row : i + row;
-      const sx = (pos[l * 3 + 1] - y) / (Math.abs(pos[l * 3] - x) || 1), sz = (pos[u * 3 + 1] - y) / (Math.abs(pos[u * 3 + 2] - z) || 1), slope = Math.hypot(sx, sz);
+      // Slope across both neighbours on each axis, so a cliff reads the same from either side.
+      const l = i % row ? i - 1 : i, r = (i + 1) % row ? i + 1 : i, u = i >= row ? i - row : i, v = i + row < n ? i + row : i;
+      const sx = (pos[r * 3 + 1] - pos[l * 3 + 1]) / (pos[r * 3] - pos[l * 3] || 1), sz = (pos[v * 3 + 1] - pos[u * 3 + 1]) / (pos[v * 3 + 2] - pos[u * 3 + 2] || 1), slope = Math.hypot(sx, sz);
       blend(x, z);
       c.setRGB(0, 0, 0);
       let cover = 0;
@@ -189,17 +243,20 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         const w = weights[k];
         if (w < 0.01) continue;
         const a = anchors[k], name = a.land, set = colour[name];
-        const inside = a.pad && a.named ? 1 - smooth(rectGap(x, z, a.rect) / 9) : 0;
+        const inside = a.pad && a.named ? 1 - smooth(rectGap(x, z, a.core) / 9) : 0;
         if (!set.wild && !(set.pad && inside)) continue;
         t.copy(set.wild || set.pad);
-        if (name === 'snow-mountain') { if (slope > 1.0) t.copy(rock).lerp(snow, smooth((1.7 - slope) / 0.7) * 0.75); }
+        if (name === 'snow-mountain') t.lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8);
         else if (name === 'red-canyon') {
-          if (slope > 0.5) t.copy(strata[((Math.floor(y / 2.4) % 4) + 4) % 4]);
-          else if (y > 12) t.copy(mesaTop);
+          // Rock layers on the cliffs: bands that follow the height, each passing softly into the next.
+          const band = y / 2.6 + 1.2 * fbm(x / 40, z / 40, 2), f = Math.floor(band), mix = smooth((band - f - 0.6) / 0.4);
+          t.lerp(mesaTop, smooth((y - 10) / 4));
+          // On the steepest faces the ground mesh is too coarse to carry the layers: one rock colour there.
+          t.lerp(s1.copy(strata[((f % 4) + 4) % 4]).lerp(strata[(((f + 1) % 4) + 4) % 4], mix).lerp(strata[1], smooth((slope - 1.1) / 0.9)), smooth((slope - 0.3) / 0.5));
         } else if (name === 'flower-hills') {
           // Flower fields: rows of one colour each, in patches across the hills.
           const field = fbm(x / 26 + 40, z / 26, 2), turn = Math.floor(fbm(x / 60, z / 60 + 20, 2) * 6), row = (turn % 2 ? x * 0.8 + z * 0.6 : x * 0.6 - z * 0.8) / 3.2;
-          if (field > 0.5 && row - Math.floor(row) < 0.72) t.lerp(flowers[((Math.floor(row) + turn) % 3 + 3) % 3], smooth((field - 0.5) / 0.05) * 0.9 * detail(x, z));
+          if (field > 0.5 && row - Math.floor(row) < 0.72) t.lerp(flowers[((Math.floor(row) + turn) % 3 + 3) % 3], smooth((field - 0.5) / 0.05) * 0.9 * detail(x, z) * (1 - smooth((slope - 0.2) / 0.3)));
         } else if (name === 'grassland') t.lerp(gold, smooth((fbm(x / 28, z / 28 + 60, 2) - 0.55) / 0.15) * 0.55);
         else if (name === 'pine-forest') t.multiplyScalar(0.86 + 0.28 * fbm(x / 20, z / 20, 2));
         else if (name === 'highland') {
@@ -211,11 +268,27 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         cover += w;
       }
       if (cover > 0) c.multiplyScalar(1 / cover);
+      // The snow line: high ground beside the snow mountains is snow too, whatever grows lower down.
+      let snowy = 0;
+      for (let k = 0; k < anchors.length; k++) if (anchors[k].land === 'snow-mountain') snowy += weights[k];
+      const white = smooth((y - 9) / 9) * smooth(snowy / 0.2);
+      if (white > 0) {
+        c.lerp(t.copy(snow).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), white);
+        cover = Math.max(cover, white);
+      }
+      // The ridge around a closed valley belongs to the valley: snow and rock down to its foot.
+      for (const s of slots) {
+        if (!LAND[s.land].closed) continue;
+        const ring = 1 - smooth((rectGap(x, z, s.pad) - 16) / 14);
+        if (ring <= 0) continue;
+        c.lerp(t.copy(colour[s.land].wild).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), ring);
+        cover = Math.max(cover, ring);
+      }
       // The shore: sand at the water's edge, sea bed below it. The river keeps its own banks.
       if (y < 1.5 && weights[seaAnchor] > 0.02) {
         const shore = (1 - smooth((y - 0.5) / 1.0)) * smooth(weights[seaAnchor] / 0.2);
         if (!cover) c.copy(b);
-        c.lerp(y < -0.6 ? seabed : sand, shore);
+        c.lerp(s1.copy(sand).lerp(seabed, smooth((-0.2 - y) / 1.6)), shore);
         cover = Math.max(cover, shore);
       }
       const k = open * Math.min(1, cover * 1.25);
@@ -244,27 +317,28 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   const world = terrain.world, group = new T.Group();
   group.name = 'world-backdrop';
   scene.add(group);
-  if (!world || !terrain.designHeight) return group;
+  if (!world || !terrain.seam) return group;
   const box = new T.Box3().setFromBufferAttribute(new T.BufferAttribute(terrain.basePosArray, 3)), x0 = box.min.x, x1 = box.max.x, z0 = box.min.z, z1 = box.max.z;
 
   // Grid lines: fine at the edge of the campus ground, coarser with distance. One ring of cells lies under the edge.
-  const axis = (lo, hi) => {
-    const out = [];
-    for (let v = lo + 4, step = 4; v > -reach; step = Math.min(34, step * 1.12), v -= step) out.unshift(v - step);
-    for (let v = lo + 4; v < hi - 4; v += (hi - lo - 8) / Math.round((hi - lo - 8) / 4)) out.push(v);
-    for (let v = hi - 4, step = 4; v < reach; step = Math.min(34, step * 1.12), v += step) out.push(v);
-    out.push(out[out.length - 1] + 34);
+  const axis = (nodes, lo = nodes[0], hi = nodes[nodes.length - 1]) => {
+    const out = [...nodes];
+    for (let v = lo, step = SEAM_STEP * 1.12; v > -reach; step = Math.min(34, step * 1.12)) out.unshift(v -= step);
+    for (let v = hi, step = SEAM_STEP * 1.12; v < reach; step = Math.min(34, step * 1.12)) out.push(v += step);
     return out;
   };
-  const xs = axis(x0, x1), zs = axis(z0, z1), row = xs.length, pos = new Float32Array(row * zs.length * 3), col = new Float32Array(row * zs.length * 3).fill(1), idx = [];
+  const xs = axis(terrain.seam.xs), zs = axis(terrain.seam.zs), row = xs.length, pos = new Float32Array(row * zs.length * 3), col = new Float32Array(row * zs.length * 3).fill(1), idx = [];
   const within = (x, z, m) => x > x0 + m && x < x1 - m && z > z0 + m && z < z1 - m;
   zs.forEach((z, j) => xs.forEach((x, i) => {
     // The same soft light and dark patches the campus ground has (terrain.js), so the two meet without a line.
-    const k = (j * row + i) * 3, shade = T.MathUtils.clamp(1 + 0.04 * Math.sin(x * 0.08) * Math.cos(z * 0.06) + 0.035 * (Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5) + 0.045 * (Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.053 - 0.7) + 0.6 * Math.sin((x + z) * 0.021 + 2.1)), 0.86, 1.12);
+    const k = (j * row + i) * 3, shade = 1 + 0.04 * Math.sin(x * 0.08) * Math.cos(z * 0.06) + 0.035 * (Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5) + 0.045 * (Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.053 - 0.7) + 0.6 * Math.sin((x + z) * 0.021 + 2.1));
     pos[k] = x;
-    pos[k + 1] = terrain.designHeight(x, z) - (within(x, z, 1) ? 0.6 : 0);
+    pos[k + 1] = terrain.designHeight(x, z) - (within(x, z, 1) ? 2 : 0);
     pos[k + 2] = z;
-    col[k] = col[k + 1] = col[k + 2] = shade;
+    const tone = f => T.MathUtils.clamp(1 + (shade - 1) * f, 0.86, 1.12);
+    col[k] = tone(0.85);
+    col[k + 1] = tone(1.05);
+    col[k + 2] = tone(0.65);
   }));
   for (let j = 0; j < zs.length - 1; j++) for (let i = 0; i < row - 1; i++) {
     if (within((xs[i] + xs[i + 1]) / 2, (zs[j] + zs[j + 1]) / 2, 4.5)) continue;
@@ -278,30 +352,19 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   geo.setAttribute('uv', new T.BufferAttribute(new Float32Array(pos.length / 3 * 2).map((_, i) => pos[Math.floor(i / 2) * 3 + (i % 2) * 2] * 0.45), 2));
   geo.setIndex(idx);
   geo.computeVertexNormals();
+  terrain.seam.shade(geo.attributes.position, geo.attributes.normal);
   const land = new T.Mesh(geo, terrain.materials[0]);
   land.name = 'world-land';
   land.receiveShadow = true;
   group.add(land);
 
-  // Sea and the river above the campus ground.
-  const waterColor = terrain.terrain.parent?.getObjectByName('river-only')?.material.color.getHex() ?? 0x4fb7d6;
-  const sea = new T.Mesh(new T.PlaneGeometry(reach * 2.2, reach * 2.6).rotateX(-Math.PI / 2), new T.MeshStandardMaterial({color: waterColor, roughness: 0.08, metalness: 0.25, transparent: true, opacity: 0.9}));
-  sea.position.set(150 + reach * 1.1, SEA_LEVEL, 0);
+  // One water surface for the sea and the river, so the river runs into the sea without a seam.
+  const stream = terrain.terrain.parent?.getObjectByName('river-only');
+  const sea = new T.Mesh(new T.PlaneGeometry(reach * 2.4, reach * 2.4).rotateX(-Math.PI / 2), stream?.material ?? new T.MeshStandardMaterial({color: 0x4fb7d6, roughness: 0.04, metalness: 0.25, transparent: true, opacity: 0.9}));
+  sea.position.y = SEA_LEVEL;
   sea.name = 'world-sea';
   group.add(sea);
-  const rp = [], ri = [];
-  for (let x = -reach, i = 0; x <= x0 + 0.01; x = Math.min(x + 6, x0 + (x < x0 ? 0 : 1)), i++) {
-    rp.push(x, 0.18, terrain.riverZ(x) - terrain.riverR(x), x, 0.18, terrain.riverZ(x) + terrain.riverR(x));
-    if (i) ri.push(i * 2 - 2, i * 2 - 1, i * 2, i * 2, i * 2 - 1, i * 2 + 1);
-    if (x === x0) break;
-  }
-  const rg = new T.BufferGeometry();
-  rg.setAttribute('position', new T.Float32BufferAttribute(rp, 3));
-  rg.setIndex(ri);
-  rg.computeVertexNormals();
-  const river = new T.Mesh(rg, sea.material);
-  river.name = 'world-river';
-  group.add(river);
+  if (stream) stream.visible = false;
 
   // Forests: one instanced mesh per tree shape, thinning out with distance.
   const tint = (g, hex) => {
@@ -316,7 +379,7 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     conifer: mergeGeometries([trunk(1.2), tint(cone(1.4, 2.4, 0.9), 0xffffff), tint(cone(1.0, 2.0, 2.3), 0xffffff), tint(cone(0.6, 1.5, 3.5), 0xffffff)]),
     round: mergeGeometries([trunk(1.7), tint(new T.IcosahedronGeometry(1.5, 1).translate(0, 2.9, 0), 0xffffff), tint(new T.IcosahedronGeometry(1.0, 0).translate(0.8, 2.3, 0.3), 0xffffff)])
   };
-  const spots = {conifer: [], round: []};
+  const spots = {conifer: [], round: []}, ground = (x, z) => within(x, z, 0) ? terrain.height(x, z) : terrain.designHeight(x, z);
   const plant = (lo, hi, step, skip) => {
     for (let x = -hi; x <= hi; x += step) for (let z = -hi; z <= hi; z += step) {
       if (Math.max(Math.abs(x), Math.abs(z)) < lo) continue;
@@ -324,8 +387,8 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
       if (skip(px, pz) || rectGap(px, pz, world.campus) < 14 || world.onPad(px, pz, 2) || world.onRoad(px, pz, 4) || Math.abs(pz - terrain.riverZ(px)) < 11) continue;
       const g = world.growth(px, pz);
       if (!g || hash(i + 13, j + 29) > g.density) continue;
-      const y = terrain.designHeight(px, pz);
-      if (y < 1.2 || y > 60 || Math.abs(terrain.designHeight(px + 2, pz) - y) > 2.6 || Math.abs(terrain.designHeight(px, pz + 2) - y) > 2.6) continue;
+      const y = ground(px, pz);
+      if (y < 1.2 || y > 60 || Math.abs(ground(px + 2, pz) - y) > 2.6 || Math.abs(ground(px, pz + 2) - y) > 2.6) continue;
       spots[g.kind].push({x: px, y, z: pz, s: 0.8 + hash(i + 3, j + 71) * 0.7 + (lo ? 0.5 : 0), r: hash(i + 7, j + 5), color: g.colors[Math.floor(hash(i + 41, j + 2) * g.colors.length)]});
     }
   };
