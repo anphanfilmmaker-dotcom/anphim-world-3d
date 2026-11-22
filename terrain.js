@@ -65,6 +65,8 @@ export function createTerrain(scene,P,L){
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
  world.paint(basePosArray,baseColorArray,nx+1,materials[0].color);
+ // The ground colours as designed, for the Studio to go back to when it clears its paint.
+ const designColorArray=new Float32Array(baseColorArray);
  applyCampusPaving(P,materials[3],materials[2]);
  geo.computeVertexNormals();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);
  const stairs=[],surfaceHeight=(x,z)=>{for(const s of stairs){const along=s.axis==='x'?x:z,across=s.axis==='x'?z:x;if(Math.abs(across-s.cross)<=s.width/2&&along>=s.start-1.2&&along<=s.end+1.2){const t=T.MathUtils.clamp((along-s.start)/(s.end-s.start),0,1);return s.high-Math.min(s.count,Math.floor(t*s.count))*s.rise;}}return height(x,z);};
@@ -102,7 +104,7 @@ export function createTerrain(scene,P,L){
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
  geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));geo.computeVertexNormals();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
  const wg=new T.PlaneGeometry(380,1,256,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i),s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {world,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ return {world,designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
