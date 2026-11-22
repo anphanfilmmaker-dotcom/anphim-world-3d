@@ -1,9 +1,9 @@
-import {createModularRoadSystem} from './modular-roads.js?rev=9';
+import {createModularRoadSystem} from './modular-roads.js?rev=10';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=118';
+import {createCampusEditor} from './campus-editor.js?rev=119';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
-import {createCampusGreenery} from './campus-greenery.js?rev=10';
+import {createCampusGreenery} from './campus-greenery.js?rev=11';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -29,6 +29,7 @@ import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
+import {districtPlan} from './district-layout.js';
 
 window.THREE = T;
 
@@ -998,6 +999,25 @@ async function main() {
   // Client districts around the ring road: land from the topology, clients and projects from the data.
   const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
   window.__clientDistricts = clientDistricts;
+  // Where a district's gate road or a branch road leaves the ring, the ring opens its curb and sidewalk and gets
+  // its junction markings; the district draws its own road, so its lines are left to it.
+  const syncDistrictRoads = () => {
+    const plan = districtPlan(L);
+    if (!plan) return;
+    const inUse = new Set(clientDistricts.districts.filter(d => d.client).map(d => d.id));
+    const gates = plan.slots.filter(s => s.ringXZ && inUse.has(s.id)), half = plan.template.roadWidth / 2;
+    roads.crossingRoads = [
+      ...gates.map(s => ({points: [s.ringXZ, s.gateXZ], halfW: half})),
+      ...(plan.accessRoads || []).map(r => ({points: r.points, halfW: r.width / 2}))
+    ];
+    roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(gates.map(s => ({
+      id: 'road:district-gate:' + s.id, districtGate: true, markings: false, halfW: half, signature: JSON.stringify([s.ringXZ, s.gateXZ]),
+      curve: new T.LineCurve3(new T.Vector3(s.ringXZ[0], 0, s.ringXZ[1]), new T.Vector3(s.gateXZ[0], 0, s.gateXZ[1])),
+      yAt: (x, z) => terrain.height(x, z) + 0.15
+    })));
+    roads.syncRoadNetwork?.();
+  };
+  syncDistrictRoads();
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
@@ -1037,7 +1057,7 @@ async function main() {
 
   // Campus-view frame: resource bar, missions, hovered building, quick jump
   const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
-  clientDistricts.onChange = () => cockpitFrame.setBuildings(frameBuildings());
+  clientDistricts.onChange = () => { cockpitFrame.setBuildings(frameBuildings()); syncDistrictRoads(); };
   cockpitFrame = new CockpitFrame({
     dataConnector,
     buildings: frameBuildings(),
