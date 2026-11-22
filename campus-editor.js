@@ -776,8 +776,9 @@ export function createCampusEditor({
   let sculptStrength = 0.4;
   let sculptMode = 'raise';
   let flattenTargetY = null;
-  const activeSculptStroke = new Map(); // k -> prevY
-  const activePaintStroke = new Map();  // k -> [prevR, prevG, prevB]
+  // Chỉ khác null trong lúc đang kéo cọ; applySculpt/applyPaint gọi từ API hay Redo không ghi vào đây.
+  let activeSculptStroke = null; // k -> prevY
+  let activePaintStroke = null;  // k -> [prevR, prevG, prevB]
 
   const brushRingGeo = new T.RingGeometry(sculptRadius - 0.25, sculptRadius + 0.15, 48);
   brushRingGeo.rotateX(-Math.PI / 2);
@@ -839,7 +840,7 @@ export function createCampusEditor({
           const k = j * (nx + 1) + i;
           const currentY = basePosArray[k * 3 + 1];
           previousHeights.push([k, currentY]);
-          if (!activeSculptStroke.has(k)) activeSculptStroke.set(k, currentY);
+          if (activeSculptStroke && !activeSculptStroke.has(k)) activeSculptStroke.set(k, currentY);
 
           const ratio = dist / radius;
           const falloff = Math.pow(1 - ratio * ratio, 2);
@@ -944,7 +945,7 @@ export function createCampusEditor({
           const g = baseColorArray[k * 3 + 1];
           const b = baseColorArray[k * 3 + 2];
           prevColors.push([k, r, g, b]);
-          if (!activePaintStroke.has(k)) activePaintStroke.set(k, [r, g, b]);
+          if (activePaintStroke && !activePaintStroke.has(k)) activePaintStroke.set(k, [r, g, b]);
 
           const ratio = dist / radius;
           const falloff = Math.min(1.0, Math.pow(1 - ratio, 1.5) * intensity * 0.85);
@@ -4272,7 +4273,7 @@ export function createCampusEditor({
         type: 'agent_paint',
         undo: () => {
           if (baseColorArray && res.prevColors) {
-            for (const [k, [r, g, b]] of res.prevColors) {
+            for (const [k, r, g, b] of res.prevColors) {
               baseColorArray[k * 3] = r;
               baseColorArray[k * 3 + 1] = g;
               baseColorArray[k * 3 + 2] = b;
@@ -6111,13 +6112,14 @@ export function createCampusEditor({
       return;
     }
 
-    if (activeSculptStroke && activeSculptStroke.size > 0) {
-      const prevMap = new Map(activeSculptStroke);
+    const sculptStroke = activeSculptStroke;
+    activeSculptStroke = null;
+    if (sculptStroke && sculptStroke.size > 0) {
+      const prevMap = sculptStroke;
       const nextMap = new Map();
       for (const [idx] of prevMap) {
         nextMap.set(idx, basePosArray[idx * 3 + 1]);
       }
-      activeSculptStroke = null;
       rebuildTerrainGrid();
       refreshAllRoadsOnTerrainChange();
       pushUndo({
@@ -6140,13 +6142,14 @@ export function createCampusEditor({
       saveStudioState();
     }
 
-    if (activePaintStroke && activePaintStroke.size > 0) {
-      const prevMap = new Map(activePaintStroke);
+    const paintStroke = activePaintStroke;
+    activePaintStroke = null;
+    if (paintStroke && paintStroke.size > 0) {
+      const prevMap = paintStroke;
       const nextMap = new Map();
       for (const [idx] of prevMap) {
         nextMap.set(idx, [baseColorArray[idx * 3], baseColorArray[idx * 3 + 1], baseColorArray[idx * 3 + 2]]);
       }
-      activePaintStroke = null;
       pushUndo({
         type: 'terrain_paint_stroke',
         undo: () => {
