@@ -131,7 +131,7 @@ export function analyseRoadNetwork(defs) {
   // Hai giao lộ sát nhau trên cùng một tuyến (vd. hai miệng đường vòng chữ U) được coi là một cụm: không kẻ vạch qua đường ở giữa
   for (const j of junctions) for (const arm of j.arms) {
     const r = arm.road;
-    for (const k of junctions) if (k !== j) for (const o of k.arms) if (o.road === r) {
+    for (const k of junctions) if (k !== j) for (const o of k.arms) if (o.road === r && o.dir === -arm.dir) { // nhánh của giao lộ kia quay mặt về phía này
       let delta = (o.s - arm.s) * arm.dir;
       if (r.closed) delta = ((delta % r.len) + r.len) % r.len;
       // "Sát nhau" = khoảng giữa hai lòng giao lộ không đủ chỗ cho hai vạch qua đường, hai vạch dừng và một đoạn vạch tim
