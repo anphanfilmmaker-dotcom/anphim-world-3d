@@ -318,6 +318,9 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
       if (!m.userData.svOriginalMaterial) {
         m.userData.svOriginalMaterial = original;
         m.material = original.clone();
+        // clone() bỏ qua shader hook: giữ lại nét vẽ tay (paintedWash) của vật liệu gốc
+        m.material.onBeforeCompile = original.onBeforeCompile;
+        m.material.customProgramCacheKey = original.customProgramCacheKey;
       }
       m.material.clippingPlanes = clipPlane ? [clipPlane] : null;
       m.material.clipShadows = true;
