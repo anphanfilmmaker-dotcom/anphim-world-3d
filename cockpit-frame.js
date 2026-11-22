@@ -1,23 +1,44 @@
 /**
  * cockpit-frame.js
- * Strategy-game frame around the campus view (approved sketch 1):
- * resource bar on top, missions and notifications on the left, the hovered
- * building and the AI workforce on the right, quick jump at the bottom.
+ * Strategy-game frame around the campus view (approved sketch 1, cleaned up from An's reference):
+ * brand and resource icons on top, an icon dock on the left (home, missions, search,
+ * dashboard, settings), small icons on the right for the hovered building and the AI
+ * workforce, the place menu bottom-left and the main buildings as tiles bottom-right.
+ * Panels open only from their icon.
  * View only. Every value comes from dataConnector; buildings come from the topology.
  */
 
 const HIDE_MONEY_KEY = 'anphim.cockpit.hideMoney';
+const MISSIONS_KEY = 'anphim.cockpit.missionsOpen';
 
-// Top resource bar: KPI field -> label and the building a click flies to.
+// Top resource icons: KPI field (raw number, formatted text) -> icon, tooltip label and the building a click flies to.
 const RESOURCES = [
-  {key: 'cashAvailableFormatted', label: 'Tiền mặt sẵn có', icon: 'coin', money: true, jump: 'bld:facility:bank'},
-  {key: 'receivableFormatted', label: 'Khoản thu dự kiến', icon: 'incoming', money: true, jump: 'bld:facility:bank'},
-  {key: 'activeProjectsCount', label: 'Dự án đang chạy', icon: 'crane', jump: 'bld:facility:hq'},
-  {key: 'missingDocumentsCount', label: 'Thiếu giấy tờ', icon: 'doc', warn: true, jump: 'bld:facility:documents'}
+  {key: 'cashAvailable', text: 'cashAvailableFormatted', label: 'Tiền mặt sẵn có', icon: 'coin', color: '#f5c242', money: true, jump: 'bld:facility:bank'},
+  {key: 'receivable', text: 'receivableFormatted', label: 'Khoản thu dự kiến', icon: 'incoming', color: '#5fd68a', money: true, jump: 'bld:facility:bank'},
+  {key: 'activeProjectsCount', label: 'Dự án đang chạy', icon: 'crane', color: '#f7941d', jump: 'bld:facility:hq'},
+  {key: 'missingDocumentsCount', label: 'Thiếu giấy tờ', icon: 'doc', color: '#7cc4f5', warn: true, jump: 'bld:facility:documents'}
 ];
+
+/** 348520000 -> "348,5 tr": the top bar shows short amounts, the tooltip the full one. */
+const compact = n => {
+  const a = Math.abs(n);
+  const f = (v, unit) => v.toLocaleString('vi-VN', {maximumFractionDigits: 1}) + ' ' + unit;
+  if (a >= 1e9) return f(n / 1e9, 'tỷ');
+  if (a >= 1e6) return f(n / 1e6, 'tr');
+  if (a >= 1e4) return f(n / 1e3, 'k');
+  return n.toLocaleString('vi-VN');
+};
 
 // Buildings with their own quick-jump button; other facilities go under "Hạ tầng".
 const MAIN_JUMPS = ['bld:facility:hq', 'bld:facility:bank', 'bld:facility:documents', 'bld:facility:schedule', 'bld:facility:ai', 'bld:facility:marketing'];
+const TILES = {
+  'bld:facility:hq': {icon: 'building'},
+  'bld:facility:bank': {icon: 'bank'},
+  'bld:facility:documents': {icon: 'doc'},
+  'bld:facility:schedule': {icon: 'calendar', short: 'Lịch'},
+  'bld:facility:ai': {icon: 'robot', short: 'AI Team'},
+  'bld:facility:marketing': {icon: 'megaphone'}
+};
 
 const PRIORITY = {
   high: {label: 'CAO', tone: 'alert'},
@@ -44,6 +65,15 @@ const ICONS = {
   chevron: '<path d="M6 9l6 6 6-6"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   building: '<path d="M4 21V6l8-3v18M12 9l8 2v10M2 21h20M7.5 9h1M7.5 13h1M7.5 17h1M15.5 14h1M15.5 17.5h1"/>',
+  home: '<path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-6h4v6"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+  chart: '<path d="M3 21h18M6 17v-5M11 17V7M16 17v-8M21 17V4"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  cube: '<path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/>',
+  bank: '<path d="M12 3l9 5H3zM3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  megaphone: '<path d="M3 10v4h3l7 4V6l-7 4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
+  up: '<path d="M6 15l6-6 6 6"/>',
   robot: '<rect x="4.5" y="8" width="15" height="11" rx="3.5"/><path d="M12 8V4.5M9 13v1.5M15 13v1.5M2 12.5v3M22 12.5v3"/><circle cx="12" cy="3.5" r="1"/>'
 };
 
@@ -55,7 +85,7 @@ const paneClose = pane => `<button data-pane="${pane}" aria-label="Thu gọn">${
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 
 const CSS = `
-#cockpit-frame-root{--cf-bg:rgba(24,33,38,.94);--cf-bg2:rgba(255,255,255,.06);--cf-line:rgba(255,255,255,.10);--cf-text:#f3f6f4;--cf-mute:#9db0ab;--cf-accent:#f7941d;--cf-teal:#4fc9bb;--cf-ok:#5fd68a;--cf-warn:#ffc440;--cf-alert:#ff6a5a;--cf-info:#7cc4f5;--cf-pad:14px;--cf-top:58px;--cf-side:308px;
+#cockpit-frame-root{--cf-bg:rgba(24,33,38,.94);--cf-bg2:rgba(255,255,255,.06);--cf-line:rgba(255,255,255,.10);--cf-text:#f3f6f4;--cf-mute:#9db0ab;--cf-accent:#f7941d;--cf-teal:#4fc9bb;--cf-ok:#5fd68a;--cf-warn:#ffc440;--cf-alert:#ff6a5a;--cf-info:#7cc4f5;--cf-pad:14px;--cf-top:52px;--cf-side:308px;
   position:fixed;inset:0;z-index:45;pointer-events:none;color:var(--cf-text);font:600 12px/1.35 ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;user-select:none}
 #cockpit-frame-root{
 *{box-sizing:border-box}
@@ -63,21 +93,35 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;paddin
 button:disabled{cursor:not-allowed;opacity:.5}
 .cf-chip,.cf-panel{background:var(--cf-bg);border:1px solid var(--cf-line);border-radius:16px;box-shadow:0 4px 0 rgba(0,0,0,.22),0 14px 30px rgba(0,0,0,.28);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}
 .cf-ico{flex:none}
-.cf-top{z-index:2;position:absolute;top:var(--cf-pad);left:var(--cf-pad);right:var(--cf-pad);height:var(--cf-top);display:flex;gap:8px;align-items:stretch}
-.cf-brand{display:flex;align-items:center;gap:10px;padding:0 16px 0 12px;flex:none}
-.cf-brand-mark{width:34px;height:34px;border-radius:10px;background:var(--cf-accent);color:#1b2428;display:grid;place-items:center;font-weight:900;font-size:15px;letter-spacing:-.5px}
-.cf-brand b{display:block;font-size:14px;font-weight:900;letter-spacing:.06em}
-.cf-brand span{display:block;font-size:9px;letter-spacing:.16em;color:var(--cf-mute)}
-.cf-res{display:flex;align-items:center;gap:9px;padding:0 13px 0 9px;flex:none;transition:transform .15s ease,border-color .15s ease}
+.cf-top{z-index:2;position:absolute;top:var(--cf-pad);left:var(--cf-pad);right:calc(var(--cf-pad) + var(--cf-aside,0px));height:var(--cf-top);display:flex;gap:8px;align-items:center}
+.cf-brand{display:flex;align-items:center;gap:10px;height:100%;padding:0 18px 0 8px;flex:none}
+.cf-brand-mark{width:38px;height:38px;border-radius:12px;background:var(--cf-accent);color:#1b2428;display:grid;place-items:center;font-weight:900;font-size:15px;letter-spacing:-.5px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.cf-brand b{display:block;font-size:15px;font-weight:900;letter-spacing:.06em;line-height:1.1}
+.cf-brand span{display:block;font-size:9px;letter-spacing:.42em;color:var(--cf-mute)}
+.cf-gap{flex:1}
+.cf-res{display:flex;align-items:center;gap:8px;height:42px;padding:0 15px 0 6px;border-radius:99px;flex:none;transition:transform .15s ease,border-color .15s ease}
 .cf-res:hover{transform:translateY(-1px);border-color:rgba(247,148,29,.6)}
-.cf-res-ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(247,148,29,.16);color:var(--cf-accent);flex:none}
-.cf-res[data-tone=warn] .cf-res-ico{background:rgba(255,106,90,.16);color:var(--cf-alert)}
-.cf-res small{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--cf-mute);white-space:nowrap}
-.cf-res strong{display:block;font-size:17px;font-weight:900;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cf-res-ico{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#1b2428;background:var(--cf-res-c,var(--cf-accent));box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);flex:none}
+.cf-res strong{font-size:15px;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
 .cf-res[data-tone=warn] strong{color:var(--cf-warn)}
-.cf-search{flex:1 1 160px;min-width:0;display:flex;align-items:center;gap:8px;padding:0 14px;position:relative;color:var(--cf-mute)}
+.cf-dock{position:absolute;z-index:3;left:var(--cf-pad);top:calc(var(--cf-pad) + var(--cf-top) + 12px);display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:18px;transition:opacity .25s ease,transform .35s cubic-bezier(.22,1,.36,1)}
+.cf-ib{position:relative;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:var(--cf-text);background:rgba(255,255,255,.06);text-align:center;text-decoration:none;transition:background .15s ease,color .15s ease}
+.cf-ib:hover:not([aria-disabled=true]){background:rgba(255,255,255,.15)}
+.cf-ib[aria-pressed=true],.cf-menu.cf-open>.cf-ib{background:var(--cf-accent);color:#1b2428}
+.cf-ib[aria-disabled=true]{opacity:.4;cursor:not-allowed}
+.cf-ib .cf-badge{position:absolute;top:-5px;right:-5px}
+.cf-dock .cf-menu-list{bottom:auto;top:0;left:calc(100% + 16px);right:auto}
+.cf-pop-search{width:360px}
+.cf-search{display:flex;align-items:center;gap:8px;padding:4px 6px 6px;color:var(--cf-mute)}
 .cf-search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--cf-text);font:inherit;font-size:13px;user-select:text}
 .cf-search input::placeholder{color:var(--cf-mute)}
+.cf-pop-search .cf-results{position:static;min-width:0;max-height:320px;padding:0;border:0;border-top:1px solid var(--cf-line);border-radius:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.cf-pop-search .cf-results:empty{display:none}
+.cf-set{min-width:250px}
+.cf-set .cf-row-btn{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;font-size:12px;font-weight:700;color:var(--cf-text);text-decoration:none}
+.cf-set button.cf-row-btn:hover,.cf-set a.cf-row-btn:hover{background:var(--cf-bg2)}
+.cf-set .cf-row-btn[aria-pressed=true]{color:var(--cf-accent)}
+.cf-set .cf-row-btn em{margin-left:auto;font-style:normal;color:var(--cf-mute);font-size:10.5px;font-weight:600}
 .cf-results{z-index:3;position:absolute;top:calc(100% + 8px);left:0;right:0;min-width:300px;max-height:320px;overflow:auto;padding:6px}
 .cf-results button{display:block;width:100%;padding:7px 10px;border-radius:10px}
 .cf-results button:hover,.cf-results button:focus-visible{background:var(--cf-bg2);outline:0}
@@ -95,16 +139,16 @@ button:disabled{cursor:not-allowed;opacity:.5}
 [data-tone=warn]>.cf-dot,.cf-dot[data-tone=warn]{background:var(--cf-warn)}
 [data-tone=alert]>.cf-dot,.cf-dot[data-tone=alert]{background:var(--cf-alert)}
 [data-tone=info]>.cf-dot,.cf-dot[data-tone=info]{background:var(--cf-info)}
-.cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - var(--cf-bh,49px) - 55px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
-.cf-left{left:var(--cf-pad)}
-.cf-right{right:calc(var(--cf-pad) + var(--cf-aside,0px));width:auto;align-items:flex-end}
+.cf-side{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 12px);width:var(--cf-side);max-height:calc(100vh - var(--cf-top) - var(--cf-bh,72px) - 62px);display:flex;flex-direction:column;gap:10px;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .25s ease}
+.cf-left{left:calc(var(--cf-pad) + 72px)}
+.cf-left:not(.cf-open){opacity:0;transform:translateX(-12px);pointer-events:none}
+.cf-left:not(.cf-open) *{pointer-events:none}
+.cf-right{right:calc(var(--cf-pad) + var(--cf-aside,0px));width:auto;flex-direction:row;align-items:flex-start}
+.cf-panes{display:flex;flex-direction:column;gap:10px;min-height:0;max-height:calc(100vh - var(--cf-top) - var(--cf-bh,72px) - 62px)}
 .cf-right .cf-panel{width:var(--cf-side)}
 .cf-right [data-slot=building]{flex:none}
 .cf-right .cf-panel:not(.cf-open){display:none}
-.cf-rail{display:flex;gap:4px;padding:5px;border-radius:14px}
-.cf-rail button{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--cf-mute);transition:background .15s ease,color .15s ease}
-.cf-rail button:hover{background:var(--cf-bg2);color:var(--cf-text)}
-.cf-rail button[aria-pressed=true]{background:var(--cf-accent);color:#1b2428}
+.cf-rail{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:18px;flex:none}
 .cf-panel{padding:12px;min-height:0;display:flex;flex-direction:column}
 .cf-panel.cf-grow{flex:0 1 auto;overflow:hidden}
 .cf-scroll{overflow-y:auto;min-height:0;margin-right:-6px;padding-right:6px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
@@ -112,9 +156,6 @@ button:disabled{cursor:not-allowed;opacity:.5}
 .cf-h small{font-size:10.5px;letter-spacing:0;text-transform:none;color:var(--cf-mute);font-weight:700}
 .cf-h button{color:var(--cf-mute);display:grid;place-items:center;width:22px;height:22px;border-radius:7px;transition:transform .2s ease}
 .cf-h button:hover{background:var(--cf-bg2);color:var(--cf-text)}
-.cf-collapsed .cf-h{margin-bottom:0}
-.cf-collapsed .cf-h button{transform:rotate(-90deg)}
-.cf-collapsed .cf-body{display:none}
 .cf-sub{margin:12px 0 6px;font-size:10px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--cf-mute)}
 .cf-mission{display:block;width:100%;padding:9px 10px;margin-bottom:7px;border-radius:12px;background:var(--cf-bg2);border:1px solid var(--cf-line);transition:transform .15s ease,border-color .15s ease}
 .cf-mission:hover:not(:disabled){transform:translateX(2px);border-color:rgba(247,148,29,.7)}
@@ -159,14 +200,17 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-agent b{font-size:12.5px;font-weight:800}
 .cf-agent p{margin:1px 0 0;font-size:11px;color:var(--cf-mute)}
 .cf-agent .cf-bar{height:4px;margin-top:5px}
-.cf-toast{position:absolute;top:calc(var(--cf-pad) + var(--cf-top) + 10px);right:calc(var(--cf-pad) + var(--cf-aside,0px) + var(--cf-rw) + 12px);max-width:340px;display:flex;align-items:flex-start;gap:8px;padding:8px 8px 8px 12px;border-color:rgba(255,196,64,.55);font-size:11.5px}
-.cf-toast button.cf-go{display:inline}
-.cf-toast .cf-x{color:var(--cf-mute);display:grid;place-items:center;width:20px;height:20px;border-radius:6px;flex:none}
-.cf-toast .cf-x:hover{background:var(--cf-bg2);color:var(--cf-text)}
-.cf-bottom{position:absolute;left:50%;bottom:var(--cf-pad);transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:7px 8px 7px 16px;width:max-content;max-width:calc(100vw - 28px)}
-.cf-bottom>small{font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--cf-mute);margin-right:4px;white-space:nowrap}
-.cf-bottom .cf-btn{height:34px;border-radius:11px;background:rgba(255,255,255,.07);border:1px solid var(--cf-line)}
-.cf-bottom .cf-btn[aria-pressed=true]{background:var(--cf-accent);color:#1b2428}
+.cf-place{position:absolute;z-index:4;left:var(--cf-pad);bottom:var(--cf-pad);display:flex;gap:8px;align-items:flex-end;transition:opacity .25s ease}
+.cf-place .cf-btn{height:50px;border-radius:15px;padding:0 14px 0 12px;gap:10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.cf-place .cf-lbl{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.cf-place .cf-menu-list{left:0;right:auto}
+.cf-tiles{position:absolute;z-index:4;right:calc(var(--cf-pad) + var(--cf-aside,0px));bottom:var(--cf-pad);display:flex;gap:6px;padding:6px;border-radius:18px;transition:opacity .25s ease}
+.cf-tile{position:relative;width:74px;height:60px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:rgba(255,255,255,.07);border:1px solid var(--cf-line);font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--cf-text);text-decoration:none;text-align:center;transition:transform .15s ease,background .15s ease}
+.cf-tile:hover:not([aria-disabled=true]){transform:translateY(-2px);background:rgba(255,255,255,.14)}
+.cf-tile[aria-pressed=true],.cf-menu.cf-open>.cf-tile{background:var(--cf-accent);color:#1b2428;border-color:transparent}
+.cf-tile[aria-disabled=true]{opacity:.45;cursor:not-allowed}
+.cf-tile>span{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-tile .cf-badge{position:absolute;top:-6px;right:-6px}
 .cf-badge{min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--cf-alert);color:#fff;font-size:10px;font-weight:900;display:inline-grid;place-items:center}
 .cf-menu{position:relative}
 .cf-menu-list{position:absolute;bottom:calc(100% + 12px);right:0;min-width:230px;max-height:min(62vh,560px);overflow-y:auto;padding:6px;display:none}
@@ -177,16 +221,14 @@ button.cf-note:hover{background:var(--cf-bg2)}
 .cf-menu-list span{color:var(--cf-mute);font-size:10.5px;white-space:nowrap}
 .cf-tip{position:fixed;z-index:46;pointer-events:none;padding:5px 10px;border-radius:10px;font-size:12px;font-weight:800;white-space:nowrap;opacity:0;transition:opacity .12s ease}
 .cf-tip.cf-show{opacity:1}
---cf-rw:86px;
-&.cf-pane-open{--cf-rw:var(--cf-side)}
-&.cf-inside .cf-right,&.cf-inside .cf-toast,&.cf-building .cf-side,&.cf-building .cf-toast,&.cf-building .cf-bottom,&.cf-building .cf-tip{opacity:0;pointer-events:none}
+&.cf-inside .cf-right,&.cf-building .cf-side,&.cf-building .cf-dock,&.cf-building .cf-place,&.cf-building .cf-tiles,&.cf-building .cf-tip,&.bp-open>.cf-dock{opacity:0;pointer-events:none}
 &.cf-inside .cf-right,&.cf-building .cf-right{transform:translateX(24px)}
-&.cf-building .cf-left{transform:translateX(-24px)}
-&.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-bottom *{pointer-events:none}
-@media (max-width:1480px){--cf-side:272px;.cf-res strong{font-size:15px}.cf-res-ico{display:none}.cf-res{padding:0 12px}.cf-brand span{display:none}}
-@media (max-width:1180px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 10px}.cf-res small{font-size:8.5px;letter-spacing:.04em}}
-@media (max-width:1250px){&.cf-details.cf-pane-open .cf-toast{display:none}}
-@media (max-width:980px){&.cf-pane-open .cf-toast{display:none}.cf-top .cf-lbl{display:none}.cf-top .cf-btn{padding:0 11px}.cf-res small{display:none}.cf-bottom>small{display:none}.cf-bottom{padding-left:8px}}
+&.cf-building .cf-left,&.cf-building .cf-dock,&.bp-open>.cf-dock{transform:translateX(-24px)}
+&.cf-inside .cf-right *,&.cf-building .cf-side *,&.cf-building .cf-dock *,&.cf-building .cf-place *,&.cf-building .cf-tiles *,&.bp-open>.cf-dock *{pointer-events:none}
+@media (max-width:1280px){--cf-side:272px}
+@media (max-width:1100px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 6px}.cf-res{padding-right:11px}.cf-res strong{font-size:13.5px}}
+@media (max-width:900px){.cf-tile{width:48px;height:48px}.cf-tile>span{display:none}.cf-place .cf-lbl{display:none}}
+@media (max-width:640px){.cf-tiles{bottom:calc(var(--cf-pad) + 62px);gap:4px}.cf-tile{width:36px;height:40px;flex:none}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
@@ -195,8 +237,9 @@ body.cf-frame.cf-tools #clean-top-nav{top:80px!important}
 /* The old Details panel (opened from the builder toolbar) sits below the bars, beside the right column. */
 body.cf-frame #main-aside-panel{top:var(--cf-tools-top,166px);right:14px;z-index:46;max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
 body.cf-frame:not(.cf-tools) #main-aside-panel{visibility:hidden}
+body.cf-frame:not(.cf-tools) .footer{display:none}
 body.cf-frame.cf-tools #game-shader-dock{top:var(--cf-dock-top,126px)!important}
-body.cf-frame.cf-tools #cockpit-frame-root .cf-side,body.cf-frame.cf-tools #cockpit-frame-root .cf-toast{top:var(--cf-tools-top,166px);max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
+body.cf-frame.cf-tools #cockpit-frame-root .cf-side,body.cf-frame.cf-tools #cockpit-frame-root .cf-dock{top:var(--cf-tools-top,166px);max-height:calc(100vh - var(--cf-tools-top,166px) - var(--cf-bh,49px) - 35px)}
 /* Inside a building the existing detail wing takes the right side; its KPI header and left wing are replaced by this frame. */
 body.cf-frame #cockpit-hud-root{inset:82px 0 70px auto!important;width:392px!important;padding:0 14px 0 0!important;z-index:44!important}
 body.cf-frame #cockpit-hud-root>header,body.cf-frame #cockpit-hud-root aside:first-of-type{display:none!important}
@@ -230,7 +273,7 @@ export class CockpitFrame {
     this.inside = null;
     this.hideMoney = localStorage.getItem(HIDE_MONEY_KEY) === '1';
     document.body.classList.toggle('cf-hide-money', this.hideMoney);
-    this.dismissed = new Set();
+    this.missionsOpen = localStorage.getItem(MISSIONS_KEY) === '1';
     this.query = '';
 
     this.initDOM();
@@ -252,19 +295,35 @@ export class CockpitFrame {
     root.id = 'cockpit-frame-root';
     root.innerHTML = `
       <div class="cf-top" role="banner" aria-label="Thanh tài nguyên">
-        <div class="cf-chip cf-brand"><div class="cf-brand-mark">AP</div><div><b>AN PHIM WORLD</b><span>TRUNG TÂM ĐIỀU HÀNH 3D</span></div></div>
+        <div class="cf-chip cf-brand"><div class="cf-brand-mark">AP</div><div><b>AN PHIM</b><span>WORLD</span></div></div>
+        <span class="cf-gap"></span>
         <div data-slot="resources" style="display:contents"></div>
-        <div class="cf-chip cf-search">${icon('search')}<input type="search" data-search placeholder="Tìm dự án, khách hàng, giấy tờ, tòa nhà…" aria-label="Tìm kiếm" autocomplete="off"><div data-slot="results"></div></div>
-        <div data-slot="controls" style="display:contents"></div>
+      </div>
+      <div class="cf-chip cf-dock" role="toolbar" aria-label="Điều hướng">
+        <div data-slot="dock" style="display:contents"></div>
+        <div class="cf-menu" data-menu="search">
+          <button class="cf-ib" data-act="menu" aria-haspopup="true" title="Tìm kiếm" aria-label="Tìm kiếm">${icon('search', 20)}</button>
+          <div class="cf-chip cf-menu-list cf-pop-search">
+            <div class="cf-search">${icon('search')}<input type="search" data-search placeholder="Tìm dự án, khách hàng, giấy tờ, tòa nhà…" aria-label="Tìm kiếm" autocomplete="off"></div>
+            <div data-slot="results"></div>
+          </div>
+        </div>
+        <div data-slot="dashboard" style="display:contents"></div>
+        <div class="cf-menu" data-menu="settings">
+          <button class="cf-ib" data-act="menu" aria-haspopup="true" title="Cài đặt" aria-label="Cài đặt">${icon('gear', 20)}</button>
+          <div class="cf-chip cf-menu-list cf-set" data-slot="controls"></div>
+        </div>
       </div>
       <div class="cf-side cf-left" role="complementary" aria-label="Mission và thông báo"><div class="cf-panel cf-grow" data-slot="missions"></div></div>
       <div class="cf-side cf-right" role="complementary" aria-label="Tòa đang trỏ và đội AI">
+        <div class="cf-panes">
+          <div class="cf-panel" data-slot="building"></div>
+          <div class="cf-panel cf-grow" data-slot="agents"></div>
+        </div>
         <div class="cf-chip cf-rail" role="toolbar" aria-label="Mở bảng bên phải" data-slot="rail"></div>
-        <div class="cf-panel" data-slot="building"></div>
-        <div class="cf-panel cf-grow" data-slot="agents"></div>
       </div>
-      <div data-slot="toast"></div>
-      <div class="cf-chip cf-bottom" role="navigation" aria-label="Đi nhanh" data-slot="jump"></div>
+      <div class="cf-place" role="navigation" aria-label="Khu vực" data-slot="place"></div>
+      <div class="cf-chip cf-tiles" role="navigation" aria-label="Đi nhanh" data-slot="jump"></div>
       <div class="cf-chip cf-tip" data-slot="tip"></div>`;
     document.body.appendChild(root);
     this.root = root;
@@ -273,14 +332,15 @@ export class CockpitFrame {
     root.addEventListener('click', e => this.onClick(e));
     const input = root.querySelector('[data-search]');
     input.addEventListener('input', () => { this.query = input.value; this.renderResults(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeMenus(); });
     input.addEventListener('keydown', e => {
       e.stopPropagation(); // typing must not trigger camera or editor shortcuts
       if (e.key === 'Enter') this.slot.results.querySelector('button')?.click();
-      if (e.key === 'Escape') { input.value = this.query = ''; this.renderResults(); input.blur(); }
+      if (e.key === 'Escape') { input.value = this.query = ''; this.renderResults(); input.blur(); this.closeMenus(); }
     });
     document.addEventListener('pointerdown', e => {
       if (!e.target.closest?.('.cf-menu')) this.closeMenus();
-      if (!e.target.closest?.('.cf-search') && this.query) { input.value = this.query = ''; this.renderResults(); }
+      if (!e.target.closest?.('.cf-pop-search') && this.query) { input.value = this.query = ''; this.renderResults(); }
     });
     new ResizeObserver(() => document.body.style.setProperty('--cf-bh', this.slot.jump.offsetHeight + 'px')).observe(this.slot.jump);
     const details = document.getElementById('main-aside-panel');
@@ -320,6 +380,7 @@ export class CockpitFrame {
     this.inside = building ? (this.byId.get(building.id) || building) : null;
     this.root.classList.toggle('cf-inside', !!this.inside);
     this.slot.tip.classList.remove('cf-show');
+    this.renderDock();
     this.renderJump();
   }
 
@@ -389,12 +450,12 @@ export class CockpitFrame {
 
   render() {
     this.renderResources();
+    this.renderDock();
     this.renderControls();
     this.renderMissions();
     this.renderBuilding();
     this.renderAgents();
     this.renderRail();
-    this.renderToast();
     this.renderJump();
     this.renderResults();
   }
@@ -402,27 +463,41 @@ export class CockpitFrame {
   renderResources() {
     const kpi = this.data.getKPI();
     this.slot.resources.innerHTML = RESOURCES.map(r => {
-      const value = kpi[r.key] ?? '—';
-      const tone = r.warn && Number(value) > 0 ? 'warn' : '';
+      const raw = Number(kpi[r.key]);
+      const full = r.text ? kpi[r.text] : kpi[r.key];
+      const shown = r.money && this.hideMoney ? '•••' : Number.isFinite(raw) && kpi[r.key] !== null && kpi[r.key] !== '' ? compact(raw) : (full ?? '—');
+      const warn = r.warn && raw > 0;
       const b = this.byId.get(r.jump);
-      return `<button class="cf-chip cf-res" data-tone="${tone}" data-enter="${esc(r.jump)}" title="${esc(r.label)} → ${esc(this.label(b))}">
-        <span class="cf-res-ico">${icon(r.icon, 17)}</span>
-        <span><small>${esc(r.label)}</small><strong>${esc(r.money ? this.money(value) : value)}</strong></span>
+      const tip = `${r.label}: ${r.money ? this.money(full ?? '—') : (full ?? '—')}${b ? ' → ' + this.label(b) : ''}`;
+      return `<button class="cf-chip cf-res" data-tone="${warn ? 'warn' : ''}" data-enter="${esc(r.jump)}" style="--cf-res-c:${warn ? 'var(--cf-alert)' : r.color}" title="${esc(tip)}" aria-label="${esc(tip)}">
+        <span class="cf-res-ico">${icon(r.icon, 17)}</span><strong>${esc(shown)}</strong>
       </button>`;
     }).join('');
+  }
+
+  /** Left dock: home and missions (badge = open missions); search and settings are static menus around them. */
+  renderDock() {
+    const open = this.data.getMissions().open.length;
+    this.slot.dock.innerHTML = `
+      <button class="cf-ib" data-act="overview" aria-pressed="${!this.inside}" title="Toàn cảnh" aria-label="Toàn cảnh">${icon('home', 20)}</button>
+      <button class="cf-ib" data-act="missions" aria-pressed="${this.missionsOpen}" title="Mission hôm nay · ${open} việc" aria-label="Mission hôm nay">${icon('list', 20)}${open ? `<i class="cf-badge">${open}</i>` : ''}</button>`;
+    const page = this.data.getWorkspacePage('overview');
+    this.slot.dashboard.innerHTML = page?.url
+      ? `<a class="cf-ib" href="${esc(page.url)}" target="_blank" rel="noopener" title="Mở dashboard" aria-label="Mở dashboard">${icon('chart', 20)}</a>`
+      : `<span class="cf-ib" aria-disabled="true" title="Mở dashboard: chưa có địa chỉ AN PHIM Workspace (workspace.baseUrl trong dữ liệu)">${icon('chart', 20)}</span>`;
+    this.slot.missions.parentElement.classList.toggle('cf-open', this.missionsOpen);
+    this.slot.missions.parentElement.inert = !this.missionsOpen;
   }
 
   renderControls() {
     const status = this.data.getDataStatus();
     const s = DATA_STATUS[status.source] || DATA_STATUS.offline;
-    const when = status.updatedAt ? ' · cập nhật ' + new Date(status.updatedAt).toLocaleString('vi-VN') : '';
-    const page = this.data.getWorkspacePage('overview');
+    const when = status.updatedAt ? new Date(status.updatedAt).toLocaleString('vi-VN') : '';
     const tools = document.body.classList.contains('cf-tools');
     this.slot.controls.innerHTML = `
-      <button class="cf-chip cf-btn" data-act="money" aria-pressed="${this.hideMoney}" title="${this.hideMoney ? 'Hiện số tiền' : 'Ẩn số tiền'}" aria-label="Ẩn hoặc hiện số tiền">${icon(this.hideMoney ? 'eyeOff' : 'eye')}</button>
-      <div class="cf-chip cf-btn" data-tone="${s.tone}" title="${esc(s.title + when)}"><i class="cf-dot"></i><span class="cf-lbl">${esc(s.label)}</span></div>
-      ${this.link(page, 'Mở dashboard', 'cf-chip cf-btn')}
-      <button class="cf-chip cf-btn" data-act="tools" aria-pressed="${tools}" title="Công cụ dựng campus: góc máy, lưới, sửa cảnh" aria-label="Công cụ dựng campus">${icon('tools')}</button>`;
+      <button class="cf-row-btn" data-act="money" aria-pressed="${this.hideMoney}">${icon(this.hideMoney ? 'eyeOff' : 'eye')}${this.hideMoney ? 'Hiện số tiền' : 'Ẩn số tiền'}</button>
+      <button class="cf-row-btn" data-act="tools" aria-pressed="${tools}" title="Góc máy, lưới, sửa cảnh">${icon('tools')}Công cụ dựng campus<em>${tools ? 'Đang bật' : ''}</em></button>
+      <div class="cf-row-btn" data-tone="${s.tone}" title="${esc(s.title)}"><i class="cf-dot"></i>${esc(s.label)}<em>${esc(when)}</em></div>`;
   }
 
   /** Link to a Workspace dashboard page; greyed out until workspace.baseUrl is set in the data. */
@@ -434,7 +509,6 @@ export class CockpitFrame {
   renderMissions() {
     const {open, done} = this.data.getMissions();
     const notes = this.data.getNotifications();
-    const collapsed = this.slot.missions.classList.contains('cf-collapsed');
     const mission = m => {
       const pr = PRIORITY[m.priority] || PRIORITY.low;
       const b = this.target(m);
@@ -455,7 +529,7 @@ export class CockpitFrame {
       return b ? `<button class="cf-note" data-enter="${esc(b.id)}" title="→ Đến tòa ${esc(this.label(b))}">${inner}</button>` : `<div class="cf-note">${inner}</div>`;
     };
     this.slot.missions.innerHTML = `
-      <div class="cf-h"><span>Mission hôm nay</span><small>${open.length} việc</small><button data-act="collapse" aria-label="Thu gọn Mission" aria-expanded="${!collapsed}">${icon('chevron', 15)}</button></div>
+      <div class="cf-h"><span>Mission hôm nay</span><small>${open.length} việc</small><button data-act="missions" aria-label="Đóng Mission">${icon('close', 13)}</button></div>
       <div class="cf-body cf-scroll">
         ${open.map(mission).join('') || '<div class="cf-empty">Không còn việc nào chờ anh.</div>'}
         ${done.length ? `<div class="cf-sub">Đã hoàn thành (${done.length})</div>${done.map(m => `<div class="cf-done">${this.text(m.title)}${m.project ? ' (' + esc(m.project.name) + ')' : ''}</div>`).join('')}` : ''}
@@ -467,7 +541,7 @@ export class CockpitFrame {
   renderRail() {
     const btn = (pane, name, label) => {
       const open = this.slot[pane].classList.contains('cf-open');
-      return `<button data-pane="${pane}" aria-pressed="${open}" title="${label}" aria-label="${label}">${icon(name, 18)}</button>`;
+      return `<button class="cf-ib" data-pane="${pane}" aria-pressed="${open}" title="${label}" aria-label="${label}">${icon(name, 20)}</button>`;
     };
     this.slot.rail.innerHTML = btn('building', 'building', 'Tòa đang trỏ') + btn('agents', 'robot', 'AI Workforce Trace');
     this.root.classList.toggle('cf-pane-open', !!this.root.querySelector('.cf-right .cf-panel.cf-open'));
@@ -514,21 +588,10 @@ export class CockpitFrame {
       }).join('') || '<div class="cf-empty">Chưa có dữ liệu agent.</div>'}</div>`;
   }
 
-  renderToast() {
-    const n = this.data.getNotifications().find(x => x.type === 'deadline' && !this.dismissed.has(x.id));
-    if (!n) { this.slot.toast.innerHTML = ''; return; }
-    const b = this.target(n);
-    this.slot.toast.innerHTML = `<div class="cf-chip cf-toast" role="status">
-      <span class="cf-tag" data-tone="warn">SẮP DEADLINE</span>
-      <span>${this.text(n.text.replace(/^Sắp deadline:\s*/i, ''))} ${b ? `<button class="cf-go" data-enter="${esc(b.id)}">→ Đến tòa ${esc(this.label(b))}</button>` : ''}</span>
-      <button class="cf-x" data-dismiss="${esc(n.id)}" aria-label="Đóng">${icon('close', 13)}</button>
-    </div>`;
-  }
-
+  /** Bottom-left: where the camera is, with the menu of districts and infrastructure. Bottom-right: main buildings as tiles. */
   renderJump() {
     const counts = this.data.getMissionCounts();
     const badge = id => counts.get(id) ? `<i class="cf-badge" title="${counts.get(id)} việc chờ anh">${counts.get(id)}</i>` : '';
-    const pressed = id => String(this.inside?.id === id);
     const main = MAIN_JUMPS.map(id => this.byId.get(id)).filter(Boolean);
     const districts = this.getDistricts().filter(d => d.client);
     // Projects are listed under their client, in the order of the client list.
@@ -540,24 +603,27 @@ export class CockpitFrame {
     const projectRows = projects.map(({b, c}, i) => `${c && c.id !== projects[i - 1]?.c?.id ? `<small>${esc(c.name)}</small>` : ''}<button data-enter="${esc(b.id)}">${esc(this.label(b))}<span>${esc(this.data.getProject(b.projectId)?.status || '')}${badge(b.id)}</span></button>`).join('');
     const infra = this.buildings.filter(b => b.kind !== 'project' && !MAIN_JUMPS.includes(b.id));
     const marketing = this.data.getWorkspacePage('marketing');
-    const menu = (key, title, list, sub) => !list.length ? '' : `<div class="cf-menu" data-menu="${key}">
-      <button class="cf-btn" data-act="menu" aria-haspopup="true" aria-pressed="${list.some(b => b.id === this.inside?.id)}">${title} ${icon('chevron', 13)}</button>
-      <div class="cf-chip cf-menu-list">${list.map(b => `<button data-enter="${esc(b.id)}">${esc(this.label(b))}<span>${sub(b)}${badge(b.id)}</span></button>`).join('')}</div>
-    </div>`;
-    this.slot.jump.innerHTML = `<small>ĐI NHANH</small>
-      <button class="cf-btn" data-act="overview" aria-pressed="${!this.inside}">Toàn cảnh</button>
-      ${main.map(b => `<button class="cf-btn" data-enter="${esc(b.id)}" aria-pressed="${pressed(b.id)}">${esc(b.name)}${badge(b.id)}</button>`).join('')}
-      ${marketing && !this.byId.has('bld:facility:marketing') ? this.link(marketing, 'Marketing', 'cf-btn') : ''}
-      ${!districts.length ? '' : `<div class="cf-menu" data-menu="districts">
-        <button class="cf-btn" data-act="menu" aria-haspopup="true">Quận ${icon('chevron', 13)}</button>
-        <div class="cf-chip cf-menu-list">${districts.map(d => `<button data-district="${esc(d.id)}">${esc(d.client.name)}<span>${esc(d.landscape || '')} · ${d.projects}/${d.lots} lô</span></button>`).join('')}</div>
-      </div>`}
+
+    this.slot.place.innerHTML = `<div class="cf-menu" data-menu="place">
+        <button class="cf-chip cf-btn" data-act="menu" aria-haspopup="true" title="Khu vực: toàn cảnh, quận, hạ tầng">${icon('cube', 20)}<span class="cf-lbl">${esc(this.inside ? this.label(this.inside) : 'Campus')}</span>${icon('up', 14)}</button>
+        <div class="cf-chip cf-menu-list">
+          <button data-act="overview">Toàn cảnh campus</button>
+          ${districts.length ? `<small>Quận</small>${districts.map(d => `<button data-district="${esc(d.id)}">${esc(d.client.name)}<span>${esc(d.landscape || '')} · ${d.projects}/${d.lots} lô</span></button>`).join('')}` : ''}
+          ${infra.length ? `<small>Hạ tầng</small>${infra.map(b => `<button data-enter="${esc(b.id)}">${esc(this.label(b))}<span>${esc(this.data.getBuildingSummary(b)?.status?.label || 'Chưa kết nối')}${badge(b.id)}</span></button>`).join('')}` : ''}
+        </div>
+      </div>
+      ${this.inside ? `<button class="cf-chip cf-btn" data-act="overview" title="Esc">${icon('close', 13)} Thoát</button>` : ''}`;
+
+    const tile = (b, t) => `<button class="cf-tile" data-enter="${esc(b.id)}" aria-pressed="${String(this.inside?.id === b.id)}" title="${esc(b.name)}">${icon(t.icon, 22)}<span>${esc(t.short || b.name)}</span>${badge(b.id)}</button>`;
+    this.slot.jump.innerHTML = `
+      ${main.map(b => tile(b, TILES[b.id])).join('')}
+      ${marketing && !this.byId.has('bld:facility:marketing') ? (marketing.url
+        ? `<a class="cf-tile" href="${esc(marketing.url)}" target="_blank" rel="noopener" title="Marketing (mở dashboard)">${icon('megaphone', 22)}<span>Marketing</span></a>`
+        : `<span class="cf-tile" aria-disabled="true" title="Marketing: chưa có địa chỉ AN PHIM Workspace">${icon('megaphone', 22)}<span>Marketing</span></span>`) : ''}
       ${!projects.length ? '' : `<div class="cf-menu" data-menu="projects">
-        <button class="cf-btn" data-act="menu" aria-haspopup="true" aria-pressed="${projects.some(({b}) => b.id === this.inside?.id)}">Dự án ${icon('chevron', 13)}</button>
+        <button class="cf-tile" data-act="menu" aria-haspopup="true" aria-pressed="${projects.some(({b}) => b.id === this.inside?.id)}" title="Dự án">${icon('crane', 22)}<span>Dự án</span></button>
         <div class="cf-chip cf-menu-list">${projectRows}</div>
-      </div>`}
-      ${menu('infra', 'Hạ tầng', infra, b => esc(this.data.getBuildingSummary(b)?.status?.label || 'Chưa kết nối'))}
-      ${this.inside ? `<button class="cf-btn" data-act="overview" title="Esc">${icon('close', 13)} Thoát</button>` : ''}`;
+      </div>`}`;
   }
 
   renderResults() {
@@ -595,12 +661,6 @@ export class CockpitFrame {
       if (d) this.onEnterDistrict?.(d);
       return;
     }
-    const dismiss = e.target.closest('[data-dismiss]');
-    if (dismiss) {
-      this.dismissed.add(dismiss.dataset.dismiss);
-      this.renderToast();
-      return;
-    }
     const pane = e.target.closest('[data-pane]')?.dataset.pane;
     if (pane) {
       this.slot[pane].classList.toggle('cf-open');
@@ -610,7 +670,12 @@ export class CockpitFrame {
     }
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'overview') {
+      this.closeMenus();
       this.onOverview();
+    } else if (act === 'missions') {
+      this.missionsOpen = !this.missionsOpen;
+      localStorage.setItem(MISSIONS_KEY, this.missionsOpen ? '1' : '0');
+      this.renderDock();
     } else if (act === 'money') {
       this.hideMoney = !this.hideMoney;
       localStorage.setItem(HIDE_MONEY_KEY, this.hideMoney ? '1' : '0');
@@ -622,14 +687,12 @@ export class CockpitFrame {
       this.renderControls();
       this.layoutTools();
       this.fitPanes();
-    } else if (act === 'collapse') {
-      this.slot.missions.classList.toggle('cf-collapsed');
-      this.renderMissions();
     } else if (act === 'menu') {
       const menu = e.target.closest('.cf-menu');
       const open = menu.classList.contains('cf-open');
       this.closeMenus();
       menu.classList.toggle('cf-open', !open);
+      if (!open && menu.dataset.menu === 'search') menu.querySelector('[data-search]').focus();
     }
   }
 }
