@@ -181,10 +181,11 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       for (const s of slots) {
         const d = rectGap(x, z, s.pad);
         if (d >= 34) continue;
-        const k = smooth((d - 1 - edge(x, z)) / 22);
+        // The nearer a district, the more its level counts: on its own ground it is the only one, whatever lies next door.
+        const k = smooth((d - 1 - edge(x, z)) / 22), w = (1 - k) / (k + 1e-4);
         wild *= k;
-        level += (1 - k) * s.y;
-        share += 1 - k;
+        level += w * s.y;
+        share += w;
       }
       if (share > 0) y = wild * y + (1 - wild) * level / share;
       // A ridge around the districts that lie in a valley or a canyon: open towards the gate, or closed all round.
