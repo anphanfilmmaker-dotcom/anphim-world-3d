@@ -2039,16 +2039,17 @@ export function createArchitecture(P) {
   // plot = [rộng, sâu] mặt bằng tối đa trên campus (m). Tòa không có cánh: bằng đúng mặt bằng của model cũ, giữ nguyên khe hở 5 m.
   // Tòa có cánh (lô được nới rộng tại chỗ): plotHeight = chiều cao tối đa (m); front = khoảng cách từ vị trí trong topology tới mép trước
   //   của lô (bằng nửa chiều sâu lô cũ). Khối đế vẫn đứng đúng vị trí topology và cửa chính ở chỗ cũ; lô chỉ nới về phía cánh và ra sau.
+  // Kích thước theo đơn vị mô hình, sát tỉ lệ thật (hệ số co khi đặt vào lô ~0.9-1) để tầng, ô kính và gờ mái to, dày khối như ảnh mẫu
   const SMALL_BUILDINGS = {
-    documents: {w: 5.4, d: 5.6, fh: 1.75, cols: 3, stripe: true, podium: 2, tower: {floors: 2, span: 0.62, side: 1, roof: 'units'},
-      wing: {side: -1, len: 5.2, d: 4.0, at: 'back', floors: 1, fh: 2.3, cols: 3, roof: 'lounge'}, plot: [9.0, 6.13], plotHeight: 7.6, front: 3.065},
-    drive: {w: 6.2, d: 5.2, fh: 2.6, cols: 4, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 1.8, span: 0.5, side: -1, roof: 'ac'},
-      wing: {side: 1, len: 4.2, d: 3.6, at: 'back', floors: 1, fh: 1.9, cols: 2, roof: 'garden'}, plot: [8.4, 5.3], plotHeight: 4.8, front: 1.66},
-    google: {w: 3.8, d: 5.2, cols: 3, stripe: true, podium: 2, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD',
-      wing: {side: 1, len: 4.6, d: 3.8, at: 'front', floors: 1, fh: 2.2, cols: 3, roof: 'solar'}, plot: [7.8, 6.0], plotHeight: 5.6, front: 2.5},
-    proj_24: {w: 5.4, d: 5.4, cols: 3, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [4.78, 5.77]},
-    proj_25: {w: 6.4, d: 4.6, cols: 4, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4]},
-    proj_05: {w: 4.4, d: 4.0, fh: 1.6, cols: 2, podium: 3, roof: 'crown', plot: [3.0, 3.29]},
+    documents: {w: 5.0, d: 4.6, fh: 2.3, cols: 2, stripe: true, podium: 2, tower: {floors: 1, span: 0.62, side: 1, roof: 'units'},
+      wing: {side: -1, len: 5.6, d: 4.0, at: 'back', floors: 2, fh: 1.95, cols: 3, roof: 'lounge'}, plot: [10.5, 6.13], plotHeight: 9.2, front: 3.065},
+    drive: {w: 5.6, d: 5.4, fh: 2.7, cols: 3, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 2.2, span: 0.55, side: -1, roof: 'ac'},
+      wing: {side: 1, len: 4.8, d: 4.2, at: 'back', floors: 1, fh: 2.7, cols: 2, roof: 'garden'}, plot: [10.0, 6.4], plotHeight: 6.4, front: 1.66},
+    google: {w: 3.2, d: 6.2, fh: 2.2, cols: 2, stripe: true, podium: 3, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD',
+      wing: {side: 1, len: 4.8, d: 4.2, at: 'front', floors: 2, fh: 2.1, cols: 3, roof: 'solar'}, plot: [8.2, 7.2], plotHeight: 8.2, front: 2.5},
+    proj_24: {w: 5.6, d: 5.0, fh: 2.3, cols: 2, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [6.2, 5.77], plotHeight: 8.4},
+    proj_25: {w: 5.6, d: 4.2, fh: 2.3, cols: 3, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4], plotHeight: 5.6},
+    proj_05: {w: 3.4, d: 3.0, fh: 2.0, cols: 2, podium: 2, roof: 'crown', plot: [3.0, 3.29], plotHeight: 5.6},
     other: {w: 4.8, d: 4.6, cols: 3, podium: 2, roof: 'garden', plot: [4.4, 4.4]}
   };
   const smallBuildingSpec = kind => SMALL_BUILDINGS[kind] || SMALL_BUILDINGS.other;
@@ -2136,11 +2137,11 @@ export function createArchitecture(P) {
       box(g, w + 0.1, 0.06, d + 0.1, x, top + 0.3, 0, M.terracotta);
       return top + 0.3;
     }
-    box(g, w + 0.4, 0.22, d + 0.4, x, top, 0, M.cream);
-    const ry = top + 0.22;
+    box(g, w + 0.5, 0.32, d + 0.5, x, top, 0, M.cream);
+    const ry = top + 0.32;
     for (const sgn of [-1, 1]) {
-      box(g, w + 0.3, 0.4, 0.14, x, ry, sgn * (d / 2 + 0.08), M.cream);
-      box(g, 0.14, 0.4, d + 0.3, x + sgn * (w / 2 + 0.08), ry, 0, M.cream);
+      box(g, w + 0.36, 0.46, 0.22, x, ry, sgn * (d / 2 + 0.07), M.cream);
+      box(g, 0.22, 0.46, d + 0.36, x + sgn * (w / 2 + 0.07), ry, 0, M.cream);
     }
     box(g, w - 0.1, 0.08, d - 0.1, x, ry, 0, surface);
     return ry;
@@ -2184,7 +2185,8 @@ export function createArchitecture(P) {
     else {
       box(g, 2.6, 0.16, 0.9, 0, base + 1.72, d / 2 + 0.45, M.orange);
       for (const x of [-1.15, 1.15]) cylinder(g, 0.06, 1.72, x, base, d / 2 + 0.8, M.metal, 8);
-      for (const x of [-1.9, 1.9]) {
+      const px = Math.min(1.9, w / 2 + 0.075); // bồn cây không vượt mép bệ ở tòa hẹp
+      for (const x of [-px, px]) {
         box(g, 0.55, 0.42, 0.55, x, base, d / 2 + 0.45, M.stone);
         box(g, 0.42, 0.34, 0.42, x, base + 0.42, d / 2 + 0.45, M.moss);
       }
