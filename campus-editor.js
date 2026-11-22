@@ -2506,6 +2506,16 @@ export function createCampusEditor({
     currentRoadPoints = [];
     currentRoadMesh = null;
 
+    // The path registered in roads.paths goes with the road on undo / redo, as in deleteCustomRoad
+    const createdPath = roads?.paths?.find(p => p.id === roadRecord.id) || null;
+    const setCreatedPath = attached => {
+      if (!createdPath) return;
+      const pIdx = roads.paths.indexOf(createdPath);
+      if (attached && pIdx === -1) roads.paths.push(createdPath);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      else return;
+      terrain.rebuild(roads.paths);
+    };
     pushUndo({
       type: 'road_create',
       undo: () => {
@@ -2514,12 +2524,16 @@ export function createCampusEditor({
           const r = customRoadsList.splice(rIdx, 1)[0];
           if (r.mesh) roadsGroup.remove(r.mesh);
         }
+        setCreatedPath(false);
         updateHierarchyUI();
+        saveStudioState();
       },
       redo: () => {
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
-        customRoadsList.push(roadRecord);
+        if (!customRoadsList.includes(roadRecord)) customRoadsList.push(roadRecord);
+        setCreatedPath(true);
         updateHierarchyUI();
+        saveStudioState();
       }
     });
 
