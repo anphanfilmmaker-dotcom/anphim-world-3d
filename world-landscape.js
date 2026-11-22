@@ -350,6 +350,9 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     group.add(mesh);
   }
 
+  // Scenery only: nothing here can be picked, so the Studio never selects or bulldozes the far land.
+  group.traverse(o => { o.raycast = () => {}; });
+
   // The view reaches the far mountains, and the camera stays over the land that is drawn in full.
   if (camera) {
     camera.far = Math.max(camera.far, reach * 2);
