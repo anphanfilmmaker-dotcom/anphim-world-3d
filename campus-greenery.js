@@ -86,6 +86,8 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
       rects.push({x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, hx: sx / 2 + .5, hz: sz / 2 + .5, cos: 1, sin: 0, soft: loose && sx < 5 && sz < 5, obj: o});
     });
   }
+  // Tòa có lô nới rộng (cánh chữ L) vượt ra ngoài bệ nền theo hạng: tránh theo lô thật
+  for (const lot of Object.values(L.builtLots || {})) rects.push({x: (lot.minX + lot.maxX) / 2, z: (lot.minZ + lot.maxZ) / 2, hx: (lot.maxX - lot.minX) / 2 + .6, hz: (lot.maxZ - lot.minZ) / 2 + .6, cos: 1, sin: 0, pad: true});
   const vistax = scene.getObjectByName('district-vistax-partner-campus');
   if (vistax) {
     box.setFromObject(vistax);

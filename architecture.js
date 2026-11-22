@@ -2034,18 +2034,29 @@ export function createArchitecture(P) {
   // Mỗi tòa = một khối đế (podium, có cửa chính) + tùy chọn một khối tháp (tower) hẹp hơn đặt lệch trên đế, để dáng nhà khác nhau:
   //   tower.span / depth = tỉ lệ bề rộng / chiều sâu so với đế; tower.side = -1 trái, 1 phải, 0 giữa; phần mái đế còn hở là sân thượng (terrace).
   //   roof = thiết bị trên mái: units | ac | solar | garden | lounge | crown; deck = tấm mái cam nhô ra thay cho lan can.
-  // plot = [rộng, sâu] mặt bằng tối đa trên campus (m), bằng đúng mặt bằng của model cũ để giữ nguyên khe hở 5 m giữa các tòa.
+  // wing = cánh nhà thấp hơn nối vào một bên khối đế, tạo mặt bằng chữ L: side = -1 trái / 1 phải, len = chiều dài nhô ra khỏi tường bên,
+  //   d = chiều sâu cánh, at = 'back' (góc lõm chữ L ở phía trước) | 'front'; mái cánh là sân thượng (wing.roof).
+  // plot = [rộng, sâu] mặt bằng tối đa trên campus (m). Tòa không có cánh: bằng đúng mặt bằng của model cũ, giữ nguyên khe hở 5 m.
+  // Tòa có cánh (lô được nới rộng tại chỗ): plotHeight = chiều cao tối đa (m); front = khoảng cách từ vị trí trong topology tới mép trước
+  //   của lô (bằng nửa chiều sâu lô cũ). Khối đế vẫn đứng đúng vị trí topology và cửa chính ở chỗ cũ; lô chỉ nới về phía cánh và ra sau.
   const SMALL_BUILDINGS = {
-    documents: {w: 5.4, d: 5.6, fh: 1.75, cols: 3, stripe: true, podium: 2, tower: {floors: 2, span: 0.62, side: -1, roof: 'units'}, plot: [4.78, 6.13]},
-    drive: {w: 7.0, d: 3.6, fh: 2.7, cols: 4, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 1.8, span: 0.42, side: 1, roof: 'ac'}, plot: [5.0, 3.32]},
-    google: {w: 4.4, d: 5.2, cols: 3, stripe: true, podium: 2, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD', plot: [3.64, 5.0]},
+    documents: {w: 5.4, d: 5.6, fh: 1.75, cols: 3, stripe: true, podium: 2, tower: {floors: 2, span: 0.62, side: 1, roof: 'units'},
+      wing: {side: -1, len: 5.2, d: 4.0, at: 'back', floors: 1, fh: 2.3, cols: 3, roof: 'lounge'}, plot: [9.0, 6.13], plotHeight: 7.6, front: 3.065},
+    drive: {w: 6.2, d: 5.2, fh: 2.6, cols: 4, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 1.8, span: 0.5, side: -1, roof: 'ac'},
+      wing: {side: 1, len: 4.2, d: 3.6, at: 'back', floors: 1, fh: 1.9, cols: 2, roof: 'garden'}, plot: [8.4, 5.3], plotHeight: 4.8, front: 1.66},
+    google: {w: 3.8, d: 5.2, cols: 3, stripe: true, podium: 2, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD',
+      wing: {side: 1, len: 4.6, d: 3.8, at: 'front', floors: 1, fh: 2.2, cols: 3, roof: 'solar'}, plot: [7.8, 6.0], plotHeight: 5.6, front: 2.5},
     proj_24: {w: 5.4, d: 5.4, cols: 3, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [4.78, 5.77]},
     proj_25: {w: 6.4, d: 4.6, cols: 4, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4]},
     proj_05: {w: 4.4, d: 4.0, fh: 1.6, cols: 2, podium: 3, roof: 'crown', plot: [3.0, 3.29]},
     other: {w: 4.8, d: 4.6, cols: 3, podium: 2, roof: 'garden', plot: [4.4, 4.4]}
   };
   const smallBuildingSpec = kind => SMALL_BUILDINGS[kind] || SMALL_BUILDINGS.other;
-  const smallBuildingPlot = kind => smallBuildingSpec(kind).plot;
+  // {size: [rộng, cao | null, sâu], front}; cao = null thì dùng chiều cao của hạng công trình (grade); front = null thì lô nằm cân quanh vị trí topology
+  const smallBuildingPlot = kind => {
+    const K = smallBuildingSpec(kind);
+    return {size: [K.plot[0], K.plotHeight || null, K.plot[1]], front: K.front ?? null};
+  };
 
   // Chồng các tầng của một khối: thân kem, băng kính bốn mặt, bệ cửa sổ chạy quanh. entry = 'door' | 'garage' cho mặt trước tầng trệt.
   function smallFloors(g, {x, w, d, y, floors, fh, cols, stripe, entry}) {
@@ -2153,6 +2164,19 @@ export function createArchitecture(P) {
       const ttop = smallFloors(g, {x: tx, w: tw, d: td, y: ry, floors: tower.floors, fh: tower.fh || fh, cols: Math.max(2, Math.round(cols * tower.span))});
       const try_ = smallRoof(g, tx, tw, td, ttop, {deck: tower.deck, surface: tower.roof === 'garden' ? M.moss : M.roofDark});
       smallRoofProps(g, tower.roof, tx, tw, td, try_);
+    }
+    if (K.wing) {
+      // Cánh nhà dựng quanh gốc riêng rồi dời vào vị trí; lấn 0.3 vào khối đế để không hở mạch nối
+      const W = K.wing, part = new T.Group(), ww = W.len + 0.3;
+      box(part, ww + 0.7, base, W.d + 0.7, 0, 0, 0, M.stone);
+      const wtop = smallFloors(part, {x: 0, w: ww, d: W.d, y: base, floors: W.floors, fh: W.fh || fh, cols: W.cols || 2});
+      const wry = smallRoof(part, 0, ww, W.d, wtop, {deck: W.deck, surface: W.roof === 'garden' ? M.moss : M.walk});
+      smallRoofProps(part, W.roof, 0, ww, W.d, wry);
+      const px = W.side * (w / 2 - 0.3 + ww / 2), pz = (W.at === 'front' ? 1 : -1) * (d - W.d) / 2;
+      for (const o of [...part.children]) {
+        o.position.x += px; o.position.z += pz;
+        g.add(o);
+      }
     }
     // Lối vào: bậc thềm, mái hiên cam trên hai cột, hai bồn cây (nhô ra tối đa 0.9 so với mặt tường)
     box(g, 2.3, 0.15, 0.6, 0, 0, d / 2 + 0.55, M.stone);

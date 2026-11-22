@@ -3,7 +3,7 @@ import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createCampusEditor} from './campus-editor.js?rev=121';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
-import {createCampusGreenery} from './campus-greenery.js?rev=11';
+import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -15,7 +15,7 @@ import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v39';
+import {createArchitecture} from './architecture.js?rev=v40';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq18';
@@ -487,7 +487,7 @@ async function main() {
   }
 
   for (const b of L.buildings) {
-    let g, bbox, f = null;
+    let g, bbox, f = null, offsetLot = false;
     const [w, h, d] = (L.grades && L.grades[b.grade]) || [7, 7, 7];
     const isSmallBuilding = ['documents', 'drive', 'google'].includes(b.legacyId) || String(b.id).startsWith('bld:project:');
 
@@ -558,8 +558,20 @@ async function main() {
       }
 
       // Tòa nhỏ dựng bằng code nằm gọn trong mặt bằng của model cũ, nên khe hở và khoảng lùi giữa các tòa không đổi
+      // Vài tòa có lô được nới rộng tại chỗ cho cánh nhà chữ L (plot.front != null): khối đế vẫn đứng đúng vị trí topology và mép trước
+      // của lô ở chỗ cũ, nên lô chỉ nới về phía cánh và ra sau; vị trí và id trong topology giữ nguyên.
       const plot = isSmallBuilding ? currentA.smallBuildingPlot(b.legacyId) : null;
-      f = A.fit(mergeBuilding(rawBuilding), b.grade, plot ? {[b.grade]: [plot[0], L.grades[b.grade][1], plot[1]]} : L.grades);
+      const merged = mergeBuilding(rawBuilding);
+      const coreX = plot && plot.front !== null ? new T.Box3().setFromObject(merged).getCenter(new T.Vector3()).x : 0;
+      f = A.fit(merged, b.grade, plot ? {[b.grade]: [plot.size[0], plot.size[1] || L.grades[b.grade][1], plot.size[2]]} : L.grades);
+      if (plot && plot.front !== null) {
+        const dz = (plot.front - f.bbox[2] / 2) / f.scale;
+        for (const child of f.group.children) {
+          child.position.x += coreX;
+          child.position.z += dz;
+        }
+        offsetLot = true;
+      }
       g = f.group;
       bbox = f.bbox;
     }
@@ -596,10 +608,16 @@ async function main() {
     allDoors.push({id: b.id, x: door.x, z: door.z});
 
     // Khung định vị phẳng sát mặt đất (Flat Ground Outlines - Không dùng Box3Helper 3D)
-    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(bbox[0], bbox[2]));
+    // Lô lệch tâm (tòa có cánh chữ L): khung lấy theo hộp bao thật của tòa sau khi xoay
+    const lotBox = offsetLot ? new T.Box3().setFromObject(g) : null;
+    // Cây và tiểu cảnh tự động (urban-planning-engine) tránh lô thật này; chỉ là dữ liệu lúc chạy, không ghi vào physical-topology.json
+    if (lotBox) (L.builtLots ||= {})[b.id] = {minX: lotBox.min.x, maxX: lotBox.max.x, minZ: lotBox.min.z, maxZ: lotBox.max.z};
+    const fpSize = lotBox ? lotBox.getSize(new T.Vector3()) : {x: bbox[0], z: bbox[2]};
+    const fpCenter = lotBox ? lotBox.getCenter(new T.Vector3()) : {x: b.position[0], z: b.position[2]};
+    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(fpSize.x, fpSize.z));
     const footprint = new T.LineSegments(fpGeo, new T.LineBasicMaterial({color: P.colors.brandOrange, transparent: true, opacity: 0.85}));
     footprint.rotation.x = -Math.PI / 2;
-    footprint.position.set(b.position[0], b.position[1] + 0.04, b.position[2]);
+    footprint.position.set(fpCenter.x, b.position[1] + 0.04, fpCenter.z);
     footprint.userData.buildingId = b.id;
     footprint.userData.isFootprint = true;
     g.userData.footprint = footprint;

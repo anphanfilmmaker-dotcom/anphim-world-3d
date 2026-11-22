@@ -39,6 +39,10 @@ export function createUrbanPlanningEngine(L, terrain) {
         return true;
       }
     }
+    // Lô thật của các tòa có mặt bằng vượt ra ngoài ô hạng (vd. tòa nhỏ có cánh chữ L); main.js ghi vào L.builtLots sau khi dựng tòa
+    for (const lot of Object.values(L.builtLots || {})) {
+      if (x >= lot.minX - clearance && x <= lot.maxX + clearance && z >= lot.minZ - clearance && z <= lot.maxZ + clearance) return true;
+    }
     return false;
   }
 
