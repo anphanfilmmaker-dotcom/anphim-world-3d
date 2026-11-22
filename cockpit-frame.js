@@ -228,7 +228,7 @@ button.cf-note:hover{background:var(--cf-bg2)}
 @media (max-width:1280px){--cf-side:272px}
 @media (max-width:1100px){.cf-brand>div:last-child{display:none}.cf-brand{padding:0 6px}.cf-res{padding-right:11px}.cf-res strong{font-size:13.5px}}
 @media (max-width:900px){.cf-tile{width:48px;height:48px}.cf-tile>span{display:none}.cf-place .cf-lbl{display:none}}
-@media (max-width:640px){.cf-tiles{left:var(--cf-pad);bottom:calc(var(--cf-pad) + 62px);flex-wrap:wrap}.cf-tile{width:42px;height:42px;flex:none}}
+@media (max-width:640px){.cf-tiles{bottom:calc(var(--cf-pad) + 62px);gap:4px}.cf-tile{width:36px;height:40px;flex:none}}
 }
 
 /* Builder tools (old top nav, shader dock, coordinate badge) only show in "Công cụ" mode. */
