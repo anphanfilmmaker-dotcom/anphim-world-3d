@@ -511,6 +511,7 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
     o.clip = null;
     const group = o.group = new T.Group();
     group.name = 'state:' + o.id;
+    group.userData.buildingId = o.id;
     root.add(group);
     const dim = o.dim, {w, h, d} = dim;
     const inner = new T.Group();
@@ -635,6 +636,7 @@ export function createStateVisuals({scene, renderer, buildingObjects, dataConnec
       markers.delete(id);
       if (!count && !sys) continue;
       const group = new T.Group();
+      group.userData.buildingId = id;
       root.add(group);
       const dim = overlays.get(id)?.dim || measure(g);
       const lift = g.userData.binding?.kind === 'project' ? 2.9 : 1.3;
