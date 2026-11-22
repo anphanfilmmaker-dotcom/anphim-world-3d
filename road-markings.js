@@ -117,13 +117,19 @@ export function analyseRoadNetwork(defs) {
     // chỉ được nằm ở chỗ cả hai mép của nó đã ra khỏi mặt nhựa các tuyến khác; không tìm được chỗ như vậy thì bỏ vạch.
     for (const arm of j.arms) {
       const r = arm.road, others = [...new Set(j.arms.filter(o => o.road !== r).map(o => o.road))];
+      // Dò suốt bề ngang mặt đường (không chỉ hai mép): góc đầu mút của một tuyến chéo có thể thò vào giữa lòng đường
+      const lanes = Math.max(2, Math.ceil((2 * r.halfW - 0.2) / 0.5));
       const overlaps = t => {
         const p = at(r, arm.s + arm.dir * (t - arm.off));
-        return [1, -1].some(side => others.some(o => onPavement(o, p.x - p.tz * side * (r.halfW - 0.1), p.z + p.tx * side * (r.halfW - 0.1))));
+        for (let i = 0; i <= lanes; i++) {
+          const o = (r.halfW - 0.1) * (2 * i / lanes - 1);
+          if (others.some(q => onPavement(q, p.x - p.tz * o, p.z + p.tx * o))) return true;
+        }
+        return false;
       };
       let t = arm.clear;
       const limit = Math.min(arm.clear + MERGE_SCAN, arm.avail);
-      while (t < limit && (overlaps(t + ZEBRA_SETBACK) || overlaps(t + ZEBRA_SETBACK + ZEBRA_DEPTH))) t += 0.5;
+      while (t < limit && [0, 0.5, 1].some(k => overlaps(t + ZEBRA_SETBACK + k * ZEBRA_DEPTH))) t += 0.5;
       arm.zclear = t;
       arm.merged = t >= limit && t > arm.clear;
     }
