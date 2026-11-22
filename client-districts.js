@@ -15,6 +15,7 @@ import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {districtPlan, slotFrame, slotLots, openLotCount, spineEnd} from './district-layout.js';
 
 /** Landscape of the land, keyed by `landscape` on the topology slot. */
+const LAMP_HEAD = new T.BoxGeometry(0.34, 0.12, 0.5);
 const LANDSCAPES = {
   grassland: {label: 'Đồng cỏ', ground: 0x9ccb6b, verge: 0x7fb659, lot: 0xe4dcc4, accent: 0x2f8f4e, walls: [0xf4efe2, 0xe6edd8, 0xfbf6ea], tree: 'round', canopy: [0x4f9c46, 0x6bb04f]},
   'flower-hills': {label: 'Đồi hoa', ground: 0xc9dd9c, verge: 0xb4d28a, lot: 0xf3e3da, accent: 0xd9488f, walls: [0xfff1f4, 0xfdf3d7, 0xeaf3ff], tree: 'round', canopy: [0xf3a6c4, 0xf7c1d6, 0xe98bb2]},
@@ -71,6 +72,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     rock: mat(0x8d949b, {flatShading: true}),
     pole: mat(0x39424e, {roughness: 0.5, metalness: 0.5}),
     glow: new T.MeshBasicMaterial({color: 0xfff0a6}),
+    // Street lamp heads: one instance per lamp, so day-night.js can put a pool of light under each at night.
+    lampHead: Object.assign(new T.MeshStandardMaterial({color: 0xfff6dc, emissive: 0xfff0a6, emissiveIntensity: 0.9, roughness: 0.6}), {userData: {nightLamp: true}}),
     snow: mat(0xffffff, {flatShading: true}),
     water: mat(0x4fb7d6, {roughness: 0.12, metalness: 0.2, transparent: true, opacity: 0.9})
   };
@@ -350,11 +353,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     for (let i = -2; i <= 2; i++) flatB.box(M.line, 2.2, 0.012, 0.55, -1.6, 0.125, i * 1.1);
 
     // Street lamps along the road.
+    const lampHeads = [];
     for (let u = 16, k = 0; u < roadEnd - 4; u += 12, k++) {
       const s = k % 2 ? 1 : -1, v = s * (rw + sw - 0.3);
       b.box(M.pole, 0.14, 4.2, 0.14, u, 0.2, v);
       b.box(M.pole, 0.1, 0.1, 1.1, u, 4.3, v - s * 0.5);
-      b.box(M.glow, 0.34, 0.12, 0.5, u, 4.2, v - s * 0.85);
+      lampHeads.push([u, 4.26, v - s * 0.85]);
     }
 
     // Gate: two pillars, a beam and the client's name on both faces.
@@ -423,6 +427,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
 
     flatB.build(group, {shadow: false});
     b.build(group);
+    if (lampHeads.length) {
+      const heads = new T.InstancedMesh(LAMP_HEAD, M.lampHead, lampHeads.length), m = new T.Matrix4();
+      lampHeads.forEach((at, i) => heads.setMatrixAt(i, m.makeTranslation(...at)));
+      heads.name = 'district-lamp-heads';
+      group.add(heads);
+    }
     group.userData.districtInfo = {slotId: slot.id, clientId: client?.id || null, open};
     return {group, open, roadEnd};
   }
