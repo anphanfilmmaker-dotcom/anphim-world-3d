@@ -66,6 +66,8 @@ export function createCampusEditor({
     if (c.useGroundTriangles) meta.useGroundTriangles = true;
     return meta;
   }
+  // Mã bố cục gốc (physical-topology.json): bản lưu Studio ghi lại để biết nó được làm trên bố cục nào
+  const LAYOUT_REVISION = L?.layoutRevision || null;
   // Baseline snapshot of native Orange Courts & Yellow Walkways (before any localStorage edits)
   const initialNativeCourts = (terrain && terrain.courts) ? terrain.courts.map(c => ({
     id: c.id,
@@ -3679,6 +3681,7 @@ export function createCampusEditor({
 
     return {
       version: '2.6',
+      layoutRevision: LAYOUT_REVISION,
       timestamp: Date.now(),
       heightDiffs,
       colorDiffs,
@@ -3781,6 +3784,22 @@ export function createCampusEditor({
 
   function loadStudioState(savedState) {
     if (!savedState) return { ok: false };
+
+    // Bản lưu làm trên bố cục cũ (physical-topology.json đã dời nhà sau đó): vị trí tòa, sân và lối đi gốc lấy theo bố cục hiện tại,
+    // nếu không tòa mới sẽ bị kéo về chỗ cũ. Sân / lối đi người dùng tự thêm (id không thuộc bố cục gốc), đường, địa hình và vật thể vẫn giữ.
+    if ((savedState.layoutRevision || null) !== LAYOUT_REVISION) {
+      const courtIds = new Set(initialNativeCourts.map(c => c.id)), walkIds = new Set(initialNativeWalks.map(w => w.id));
+      savedState = {...savedState, buildingTransforms: null};
+      if (Array.isArray(savedState.nativeCourtsState)) {
+        savedState.nativeCourtsState = [...initialNativeCourts.map(c => ({...c})), ...savedState.nativeCourtsState.filter(c => c && !courtIds.has(c.id))];
+      }
+      if (Array.isArray(savedState.nativeWalksState)) {
+        savedState.nativeWalksState = [
+          ...initialNativeWalks.map(w => ({...w, points: w.points.map(pt => [pt[0], pt[1]])})),
+          ...savedState.nativeWalksState.filter(w => w && !walkIds.has(w.id))
+        ];
+      }
+    }
 
     // 1. Restore heights
     let needPosSync = false;
@@ -3989,17 +4008,6 @@ export function createCampusEditor({
     }
     if (savedState.nativeWalksState && Array.isArray(savedState.nativeWalksState) && roads && roads.paths) {
       const validWalks = savedState.nativeWalksState.filter(sw => sw && sw.points && sw.points.length >= 2 && !['walk:dropoff-commons', 'walk:arrival-ramp-west', 'walk:arrival-ramp-east'].includes(sw.id));
-      // Auto-heal legacy corrupted IT walkways from older saves
-      for (const sw of validWalks) {
-        if (sw.id === 'door:bld:facility:telegram') sw.points = [[34.47, 21.5], [34.47, 15]];
-        if (sw.id === 'door:bld:facility:oracle') sw.points = [[40.47, 8], [40.47, 15]];
-        if (sw.id === 'door:bld:facility:supabase') sw.points = [[26, 7], [26, 15]];
-        if (sw.id === 'door:bld:facility:google') sw.points = [[25, 17.5], [25, 15]];
-        if (sw.id === 'walk:IT-court') sw.points = [[19, 15], [25, 15], [26, 15], [34.47, 15], [40.47, 15]];
-        if (sw.id === 'walk:ecosystem-loop' && Array.isArray(sw.points)) {
-          sw.points = sw.points.map(pt => (pt[0] === 19 && pt[1] === 14 ? [19, 15] : pt[0] === 9 && pt[1] === 14 ? [9, 15] : pt));
-        }
-      }
       const visibleWalks = validWalks.filter(sw => !sw.hidden);
       const preservedDoorPaths = roads.paths.filter(p => p.class === 1 && p.id && p.id.startsWith('door:'));
       for (let i = roads.paths.length - 1; i >= 0; i--) {
