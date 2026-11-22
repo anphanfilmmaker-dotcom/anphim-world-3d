@@ -96,7 +96,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     if (a[2] != null && b[2] != null) grades.push({a, b, first: road.points[i - 1]?.[2] == null, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.6});
   }
 
-  const weights = new Float64Array(anchors.length), seaAnchor = anchors.findIndex(a => a.land === 'sea');
+  const beds = [], weights = new Float64Array(anchors.length), seaAnchor = anchors.findIndex(a => a.land === 'sea');
   /** Share of each anchor at a point; returns the index of the strongest. */
   function blend(x, z) {
     // Borders between landscapes wander instead of following the straight sides of the plots.
@@ -145,15 +145,25 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         if (d > 0 && d < 42) y += open * rim * Math.exp(-(((d - 13 - edge(x, z)) / 7) ** 2)) * smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
       }
     }
-    let cut = 0, level = y;
+    // The road bed: the grade of the nearest stretch of road, passing smoothly from one stretch to the next.
+    let cut = 0, nearest = Infinity;
+    beds.length = 0;
     for (const g of grades) {
       const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = T.MathUtils.clamp(((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), 0, 1);
       const d = Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz);
       if (d > g.half + 7) continue;
-      const w = (1 - smooth((d - g.half) / 7)) * (g.first ? smooth(t * 1.6) : 1);
-      if (w > cut) { cut = w; level = g.a[2] + (g.b[2] - g.a[2]) * t; }
+      cut = Math.max(cut, (1 - smooth((d - g.half) / 7)) * (g.first ? smooth(t * 1.6) : 1));
+      nearest = Math.min(nearest, d);
+      beds.push(d, g.a[2] + (g.b[2] - g.a[2]) * t);
     }
-    return cut ? y + (level - y) * cut : y;
+    if (!cut) return y;
+    let level = 0, total = 0;
+    for (let i = 0; i < beds.length; i += 2) {
+      const k = Math.exp((nearest - beds[i]) / 1.5);
+      level += k * beds[i + 1];
+      total += k;
+    }
+    return y + (level / total - y) * cut;
   }
 
   const isSea = (x, z) => rectGap(x, z, FAR[3].slice(1)) < 60 || x > 172 && z > -70;
