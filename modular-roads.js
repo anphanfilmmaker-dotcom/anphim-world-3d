@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
-import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=5';
+import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=7';
 
 /**
  * AN PHIM HIGH-FIDELITY UNIFIED ROAD NETWORK
@@ -65,7 +65,23 @@ export async function createModularRoadSystem(scene, terrain, roads) {
       const curve = ring.curve, N = 360, len = ring.len;
       // +1 = phía trong campus (pháp tuyến (-tz, tx)), -1 = phía ngoài
       const openIn = sideOpenings(net, ring, 1, true), openOut = sideOpenings(net, ring, -1, true);
-      const cutIn = i => isInside(openIn, ring, (i / N) * len), cutOut = i => isInside(openOut, ring, (i / N) * len);
+      // Đường do module khác dựng (đường cổng và đường nhánh của các quận) đi qua dải bó vỉa / vỉa hè: ngắt đúng chỗ mặt nhựa của chúng phủ lên
+      const crossers = roads?.crossingRoads || [];
+      const covered = (x, z) => crossers.some(c => {
+        for (let k = 0; k < c.points.length - 1; k++) {
+          const [ax, az] = c.points[k], [bx, bz] = c.points[k + 1], dx = bx - ax, dz = bz - az;
+          const u = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+          if (Math.hypot(x - ax - dx * u, z - az - dz * u) < c.halfW + 0.15) return true;
+        }
+        return false;
+      });
+      const crossed = side => Array.from({length: N + 1}, (_, i) => {
+        if (!crossers.length) return false;
+        const p = curve.getPointAt(i / N), d = curve.getTangentAt(Math.min(0.999999, i / N));
+        return [halfW, halfW + curbW + walkW].some(o => covered(p.x - d.z * o * side, p.z + d.x * o * side));
+      });
+      const crossIn = crossed(1), crossOut = crossed(-1);
+      const cutIn = i => crossIn[i] || isInside(openIn, ring, (i / N) * len), cutOut = i => crossOut[i] || isInside(openOut, ring, (i / N) * len);
 
       const roadVerts = [], roadIndices = [];
       const innerCurbVerts = [], innerCurbIndices = [], outerCurbVerts = [], outerCurbIndices = [];
@@ -142,9 +158,11 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   }
 
   // Dựng lại mặt đường + vạch khi danh sách đường thay đổi (Studio vẽ / xóa / undo một con đường xe chạy)
-  function syncRoadNetwork(extra = [], force = false) {
+  let lastExtra = [];
+  function syncRoadNetwork(extra = lastExtra, force = false) {
+    lastExtra = extra;
     const defs = collectRoadDefs(extra);
-    const signature = JSON.stringify(defs.map(d => [d.id, d.halfW, d.signature ?? null]));
+    const signature = JSON.stringify([defs.map(d => [d.id, d.halfW, d.signature ?? null]), roads?.crossingRoads || []]);
     if (signature === lastSignature && !force) return dynamicGroup; // force: địa hình vừa đổi cao độ, vạch phải đo lại
     lastSignature = signature;
     if (dynamicGroup) {

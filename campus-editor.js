@@ -2506,6 +2506,16 @@ export function createCampusEditor({
     currentRoadPoints = [];
     currentRoadMesh = null;
 
+    // The path registered in roads.paths goes with the road on undo / redo, as in deleteCustomRoad
+    const createdPath = roads?.paths?.find(p => p.id === roadRecord.id) || null;
+    const setCreatedPath = attached => {
+      if (!createdPath) return;
+      const pIdx = roads.paths.indexOf(createdPath);
+      if (attached && pIdx === -1) roads.paths.push(createdPath);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      else return;
+      terrain.rebuild(roads.paths);
+    };
     pushUndo({
       type: 'road_create',
       undo: () => {
@@ -2514,12 +2524,16 @@ export function createCampusEditor({
           const r = customRoadsList.splice(rIdx, 1)[0];
           if (r.mesh) roadsGroup.remove(r.mesh);
         }
+        setCreatedPath(false);
         updateHierarchyUI();
+        saveStudioState();
       },
       redo: () => {
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
-        customRoadsList.push(roadRecord);
+        if (!customRoadsList.includes(roadRecord)) customRoadsList.push(roadRecord);
+        setCreatedPath(true);
         updateHierarchyUI();
+        saveStudioState();
       }
     });
 
@@ -6910,6 +6924,16 @@ export function createCampusEditor({
         btn.style.borderColor = isAct ? '#34d399' : '#475569';
       }
     });
+
+    // The options drawer stays hidden for every tool except Roads, where it holds the road type and the drawing mode
+    if (bottomDrawer) {
+      const showDrawer = editModeActive && targetTab === 'roads';
+      bottomDrawer.hidden = !showDrawer;
+      bottomDrawer.style.display = showDrawer ? 'block' : 'none';
+      // Sit just above the dock, whatever height the dock has at this window size
+      const dockTop = document.querySelector('#simcity-dock')?.getBoundingClientRect().top;
+      if (showDrawer && dockTop > 0) bottomDrawer.style.bottom = Math.round(window.innerHeight - dockTop + 8) + 'px';
+    }
 
     const roadMode = document.querySelector('input[name="road-draw-mode"]:checked')?.value || 'grid';
     const propMode = document.querySelector('input[name="prop-place-mode"]:checked')?.value || 'single';

@@ -1,6 +1,7 @@
 import * as T from 'three';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js';
+import {districtPlan, districtGroundPads} from './district-layout.js';
 
 // Lớp cây xanh đa tầng theo ảnh tham chiếu "AN PHIM World Campus Builder":
 // vườn có hàng rào cây cắt tỉa + cây tán tròn nở hoa, thông sẫm, cây tán đa diện sáng, đá cảnh, đèn lối đi.
@@ -48,6 +49,18 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
     rects.push(s.axis === 'x' ? {x: along, z: s.cross, hx: halfAlong, hz: halfAcross, cos: 1, sin: 0} : {x: s.cross, z: along, hx: halfAcross, hz: halfAlong, cos: 1, sin: 0});
   }
   for (const t of landscape?.trees || []) disks.push({x: t.x, z: t.z, r: 1.6, soft: true});
+
+  // Đất của các quận khách hàng và đường dẫn vào chúng (cổng, đường nhánh) là của client-districts.js: không trồng gì lên đó
+  const plan = districtPlan(L);
+  for (const p of districtGroundPads(L, 1)) rects.push({x: p.x, z: p.z, hx: p.hx, hz: p.hz, cos: 1, sin: 0});
+  const districtRoad = (pts, half) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, az] = pts[i], [bx, bz] = pts[i + 1], len = Math.hypot(bx - ax, bz - az) || 1;
+      rects.push({x: (ax + bx) / 2, z: (az + bz) / 2, hx: len / 2 + half, hz: half, cos: (bx - ax) / len, sin: -(bz - az) / len});
+    }
+  };
+  for (const slot of plan?.slots || []) if (slot.ringXZ) districtRoad([slot.ringXZ, slot.gateXZ], plan.template.roadWidth / 2 + plan.template.sidewalkWidth + 1);
+  for (const r of plan?.accessRoads || []) districtRoad(r.points, r.width / 2 + 2.5);
 
   // Vật thể cảnh quan đã dựng sẵn trong scene (bồn cây, ghế, kiosk, khu VistaX...): lấy theo bounding box thật.
   scene.updateMatrixWorld(true);

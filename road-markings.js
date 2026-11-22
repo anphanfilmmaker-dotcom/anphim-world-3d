@@ -2,7 +2,7 @@ import * as T from 'three';
 
 /**
  * Cơ chế vạch kẻ đường theo mạng lưới (road network markings).
- * Đầu vào là danh sách tuyến đường xe chạy: {id, curve, halfW, closed, yAt(x,z), center, edges, walkW, group}.
+ * Đầu vào là danh sách tuyến đường xe chạy: {id, curve, halfW, closed, yAt(x,z), center, edges, markings, walkW, group}.
  * Module tự tìm giao lộ (ngã ba: đầu một tuyến chạm vào tuyến khác; ngã tư: hai tuyến cắt nhau) rồi sinh:
  * vạch tim đứt đoạn, vạch mép liền, vạch dừng và vạch qua đường (zebra) ở từng nhánh của giao lộ.
  * Không tuyến nào được vẽ vạch xuyên qua lòng giao lộ.
@@ -191,6 +191,7 @@ export function buildMarkingBoxes(net) {
     if (d > 0.05) push(r, (ax + bx) / 2, (az + bz) / 2, (bx - ax) / d, (bz - az) / d, w, d);
   };
   for (const r of net.roads) {
+    if (r.markings === false) continue; // tuyến do module khác tự kẻ vạch: chỉ tham gia tạo giao lộ
     const arms = net.junctions.flatMap(j => j.arms.filter(a => a.road === r));
     if (r.center !== false) {
       for (const [a, b] of freeIntervals(r, arms.map(arm => span(arm, 0, arm.quiet)))) {
@@ -217,8 +218,8 @@ export function buildMarkingBoxes(net) {
         }
       }
       if (arm.stop) {
-        // Vạch dừng nằm ở làn bên phải của xe đang đi vào giao lộ
-        const p = at(r, arm.s + arm.dir * (arm.stop - arm.off)), rx = arm.dz, rz = -arm.dx, o = r.halfW / 2;
+        // Vạch dừng nằm ở làn bên phải của xe đang đi vào giao lộ, vuông góc với tuyến ngay tại đó (nhánh có thể cong)
+        const p = at(r, arm.s + arm.dir * (arm.stop - arm.off)), rx = p.tz * arm.dir, rz = -p.tx * arm.dir, o = r.halfW / 2;
         push(r, p.x + rx * o, p.z + rz * o, rx, rz, STOP_T, r.halfW - 0.3);
       }
     }

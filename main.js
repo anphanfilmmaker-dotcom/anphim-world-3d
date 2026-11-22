@@ -1,14 +1,13 @@
-import {createVistaXDistrict} from './district-vistax.js?rev=12';
-import {createModularRoadSystem} from './modular-roads.js?rev=9';
+import {createModularRoadSystem} from './modular-roads.js?rev=11';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=118';
+import {createCampusEditor} from './campus-editor.js?rev=121';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
 import {createCampusGreenery} from './campus-greenery.js?rev=11';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
-import {getStudioModelById, preloadAllStudioPacks} from './asset-pack-extractor.js?rev=146';
+import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
 import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v7';
@@ -24,11 +23,13 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v5';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
+import {createClientDistricts} from './client-districts.js';
+import {districtPlan} from './district-layout.js';
 
 window.THREE = T;
 
@@ -978,7 +979,6 @@ async function main() {
   console.log('[STEP 6] ecosystem design created');
   await createLandscapePolish(scene, P, L, terrain, roads, registry, layers, report, A);
   await createHQGardens(scene,terrain,roads,L,report);
-  await createVistaXDistrict(scene, terrain, roads, registry, P);
   await createModularRoadSystem(scene, terrain, roads);
   createCampusGreenery(scene, L, terrain, roads, landscape, layers, report);
   console.log('[STEP 6.5] HQ gardens created');
@@ -1035,6 +1035,37 @@ async function main() {
 
   // Cockpit Command Engine (Spec Kit Integration)
   await dataConnector.load();
+  // Client districts around the ring road: land from the topology, clients and projects from the data.
+  const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
+  window.__clientDistricts = clientDistricts;
+  // Where a district's gate road or a branch road leaves the ring, the ring opens its curb and sidewalk and gets
+  // its junction markings; the district draws its own road, so its lines are left to it.
+  const syncDistrictRoads = () => {
+    const plan = districtPlan(L);
+    if (!plan) return;
+    const inUse = new Set(clientDistricts.districts.filter(d => d.client).map(d => d.id));
+    const gates = plan.slots.filter(s => s.ringXZ && inUse.has(s.id)), half = plan.template.roadWidth / 2;
+    roads.crossingRoads = [
+      ...gates.map(s => ({points: [s.ringXZ, s.gateXZ], halfW: half})),
+      ...(plan.accessRoads || []).map(r => ({points: r.points, halfW: r.width / 2}))
+    ];
+    const polyline = pts => {
+      const path = new T.CurvePath();
+      for (let i = 0; i < pts.length - 1; i++)
+        path.add(new T.LineCurve3(new T.Vector3(pts[i][0], 0, pts[i][1]), new T.Vector3(pts[i + 1][0], 0, pts[i + 1][1])));
+      return path;
+    };
+    const districtDef = (id, pts, halfW) => ({
+      id, districtGate: true, markings: false, halfW, signature: JSON.stringify(pts), curve: polyline(pts),
+      yAt: (x, z) => terrain.height(x, z) + 0.15
+    });
+    roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(
+      gates.map(s => districtDef('road:district-gate:' + s.id, [s.ringXZ, s.gateXZ], half)),
+      (plan.accessRoads || []).map(r => districtDef(r.id, r.points, r.width / 2))
+    );
+    roads.syncRoadNetwork?.();
+  };
+  syncDistrictRoads();
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
@@ -1073,11 +1104,19 @@ async function main() {
   dataConnector.subscribe(refreshInside);
 
   // Campus-view frame: resource bar, missions, hovered building, quick jump
+  const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
+  clientDistricts.onChange = () => { cockpitFrame.setBuildings(frameBuildings()); syncDistrictRoads(); };
   cockpitFrame = new CockpitFrame({
     dataConnector,
-    buildings: [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom],
+    buildings: frameBuildings(),
     onMoneyToggle: () => refreshInside(),
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
+    getDistricts: () => clientDistricts.districts,
+    onEnterDistrict: d => {
+      if (cutawayAnimator.isInspecting) exitInspect();
+      const [x, y, z] = d.center;
+      director.flyTo({target: [x, y + 1, z], position: [x + 70, y + 86, z + 94], span: Math.max(d.depth, 60) * 1.05});
+    },
     onOverview: () => {
       if (cutawayAnimator.isInspecting) exitInspect();
       else view('overview');
@@ -1270,11 +1309,7 @@ async function main() {
 
   document.querySelector('#photo').onclick = () => {
     renderer.setPixelRatio(2);
-    if (postPipeline) {
-      postPipeline.render();
-    } else {
-      renderer.render(scene, camera);
-    }
+    drawFrame();
     report.drawCalls = renderer.info.render.calls;
     report.triangles = renderer.info.render.triangles;
     report.exportPixels = [renderer.domElement.width, renderer.domElement.height];
@@ -1440,6 +1475,9 @@ async function main() {
 
   const frameTimes = [];
   let previous = performance.now();
+  const drawCampus = () => postPipeline ? postPipeline.render() : renderer.render(scene, camera);
+  // While a building is open the animator draws the frame: the campus as a sketch, the room on top
+  const drawFrame = () => { if (!cutawayAnimator?.render(renderer, drawCampus)) drawCampus(); };
   function frame(now) {
     requestAnimationFrame(frame);
     const cameraMoving = director.update(now);
@@ -1451,11 +1489,7 @@ async function main() {
     const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
-      if (postPipeline) {
-        postPipeline.render();
-      } else {
-        renderer.render(scene, camera);
-      }
+      drawFrame();
     }
     frameTimes.push(now - previous);
     previous = now;

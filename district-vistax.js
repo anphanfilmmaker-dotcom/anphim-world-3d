@@ -1,6 +1,6 @@
 import * as T from 'three';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
-import { getStudioModelById, getBuildingFromPack1 } from './asset-pack-extractor.js?rev=146';
+import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
 
 /**
  * AN PHIM WORLD — QUẬN VỆ TINH VISTAX (VISTAX PARTNER DISTRICT)
