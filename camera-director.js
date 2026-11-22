@@ -9,7 +9,7 @@
 import * as T from 'three';
 
 const DAMPING_AT_60HZ = 0.1;
-const SPAN_MIN = 6, SPAN_MAX = 300;
+const SPAN_MIN = 6, SPAN_MAX = 460;
 // Terrain is 380 x 340; keep the orbit target near it.
 const TARGET_MIN = new T.Vector3(-200, -30, -180), TARGET_MAX = new T.Vector3(200, 120, 180);
 const ZOOM_SMOOTH_S = 0.09, KEY_SMOOTH_S = 0.1;
