@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+// Glow added to the glass of model buildings after dark; day-night.js drives it (black by day).
+export const nightWindowGlow = { value: new THREE.Color(0, 0, 0) };
+
 export function createAdapter(P) {
   const C = k => new THREE.Color(P.colors[k]);
 
@@ -14,13 +17,14 @@ export function createAdapter(P) {
     m.onBeforeCompile = shader => {
       shader.uniforms.palGlassRoughness = { value: P.materialTargets.glass.roughness };
       shader.uniforms.palGlassMetalness = { value: P.materialTargets.glass.metalness };
+      shader.uniforms.palNightGlow = nightWindowGlow;
       for (const key of ['plaster', 'stone', 'glass', 'frame', 'terracotta', 'brass', 'asphalt', 'roadMarking', 'canopyMid', 'canopyLight', 'canopyDark', 'soil', 'lawn']) {
         shader.uniforms['pal_' + key] = { value: C(key) };
       }
 
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        '#include <common>\nuniform float palGlassRoughness;\nuniform float palGlassMetalness;\n' +
+        '#include <common>\nuniform float palGlassRoughness;\nuniform float palGlassMetalness;\nuniform vec3 palNightGlow;\n' +
         ['plaster', 'stone', 'glass', 'frame', 'terracotta', 'brass', 'asphalt', 'roadMarking', 'canopyMid', 'canopyLight', 'canopyDark', 'soil', 'lawn'].map(k => 'uniform vec3 pal_' + k + ';').join('\n')
       );
 
@@ -32,6 +36,7 @@ export function createAdapter(P) {
           diffuseColor.rgb = pal_glass * (.85 + .25 * lum);
           roughnessFactor = palGlassRoughness;
           metalnessFactor = palGlassMetalness;
+          totalEmissiveRadiance += palNightGlow;
         } else if (lum < .065) {
           // Window frames & metal mullions
           diffuseColor.rgb = pal_frame;
@@ -86,7 +91,7 @@ export function createAdapter(P) {
       );
     };
 
-    m.customProgramCacheKey = () => kind + '-world-palette-v4-pbr';
+    m.customProgramCacheKey = () => kind + '-world-palette-v5-pbr';
     return m;
   }
 

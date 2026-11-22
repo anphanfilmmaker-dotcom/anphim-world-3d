@@ -74,6 +74,9 @@ const ICONS = {
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   megaphone: '<path d="M3 10v4h3l7 4V6l-7 4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/>',
   up: '<path d="M6 15l6-6 6 6"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
   robot: '<rect x="4.5" y="8" width="15" height="11" rx="3.5"/><path d="M12 8V4.5M9 13v1.5M15 13v1.5M2 12.5v3M22 12.5v3"/><circle cx="12" cy="3.5" r="1"/>'
 };
 
@@ -256,10 +259,12 @@ export class CockpitFrame {
    * @param {(b: object) => void} o.onEnterBuilding  fly inside a building
    * @param {() => void} o.onOverview  back to the whole-campus view
    * @param {() => void} [o.onMoneyToggle]  the "hide money" switch changed
+   * @param {object} [o.dayNight]  day-night.js controller ({night, auto, setNight, setAuto})
    * @param {() => object[]} [o.getDistricts]  client districts ({id, client, landscape, projects, lots})
    * @param {(d: object) => void} [o.onEnterDistrict]  fly to a client district
    */
-  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle, getDistricts, onEnterDistrict}) {
+  constructor({dataConnector, buildings, onEnterBuilding, onOverview, onMoneyToggle, getDistricts, onEnterDistrict, dayNight}) {
+    this.dayNight = dayNight;
     this.onMoneyToggle = onMoneyToggle;
     this.getDistricts = getDistricts || (() => []);
     this.onEnterDistrict = onEnterDistrict;
@@ -309,6 +314,7 @@ export class CockpitFrame {
           </div>
         </div>
         <div data-slot="dashboard" style="display:contents"></div>
+        <div data-slot="daynight" style="display:contents"></div>
         <div class="cf-menu" data-menu="settings">
           <button class="cf-ib" data-act="menu" aria-haspopup="true" title="Cài đặt" aria-label="Cài đặt">${icon('gear', 20)}</button>
           <div class="cf-chip cf-menu-list cf-set" data-slot="controls"></div>
@@ -451,6 +457,7 @@ export class CockpitFrame {
   render() {
     this.renderResources();
     this.renderDock();
+    this.renderDayNight();
     this.renderControls();
     this.renderMissions();
     this.renderBuilding();
@@ -489,6 +496,15 @@ export class CockpitFrame {
     this.slot.missions.parentElement.inert = !this.missionsOpen;
   }
 
+  /** Day/night switch in the dock (one icon: what a click changes to) and its "follow the clock" row in settings. */
+  renderDayNight() {
+    const dn = this.dayNight;
+    if (!dn) return;
+    const label = dn.night ? 'Chuyển sang ban ngày' : 'Chuyển sang ban đêm';
+    this.slot.daynight.innerHTML = `<button class="cf-ib" data-act="night" aria-pressed="${dn.night}" title="${label}${dn.auto ? ' (đang tự đổi theo giờ)' : ''}" aria-label="${label}">${icon(dn.night ? 'sun' : 'moon', 20)}</button>`;
+    this.renderControls();
+  }
+
   renderControls() {
     const status = this.data.getDataStatus();
     const s = DATA_STATUS[status.source] || DATA_STATUS.offline;
@@ -497,6 +513,7 @@ export class CockpitFrame {
     this.slot.controls.innerHTML = `
       <button class="cf-row-btn" data-act="money" aria-pressed="${this.hideMoney}">${icon(this.hideMoney ? 'eyeOff' : 'eye')}${this.hideMoney ? 'Hiện số tiền' : 'Ẩn số tiền'}</button>
       <button class="cf-row-btn" data-act="tools" aria-pressed="${tools}" title="Góc máy, lưới, sửa cảnh">${icon('tools')}Công cụ dựng campus<em>${tools ? 'Đang bật' : ''}</em></button>
+      ${this.dayNight ? `<button class="cf-row-btn" data-act="night-auto" aria-pressed="${this.dayNight.auto}" title="Ban đêm từ 18:00 đến 06:00 theo giờ máy">${icon('clock')}Ngày đêm theo giờ thật<em>${this.dayNight.auto ? 'Đang bật' : ''}</em></button>` : ''}
       <div class="cf-row-btn" data-tone="${s.tone}" title="${esc(s.title)}"><i class="cf-dot"></i>${esc(s.label)}<em>${esc(when)}</em></div>`;
   }
 
@@ -682,6 +699,10 @@ export class CockpitFrame {
       document.body.classList.toggle('cf-hide-money', this.hideMoney);
       this.render();
       this.onMoneyToggle?.();
+    } else if (act === 'night') {
+      this.dayNight.setNight(!this.dayNight.night);
+    } else if (act === 'night-auto') {
+      this.dayNight.setAuto(!this.dayNight.auto);
     } else if (act === 'tools') {
       document.body.classList.toggle('cf-tools');
       this.renderControls();
