@@ -1,7 +1,7 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=123';
+import {createCampusEditor} from './campus-editor.js?rev=124';
 import {createLandscapePolish} from './landscape-polish.js?rev=119';
 import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -18,7 +18,7 @@ import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v43';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq19';
+import {createTerrain} from './terrain.js?rev=hq20';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -91,7 +91,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v11'), fetchJSON('./campus-palette.json?rev=finalPaletteV9')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v11'), fetchJSON('./campus-palette.json?rev=finalPaletteV10')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;

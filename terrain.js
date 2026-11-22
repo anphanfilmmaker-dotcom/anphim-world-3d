@@ -57,7 +57,7 @@ export function createTerrain(scene,P,L){
  const materials = [
     '#6fa659',  // 0: Nền cỏ xanh tươi sáng theo ảnh tham chiếu (Campus Builder)
     '#4f6078',  // 1: Đường chính màu xám xanh slate
-    '#dca658',  // 2: Lối đi bộ màu vàng nung ấm (màu gốc sếp chọn)
+    P.colors.walk || '#dca658',  // 2: Lối đi bộ màu vàng (campus-palette.json → colors.walk)
     '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));

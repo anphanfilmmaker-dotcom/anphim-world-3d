@@ -917,7 +917,7 @@ export function createCampusEditor({
   const targetColors = {
     grass:  { r: 1.0, g: 1.0, b: 1.0 },                 // 🌾 Cỏ xanh nguyên bản (#4f805a)
     dirt:   makeCompensatedVertexColor('#b76e4b'),      // 🟫 Đất cam gạch nung (#b76e4b)
-    gravel: makeCompensatedVertexColor('#dca658'),      // 🟨 Cát vàng đường dạo (#dca658)
+    gravel: makeCompensatedVertexColor(P?.colors?.walk || '#dca658'),      // 🟨 Cát vàng đường dạo (campus-palette.json → colors.walk)
     stone:  makeCompensatedVertexColor('#d6cebd')       // ⬜ Đá sỏi kem sáng (#d6cebd)
   };
 
@@ -1306,8 +1306,8 @@ export function createCampusEditor({
     concrete:        makeRoadMaterial(0x94a3b8, 0.78, -2),
     concreteSeam:    makeRoadMaterial(0x475569, 0.90, -3),
 
-    // 3. Đường đi bộ Campus (Lòng đường màu vàng cam ấm #dca658 + 2 mép hai bên màu vàng kem nhạt hơn #f6dfa4)
-    walkStone:          makeRoadMaterial(0xdca658, 0.90, -3),
+    // 3. Đường đi bộ Campus (lòng đường vàng + 2 mép vàng kem nhạt hơn; màu lấy từ campus-palette.json → colors.walk / walkBorder)
+    walkStone:          makeRoadMaterial(P?.colors?.walk || 0xdca658, 0.90, -3),
     curbStone:          makeRoadMaterial(0x808d59, 0.86, -2),
 
     // 4. Đường lát gạch nung (Terracotta Brick)
@@ -1316,9 +1316,9 @@ export function createCampusEditor({
     // 5. Sàn quảng trường / Công viên (Granite Plaza & Deck)
     plazaGranite:       makeRoadMaterial(0xdfd9c7, 0.82, -3),
 
-    // 6. Đường đi bộ màu vàng (#dca658) kèm 2 mép vàng nhạt (#f6dfa4) & Hộp sân màu cam (#b76e4b)
-    campusYellow:       makeRoadMaterial(0xdca658, 0.90, -3),
-    campusYellowBorder: makeRoadMaterial(0xf2d99b, 0.86, -2),
+    // 6. Đường đi bộ màu vàng kèm 2 mép vàng nhạt & Hộp sân màu cam (#b76e4b)
+    campusYellow:       makeRoadMaterial(P?.colors?.walk || 0xdca658, 0.90, -3),
+    campusYellowBorder: makeRoadMaterial(P?.colors?.walkBorder || 0xf2d99b, 0.86, -2),
     campusOrange:       makeRoadMaterial(0xe09468, 0.90, -4)
   };
 
