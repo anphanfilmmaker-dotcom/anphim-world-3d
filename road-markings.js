@@ -47,7 +47,15 @@ export function analyseRoadNetwork(defs) {
   const nearest = (r, x, z) => {
     let best = Infinity, bi = 0;
     for (let i = 0; i <= r.n; i++) { const p = r.pts[i], d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < best) { best = d; bi = i; } }
-    return {d: Math.sqrt(best), s: bi * r.ds};
+    return {d: Math.sqrt(best), s: bi * r.ds, i: bi};
+  };
+  // Điểm nằm trên mặt nhựa của tuyến r; phần bán nguyệt phía ngoài đầu mút của tuyến hở không phải mặt nhựa
+  const onPavement = (r, x, z) => {
+    const q = nearest(r, x, z);
+    if (q.d >= r.halfW) return false;
+    if (r.closed || (q.i > 0 && q.i < r.n)) return true;
+    const e = r.pts[q.i], along = (x - e.x) * e.tx + (z - e.z) * e.tz;
+    return q.i === 0 ? along >= 0 : along <= 0;
   };
 
   // Ngã ba: đầu của một tuyến hở chạm vào thân một tuyến khác
@@ -111,7 +119,7 @@ export function analyseRoadNetwork(defs) {
       const r = arm.road, others = [...new Set(j.arms.filter(o => o.road !== r).map(o => o.road))];
       const overlaps = t => {
         const p = at(r, arm.s + arm.dir * (t - arm.off));
-        return [1, -1].some(side => others.some(o => nearest(o, p.x - p.tz * side * (r.halfW - 0.1), p.z + p.tx * side * (r.halfW - 0.1)).d < o.halfW));
+        return [1, -1].some(side => others.some(o => onPavement(o, p.x - p.tz * side * (r.halfW - 0.1), p.z + p.tx * side * (r.halfW - 0.1))));
       };
       let t = arm.clear;
       const limit = Math.min(arm.clear + MERGE_SCAN, arm.avail);
