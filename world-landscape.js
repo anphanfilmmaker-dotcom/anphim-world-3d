@@ -145,7 +145,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     if (a[2] != null && b[2] != null) grades.push({a, b, first: road.points[i - 1]?.[2] == null, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.6});
   }
 
-  const beds = [], weights = new Float64Array(anchors.length), seaAnchor = anchors.findIndex(a => a.land === 'sea');
+  const beds = [], near = new Float64Array(slots.length), weights = new Float64Array(anchors.length), seaAnchor = anchors.findIndex(a => a.land === 'sea');
   /** Share of each anchor at a point; returns the index of the strongest. */
   function blend(x, z) {
     // Borders between landscapes wander instead of following the straight sides of the plots.
@@ -167,6 +167,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   function shape(x, z, y) {
     const open = smooth((rectGap(x, z, CAMPUS) - 6) / 45);
     if (open > 0) {
+      const y0 = y;
       blend(x, z);
       // Hills stand back from the river, which keeps a flat valley; the sea bed does not, so the river runs out into open water.
       let hills = 0, deep = 0;
@@ -177,27 +178,35 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       }
       y += open * (hills * (1 + 1.5 * smooth((Math.hypot(x, z) - 260) / 380)) * smooth((Math.abs(z - riverZ(x)) - 9) / 60) + deep);
       // Each district keeps its own level, and the land eases from that level into the landscape around it.
+      const e = edge(x, z);
       let wild = 1, level = 0, share = 0;
-      for (const s of slots) {
-        const d = rectGap(x, z, s.pad);
+      for (let i = 0; i < slots.length; i++) {
+        const d = rectGap(x, z, slots[i].pad);
+        near[i] = d < 34 ? smooth((d - 1 - e) / 22) : 1;
         if (d >= 34) continue;
         // The nearer a district, the more its level counts: on its own ground it is the only one, whatever lies next door.
-        const k = smooth((d - 1 - edge(x, z)) / 22), w = (1 - k) / (k + 1e-4);
-        wild *= k;
-        level += w * s.y;
+        const w = (1 - near[i]) / (d * d + 1e-4);
+        wild *= near[i];
+        level += w * slots[i].y;
         share += w;
       }
       if (share > 0) y = wild * y + (1 - wild) * level / share;
       // A ridge around the districts that lie in a valley or a canyon: open towards the gate, or closed all round.
-      for (const s of slots) {
-        const land = LAND[s.land];
+      for (let i = 0; i < slots.length; i++) {
+        const s = slots[i], land = LAND[s.land];
         if (!land.rim) continue;
         const d = rectGap(x, z, s.pad);
         if (d <= 0 || d >= 62) continue;
+        // The ridge stops short of any other district's ground.
+        let clear = 1;
+        for (let j = 0; j < slots.length; j++) if (j !== i) clear *= near[j];
+        if (clear <= 0) continue;
         // A closed valley is walled highest at the back; the sides towards the campus stay low enough to look in over.
         const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.pad[3] + 10) / 20), smooth((x - s.pad[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
-        y += open * land.rim * Math.exp(-(((d - 14 - edge(x, z) * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
+        y += open * clear * land.rim * Math.exp(-(((d - 14 - e * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
       }
+      // Beside the campus the ground stays as the campus has it; the landscapes take over within a few metres.
+      y = y0 + (y - y0) * smooth(open * 8);
     }
     // The road bed: the grade of the nearest stretch of road, passing smoothly from one stretch to the next.
     let cut = 0, nearest = Infinity;
