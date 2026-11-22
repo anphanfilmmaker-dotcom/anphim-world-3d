@@ -1,9 +1,9 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=121';
+import {createCampusEditor} from './campus-editor.js?rev=122';
 import {createLandscapePolish} from './landscape-polish.js?rev=118';
-import {createCampusGreenery} from './campus-greenery.js?rev=11';
+import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
@@ -15,10 +15,10 @@ import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v35';
+import {createArchitecture} from './architecture.js?rev=v40';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq17';
+import {createTerrain} from './terrain.js?rev=hq18';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -277,8 +277,33 @@ async function main() {
   const clickable = [], allDoors = [], buildingObjects = new Map();
   let network = null;
 
+  // Chuyển sắc kiểu vẽ tay trên mặt nhà: chân tường sẫm và ấm hơn, lên cao sáng dần (vertex color theo cao độ trong tòa).
+  // Cường độ lấy từ campus-palette.json (lighting.faceGradient, 0 = tắt). Vật liệu có texture (biển chữ) giữ nguyên.
+  const FACE_GRADIENT = P.lighting.faceGradient ?? 0.24;
+  const gradientMaterials = new WeakMap();
+  function gradientMaterial(mat) {
+    if (!FACE_GRADIENT || mat.map || !mat.isMeshStandardMaterial) return null;
+    if (!gradientMaterials.has(mat)) {
+      const m = mat.clone();
+      m.vertexColors = true;
+      gradientMaterials.set(mat, m);
+    }
+    return gradientMaterials.get(mat);
+  }
+  function paintFaceGradient(geo, y0, height) {
+    const p = geo.attributes.position, c = new Float32Array(p.count * 3);
+    for (let i = 0; i < p.count; i++) {
+      const t = Math.min(1, Math.max(0, (p.getY(i) - y0) / height)), k = FACE_GRADIENT * (1 - t) ** 1.4;
+      c[i * 3] = 1 - k * 0.85;
+      c[i * 3 + 1] = 1 - k;
+      c[i * 3 + 2] = 1 - k * 1.3;
+    }
+    geo.setAttribute('color', new T.BufferAttribute(c, 3));
+  }
+
   function mergeBuilding(group) {
     group.updateMatrixWorld(true);
+    const bounds = new T.Box3().setFromObject(group), boundsH = Math.max(0.01, bounds.max.y - bounds.min.y);
     const buckets = new Map();
     for (const o of [...group.children]) {
       if (!o.isMesh || Array.isArray(o.material)) continue;
@@ -296,7 +321,9 @@ async function main() {
         geom.dispose();
       }
       if (!g) throw Error('Không merge được building');
-      const m = new T.Mesh(g, mat);
+      const shaded = gradientMaterial(mat);
+      if (shaded) paintFaceGradient(g, bounds.min.y, boundsH);
+      const m = new T.Mesh(g, shaded || mat);
       m.castShadow = m.receiveShadow = true;
       group.add(m);
     }
@@ -460,8 +487,9 @@ async function main() {
   }
 
   for (const b of L.buildings) {
-    let g, bbox, f = null;
+    let g, bbox, f = null, offsetLot = false;
     const [w, h, d] = (L.grades && L.grades[b.grade]) || [7, 7, 7];
+    const isSmallBuilding = ['documents', 'drive', 'google'].includes(b.legacyId) || String(b.id).startsWith('bld:project:');
 
     if (b.style === 'hq') {
       const studioCfg = getStudioConfig('hq');
@@ -518,6 +546,8 @@ async function main() {
       else if (b.legacyId === 'supabase') rawBuilding = currentA.databaseBuilding();
       else if (b.legacyId === 'oracle') rawBuilding = currentA.oracleCloudBuilding();
       else if (b.legacyId === 'ai' || b.style === 'office') rawBuilding = currentA.officeBuilding();
+      // Các tòa nhỏ (tài liệu, drive, google, tòa dự án) dựng bằng code theo ảnh tham chiếu thay cho model GLB mặt phẳng
+      else if (isSmallBuilding) rawBuilding = currentA.smallCampusBuilding(b.legacyId);
       else rawBuilding = await registry.building(V23.bindings[b.legacyId], currentA, b.legacyId);
 
       if (bldType) {
@@ -527,7 +557,21 @@ async function main() {
         }
       }
 
-      f = A.fit(mergeBuilding(rawBuilding), b.grade, L.grades);
+      // Tòa nhỏ dựng bằng code nằm gọn trong mặt bằng của model cũ, nên khe hở và khoảng lùi giữa các tòa không đổi
+      // Vài tòa có lô được nới rộng tại chỗ cho cánh nhà chữ L (plot.front != null): khối đế vẫn đứng đúng vị trí topology và mép trước
+      // của lô ở chỗ cũ, nên lô chỉ nới về phía cánh và ra sau; vị trí và id trong topology giữ nguyên.
+      const plot = isSmallBuilding ? currentA.smallBuildingPlot(b.legacyId) : null;
+      const merged = mergeBuilding(rawBuilding);
+      const coreX = plot && plot.front !== null ? new T.Box3().setFromObject(merged).getCenter(new T.Vector3()).x : 0;
+      f = A.fit(merged, b.grade, plot ? {[b.grade]: [plot.size[0], plot.size[1] || L.grades[b.grade][1], plot.size[2]]} : L.grades);
+      if (plot && plot.front !== null) {
+        const dz = (plot.front - f.bbox[2] / 2) / f.scale;
+        for (const child of f.group.children) {
+          child.position.x += coreX;
+          child.position.z += dz;
+        }
+        offsetLot = true;
+      }
       g = f.group;
       bbox = f.bbox;
     }
@@ -538,7 +582,14 @@ async function main() {
     b.position[1] = finalY;
 
     g.position.set(b.position[0], finalY, b.position[2]);
-    if (b.rotationY !== undefined) g.rotation.y = b.rotationY;
+    // Tòa nhỏ dựng bằng code có mặt tiền (+Z cục bộ): xoay mặt tiền về phía cửa khai trong topology (doorXZ) khi topology chưa cho rotationY.
+    let rotY = b.rotationY;
+    if (rotY === undefined && isSmallBuilding && b.doorXZ) {
+      const dx = b.doorXZ[0] - b.position[0], dz = b.doorXZ[1] - b.position[2];
+      if (Math.abs(dx) > Math.abs(dz)) rotY = dx > 0 ? Math.PI / 2 : -Math.PI / 2;
+      else if (dz < 0) rotY = Math.PI;
+    }
+    if (rotY !== undefined) g.rotation.y = rotY;
     g.userData.binding = b;
     g.userData.buildingId = b.id;
     g.userData.isBuildingRoot = true;
@@ -557,9 +608,26 @@ async function main() {
     allDoors.push({id: b.id, x: door.x, z: door.z});
 
     // Khung định vị phẳng sát mặt đất (Flat Ground Outlines - Không dùng Box3Helper 3D)
-    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(bbox[0], bbox[2]));
+    // Lô lệch tâm (tòa có cánh chữ L): lô thật ghi trong hệ tọa độ cục bộ của tòa (chưa xoay), để khung và kiểm tra va chạm của Studio
+    // đi theo khi tòa bị dời hoặc xoay.
+    let lot = null;
+    if (offsetLot) {
+      const rotation = g.rotation.y, box = new T.Box3();
+      g.rotation.y = 0;
+      g.updateMatrixWorld(true);
+      box.setFromObject(g);
+      lot = g.userData.lot = {x: (box.min.x + box.max.x) / 2 - g.position.x, z: (box.min.z + box.max.z) / 2 - g.position.z, w: box.max.x - box.min.x, d: box.max.z - box.min.z};
+      g.rotation.y = rotation;
+      g.updateMatrixWorld(true);
+      box.setFromObject(g);
+      // Cây và tiểu cảnh tự động (urban-planning-engine) tránh lô thật này; chỉ là dữ liệu lúc chạy, không ghi vào physical-topology.json
+      (L.builtLots ||= {})[b.id] = {minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z};
+    }
+    const fpGeo = new T.EdgesGeometry(new T.PlaneGeometry(lot ? lot.w : bbox[0], lot ? lot.d : bbox[2]));
+    if (lot) fpGeo.translate(lot.x, -lot.z, 0);
     const footprint = new T.LineSegments(fpGeo, new T.LineBasicMaterial({color: P.colors.brandOrange, transparent: true, opacity: 0.85}));
     footprint.rotation.x = -Math.PI / 2;
+    if (lot) footprint.rotation.z = g.rotation.y;
     footprint.position.set(b.position[0], b.position[1] + 0.04, b.position[2]);
     footprint.userData.buildingId = b.id;
     footprint.userData.isFootprint = true;
@@ -584,7 +652,7 @@ async function main() {
 
     if (b.legacyId !== 'hq') {
       const lbl = label(b.name, door.x, b.position[1] + 1.2, door.z + 0.10, Math.min(6, b.name.length * 0.27), 0.55, layers.labels, false);
-      if (b.rotationY !== undefined) lbl.rotation.y = b.rotationY;
+      if (rotY !== undefined) lbl.rotation.y = rotY;
     }
     const btn = document.createElement('button');
     btn.textContent = b.name;
