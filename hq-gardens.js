@@ -16,12 +16,12 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
   scene.add(root);
 
   // --- 1. VẬT LIỆU CHUẨN MỸ THUẬT AN PHIM ---
-  const asphaltRoadMat = new T.MeshStandardMaterial({ color: 0x222a33, roughness: 0.82 }); // Mặt đường nhựa asphalt sẫm mịn đồng bộ
+  const asphaltRoadMat = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86 }); // Mặt đường nhựa asphalt sẫm mịn đồng bộ
   const roadStripeMat  = new T.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });  // Vạch kẻ đường trắng
   const stonePavingMat = new T.MeshStandardMaterial({ color: 0xdfd9c7, roughness: 0.88 }); // Đá lát sân ấm áp
   const stoneBorderMat = new T.MeshStandardMaterial({ color: 0xc8c0af, roughness: 0.8 });  // Viền đá kem
   const stoneWalkMat   = new T.MeshStandardMaterial({ color: 0xc9c1b0, roughness: 0.85 }); // Vỉa hè đá kem uốn cong
-  const curbBevelMat   = new T.MeshStandardMaterial({ color: 0x8a96a3, roughness: 0.78 }); // Bó vỉa bê tông đô thị đồng bộ
+  const curbBevelMat   = new T.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.78 }); // Bó vỉa bê tông đô thị đồng bộ
   const poolBorderMat  = new T.MeshStandardMaterial({ color: 0xd8d2c2, roughness: 0.65 }); // Thành hồ đá kem
   const waterMat       = new T.MeshStandardMaterial({
     color: 0x22b2c4,
@@ -31,8 +31,8 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
     opacity: 0.94
   }); // Nước ngọc teal trong suốt lấp lánh
   const soilMat        = new T.MeshStandardMaterial({ color: 0x3d3529, roughness: 1.0 });
-  const hedgeDarkMat   = new T.MeshStandardMaterial({ color: 0x204822, roughness: 0.92 }); // Rào cây xanh đậm
-  const hedgeMidMat    = new T.MeshStandardMaterial({ color: 0x386932, roughness: 0.88 }); // Cây xanh mướt
+  const hedgeDarkMat   = new T.MeshStandardMaterial({ color: 0x2f6e35, roughness: 0.92 }); // Rào cây xanh đậm
+  const hedgeMidMat    = new T.MeshStandardMaterial({ color: 0x4f9140, roughness: 0.88 }); // Cây xanh mướt
   const woodOrangeMat  = new T.MeshStandardMaterial({ color: 0xed8038, roughness: 0.72 });
   const metalBenchMat  = new T.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
   const trunkWoodMat   = new T.MeshStandardMaterial({ color: 0x544738, roughness: 0.95 });
@@ -104,7 +104,7 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
   smoothRoadGroup.name = 'hq-smooth-road-and-curbs';
   root.add(smoothRoadGroup);
 
-  const turfMat = new T.MeshStandardMaterial({ color: 0x3a6948, roughness: 0.92 }); // Màu cỏ mượt AN PHIM đồng nhất 100% với terrain
+  const turfMat = new T.MeshStandardMaterial({ color: 0x6fa659, roughness: 0.92 }); // Màu cỏ mượt AN PHIM đồng nhất 100% với terrain
 
   const uRoadPath = roads.paths.find(p => p.id === 'road:HQ-arrival' || (p.class === 2 && p.curve));
   if (uRoadPath && uRoadPath.curve) {
@@ -232,39 +232,8 @@ export async function createHQGardens(scene, terrain, roads, L, report) {
       createRibbonMesh(vertices,[0,1,2,2,1,3],roadStripeMat,'hq-loading-edge');
     }
 
-    // Vạch kẻ đường trắng đứt đoạn ở tim đường (Centerline dashes) - Tối ưu hóa InstancedMesh
-    const stripeBoxes = [];
-    for (let di = 8; di < N - 8; di += 12) {
-      const p1 = curve.getPointAt(di / N);
-      const p2 = curve.getPointAt((di + 5) / N);
-      if (p1.z > 31.5 || p2.z > 31.5) continue;
-      const mx = (p1.x + p2.x) / 2, mz = (p1.z + p2.z) / 2;
-      const tangent = p2.clone().sub(p1).normalize();
-      const nx = -tangent.z * 2.02, nz = tangent.x * 2.02;
-      const my = (terrain.height(mx + nx, mz + nz) + terrain.height(mx - nx, mz - nz)) / 2 + 0.075;
-      const dLen = Math.hypot(p2.x - p1.x, p2.z - p1.z);
-      const rotY = Math.atan2(p2.x - p1.x, p2.z - p1.z);
-      stripeBoxes.push({ w: 0.14, h: 0.012, d: dLen, x: mx, y: my, z: mz, rotY });
-    }
-    if (stripeBoxes.length > 0) {
-      const sGeo = new T.BoxGeometry(1, 1, 1);
-      const sMesh = new T.InstancedMesh(sGeo, roadStripeMat, stripeBoxes.length);
-      sMesh.name = 'hq-u-turn-dashes-instanced';
-      sMesh.castShadow = false;
-      sMesh.receiveShadow = true;
-      const dummy = new T.Object3D();
-      for (let i = 0; i < stripeBoxes.length; i++) {
-        const b = stripeBoxes[i];
-        dummy.position.set(b.x, b.y + b.h / 2, b.z);
-        dummy.rotation.set(0, b.rotY, 0);
-        dummy.scale.set(b.w, b.h, b.d);
-        dummy.updateMatrix();
-        sMesh.setMatrixAt(i, dummy.matrix);
-      }
-      sMesh.instanceMatrix.needsUpdate = true;
-      sMesh.computeBoundingSphere();
-      smoothRoadGroup.add(sMesh);
-    }
+    // Vạch tim đường của đường vòng do cơ chế vạch kẻ chung (road-markings.js, gọi từ modular-roads.js) sinh ra,
+    // để vạch dừng lại đúng trước vạch qua đường ở hai miệng đường vòng.
   }
 
   // --- 2.1 ĐÃ GỠ BỎ 2 ĐƯỜNG ĐI BỘ HAI BÊN ĐƯỜNG CHỮ U THEO YÊU CẦU CỦA SẾP ---

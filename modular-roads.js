@@ -1,5 +1,6 @@
 import * as T from 'three';
 import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
+import { analyseRoadNetwork, sideOpenings, isInside, buildMarkingBoxes, createMarkingMesh } from './road-markings.js?rev=10';
 
 /**
  * AN PHIM HIGH-FIDELITY UNIFIED ROAD NETWORK
@@ -11,7 +12,7 @@ import { getStudioModelById } from './asset-pack-extractor.js?rev=146';
  *    - Cột đèn cao áp đại lộ cần đôi (#143) và cần đơn (#144)
  *    - Cột đèn tín hiệu giao thông ngã tư (#145)
  *    - Biển báo giới hạn tốc độ 100 km/h (#146)
- *    - Vạch qua đường cho người đi bộ (Zebra Crossing) tại giao lộ chính
+ *    - Vạch tim, vạch mép, vạch dừng và vạch qua đường (zebra) tự sinh ở mọi ngã ba / ngã tư (road-markings.js)
  */
 export async function createModularRoadSystem(scene, terrain, roads) {
   const roadRoot = new T.Group();
@@ -19,11 +20,10 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   scene.add(roadRoot);
 
   // --- VẬT LIỆU CHUẨN ĐÔ THỊ ---
-  const asphaltMat   = new T.MeshStandardMaterial({ color: 0x222a33, roughness: 0.82 }); // Mặt đường nhựa asphalt sẫm mịn
-  const yellowLineMat = new T.MeshBasicMaterial({ color: 0xf6be2c });                    // Vạch sơn vàng tim đường
-  const whiteLineMat  = new T.MeshBasicMaterial({ color: 0xf8fafc });                    // Vạch sơn trắng mép đường & zebra
-  const curbMat       = new T.MeshStandardMaterial({ color: 0x8a96a3, roughness: 0.78 }); // Bó vỉa bê tông đô thị
-  const sidewalkMat   = new T.MeshStandardMaterial({ color: 0xc8c0af, roughness: 0.85 }); // Vỉa hè đá kem ấm áp
+  const asphaltMat   = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86 }); // Mặt đường nhựa xám xanh slate
+  const whiteLineMat  = new T.MeshBasicMaterial({ color: 0xf8fafc, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });                    // Vạch sơn trắng mép đường & zebra
+  const curbMat       = new T.MeshStandardMaterial({ color: 0xb4bcc6, roughness: 0.78 }); // Bó vỉa bê tông đô thị
+  const sidewalkMat   = new T.MeshStandardMaterial({ color: 0xd9d4c8, roughness: 0.85 }); // Vỉa hè đá kem ấm áp
 
   function addBox(parent, w, h, d, x, y, z, mat, rotY = 0) {
     const geo = new T.BoxGeometry(w, h, d);
@@ -36,170 +36,149 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   }
 
   // =========================================================================
-  // 1. DẢI ĐẠI LỘ VÀNH ĐAI LIỀN MẠCH (CONTINUOUS RING ROAD RIBBON & CURBS)
+  // 1. MẶT ĐƯỜNG VÀNH ĐAI, BÓ VỈA, VỈA HÈ VÀ VẠCH KẺ ĐƯỜNG (dựng lại được khi mạng lưới đường thay đổi)
   // =========================================================================
-  const ringPath = roads?.paths?.find(p => p.id === 'road:campus-ring');
-  if (ringPath && ringPath.curve) {
-    const curve = ringPath.curve;
-    const N = 360; // 360 phân đoạn siêu mịn bao quanh campus
+  const halfW = 4.2; // Mặt đường rộng 8.4m
+  const curbW = 0.26, curbH = 0.07, walkW = 1.35;
+  const ROAD_COLS = [-1, -0.78, -0.4, 0, 0.4, 0.78, 1];
+  let dynamicGroup = null, lastSignature = null;
 
-    const roadVerts = [], roadIndices = [];
-    const innerCurbVerts = [], innerCurbIndices = [];
-    const outerCurbVerts = [], outerCurbIndices = [];
-    const innerWalkVerts = [], innerWalkIndices = [];
-
-    const halfW = 4.2; // Mặt đường rộng 8.4m
-    const curbW = 0.26;
-    const curbH = 0.07;
-    const walkW = 1.35;
-
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const p = curve.getPointAt(t);
-      const d = curve.getTangentAt(Math.min(0.999999, t));
-      // Normal vector vuông góc với tiếp tuyến: +n hướng vào trong campus, -n hướng ra ngoài
-      const nx = -d.z, nz = d.x;
-
-      // 1. Mặt đường chính asphalt
-      const rOut_x = p.x - nx * halfW, rOut_z = p.z - nz * halfW;
-      const rIn_x  = p.x + nx * halfW, rIn_z  = p.z + nz * halfW;
-      const rY_Out = terrain.height(rOut_x, rOut_z) + 0.045;
-      const rIn_y  = terrain.height(rIn_x,  rIn_z)  + 0.045;
-      roadVerts.push(rOut_x, rY_Out, rOut_z, rIn_x, rIn_y, rIn_z);
-
-      if (i < N) {
-        const k = i * 2;
-        roadIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-      }
-
-      // 2. Gờ bó vỉa trong (Inner Curb)
-      const ic1_x = rIn_x, ic1_z = rIn_z;
-      const ic2_x = p.x + nx * (halfW + curbW), ic2_z = p.z + nz * (halfW + curbW);
-      const icY = rIn_y + curbH;
-      innerCurbVerts.push(ic1_x, icY, ic1_z, ic2_x, icY, ic2_z);
-
-      // 3. Gờ bó vỉa ngoài (Outer Curb)
-      const oc1_x = rOut_x, oc1_z = rOut_z;
-      const oc2_x = p.x - nx * (halfW + curbW), oc2_z = p.z - nz * (halfW + curbW);
-      const ocY = rY_Out + curbH;
-      outerCurbVerts.push(oc1_x, ocY, oc1_z, oc2_x, ocY, oc2_z);
-
-      // 4. Vỉa hè đi bộ bên trong (Inner Sidewalk)
-      const iw1_x = ic2_x, iw1_z = ic2_z;
-      const iw2_x = p.x + nx * (halfW + curbW + walkW), iw2_z = p.z + nz * (halfW + curbW + walkW);
-      const iwY1 = icY - 0.015;
-      const iwY2 = terrain.height(iw2_x, iw2_z) + 0.042;
-      innerWalkVerts.push(iw1_x, iwY1, iw1_z, iw2_x, iwY2, iw2_z);
-
-      if (i < N) {
-        const k = i * 2;
-        innerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-        outerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-        innerWalkIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
-      }
-    }
-
-    function createRibbon(verts, indices, mat, name) {
-      const geo = new T.BufferGeometry();
-      geo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
-      geo.setIndex(indices);
-      geo.computeVertexNormals();
-      const mesh = new T.Mesh(geo, mat);
-      mesh.name = name;
-      mesh.receiveShadow = true;
-      roadRoot.add(mesh);
-      return mesh;
-    }
-
-    createRibbon(roadVerts, roadIndices, asphaltMat, 'ring-road-smooth-asphalt');
-    createRibbon(innerCurbVerts, innerCurbIndices, curbMat, 'ring-road-inner-curb');
-    createRibbon(outerCurbVerts, outerCurbIndices, curbMat, 'ring-road-outer-curb');
-    createRibbon(innerWalkVerts, innerWalkIndices, sidewalkMat, 'ring-road-inner-walkway');
-
-    // Vạch vàng đôi tim đường (Double yellow centerlines) - Tối ưu hóa InstancedMesh
-    const yellowBoxes = [];
-    for (let di = 0; di < N; di += 4) {
-      const p1 = curve.getPointAt(di / N);
-      const p2 = curve.getPointAt((di + 2) / N);
-      // Chừa khoảng trống ngã tư giao lộ đón xe tại cổng chính (x: -5..5, z: 36)
-      if (Math.abs(p1.x) < 5.5 && p1.z > 33) continue;
-      const d = curve.getTangentAt(di / N);
-      const nx = -d.z, nz = d.x;
-      const mx = (p1.x + p2.x) / 2, mz = (p1.z + p2.z) / 2;
-      const my = terrain.height(mx, mz) + 0.052;
-      const dLen = Math.hypot(p2.x - p1.x, p2.z - p1.z);
-      const rotY = Math.atan2(p2.x - p1.x, p2.z - p1.z);
-
-      // Vạch vàng trái & phải
-      yellowBoxes.push({ w: 0.11, h: 0.012, d: dLen, x: mx - nx * 0.12, y: my, z: mz - nz * 0.12, rotY });
-      yellowBoxes.push({ w: 0.11, h: 0.012, d: dLen, x: mx + nx * 0.12, y: my, z: mz + nz * 0.12, rotY });
-    }
-
-    if (yellowBoxes.length > 0) {
-      const yGeo = new T.BoxGeometry(1, 1, 1);
-      const yMesh = new T.InstancedMesh(yGeo, yellowLineMat, yellowBoxes.length);
-      yMesh.name = 'ring-road-yellow-lines-instanced';
-      yMesh.castShadow = false;
-      yMesh.receiveShadow = true;
-      const dummy = new T.Object3D();
-      for (let i = 0; i < yellowBoxes.length; i++) {
-        const b = yellowBoxes[i];
-        dummy.position.set(b.x, b.y + b.h / 2, b.z);
-        dummy.rotation.set(0, b.rotY, 0);
-        dummy.scale.set(b.w, b.h, b.d);
-        dummy.updateMatrix();
-        yMesh.setMatrixAt(i, dummy.matrix);
-      }
-      yMesh.instanceMatrix.needsUpdate = true;
-      yMesh.computeBoundingSphere();
-      roadRoot.add(yMesh);
-    }
-
-    // Vạch trắng kẻ mép đường (Solid white edge lines) & Zebra crossing - Tối ưu hóa InstancedMesh
-    const whiteBoxes = [];
-    for (let di = 0; di < N; di += 3) {
-      const p1 = curve.getPointAt(di / N);
-      const p2 = curve.getPointAt((di + 2) / N);
-      if (Math.abs(p1.x) < 5.5 && p1.z > 33) continue;
-      const d = curve.getTangentAt(di / N);
-      const nx = -d.z, nz = d.x;
-      const mx = (p1.x + p2.x) / 2, mz = (p1.z + p2.z) / 2;
-      const dLen = Math.hypot(p2.x - p1.x, p2.z - p1.z);
-      const rotY = Math.atan2(p2.x - p1.x, p2.z - p1.z);
-
-      // Mép ngoài & Mép trong
-      const myOut = terrain.height(mx - nx * 3.8, mz - nz * 3.8) + 0.052;
-      const myIn  = terrain.height(mx + nx * 3.8, mz + nz * 3.8) + 0.052;
-      whiteBoxes.push({ w: 0.12, h: 0.012, d: dLen, x: mx - nx * 3.8, y: myOut, z: mz - nz * 3.8, rotY });
-      whiteBoxes.push({ w: 0.12, h: 0.012, d: dLen, x: mx + nx * 3.8, y: myIn,  z: mz + nz * 3.8, rotY });
-    }
-
-    // Vạch sang đường cho người đi bộ (Zebra Crossing) tại cổng chính Campus (x=0, z=36)
-    for (let zi = -3.2; zi <= 3.2; zi += 0.8) {
-      const my = terrain.height(zi, 36) + 0.054;
-      whiteBoxes.push({ w: 0.45, h: 0.012, d: 3.2, x: zi, y: my, z: 36, rotY: 0 });
-    }
-
-    if (whiteBoxes.length > 0) {
-      const wGeo = new T.BoxGeometry(1, 1, 1);
-      const wMesh = new T.InstancedMesh(wGeo, whiteLineMat, whiteBoxes.length);
-      wMesh.name = 'ring-road-white-lines-instanced';
-      wMesh.castShadow = false;
-      wMesh.receiveShadow = true;
-      const dummy = new T.Object3D();
-      for (let i = 0; i < whiteBoxes.length; i++) {
-        const b = whiteBoxes[i];
-        dummy.position.set(b.x, b.y + b.h / 2, b.z);
-        dummy.rotation.set(0, b.rotY, 0);
-        dummy.scale.set(b.w, b.h, b.d);
-        dummy.updateMatrix();
-        wMesh.setMatrixAt(i, dummy.matrix);
-      }
-      wMesh.instanceMatrix.needsUpdate = true;
-      wMesh.computeBoundingSphere();
-      roadRoot.add(wMesh);
-    }
+  // Danh sách tuyến đường xe chạy đưa vào cơ chế vạch kẻ: vành đai, đường vòng HQ, các nhánh cố định, và đường do Studio vẽ
+  function collectRoadDefs(extra) {
+    const defs = [];
+    const ring = roads?.paths?.find(p => p.id === 'road:campus-ring' && p.curve && !p.hidden);
+    if (ring) defs.push({ id: ring.id, curve: ring.curve, halfW, closed: true, yAt: (x, z) => terrain.height(x, z) + 0.07 });
+    const arrival = roads?.paths?.find(p => p.id === 'road:HQ-arrival' && p.curve && !p.hidden);
+    if (arrival) defs.push({ id: arrival.id, curve: arrival.curve, halfW: 2.02, walkW, edges: false, yAt: (x, z) => terrain.height(x, z) + 0.088 });
+    for (const d of roads?.extraRoadDefs || []) defs.push(d);
+    // Đường Studio vẽ dùng polygonOffset để nổi trên địa hình nên vạch phải nằm cao hơn hẳn mặt đường mới không bị che ở góc nhìn xiên
+    for (const d of extra || []) defs.push({ yAt: (x, z) => terrain.height(x, z) + 0.15, ...d });
+    return defs;
   }
+
+  function buildDynamic(defs) {
+    const group = new T.Group();
+    group.name = 'road-network-dynamic';
+    const net = analyseRoadNetwork(defs);
+    const ring = net.roads.find(r => r.id === 'road:campus-ring');
+    if (ring) {
+      const curve = ring.curve, N = 360, len = ring.len;
+      // +1 = phía trong campus (pháp tuyến (-tz, tx)), -1 = phía ngoài
+      const openIn = sideOpenings(net, ring, 1, true), openOut = sideOpenings(net, ring, -1, true);
+      // Đường do module khác dựng (đường cổng và đường nhánh của các quận) đi qua dải bó vỉa / vỉa hè: ngắt đúng chỗ mặt nhựa của chúng phủ lên
+      const crossers = roads?.crossingRoads || [];
+      const covered = (x, z) => crossers.some(c => {
+        for (let k = 0; k < c.points.length - 1; k++) {
+          const [ax, az] = c.points[k], [bx, bz] = c.points[k + 1], dx = bx - ax, dz = bz - az;
+          const u = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+          if (Math.hypot(x - ax - dx * u, z - az - dz * u) < c.halfW + 0.15) return true;
+        }
+        return false;
+      });
+      const crossed = side => Array.from({length: N + 1}, (_, i) => {
+        if (!crossers.length) return false;
+        const p = curve.getPointAt(i / N), d = curve.getTangentAt(Math.min(0.999999, i / N));
+        return [halfW, halfW + curbW + walkW].some(o => covered(p.x - d.z * o * side, p.z + d.x * o * side));
+      });
+      const crossIn = crossed(1), crossOut = crossed(-1);
+      const cutIn = i => crossIn[i] || isInside(openIn, ring, (i / N) * len), cutOut = i => crossOut[i] || isInside(openOut, ring, (i / N) * len);
+
+      const roadVerts = [], roadIndices = [];
+      const innerCurbVerts = [], innerCurbIndices = [], outerCurbVerts = [], outerCurbIndices = [];
+      const innerWalkVerts = [], innerWalkIndices = [], outerWalkVerts = [], outerWalkIndices = [];
+
+      for (let i = 0; i <= N; i++) {
+        const t = i / N;
+        const p = curve.getPointAt(t);
+        const d = curve.getTangentAt(Math.min(0.999999, t));
+        const nx = -d.z, nz = d.x;
+
+        const rOut_x = p.x - nx * halfW, rOut_z = p.z - nz * halfW;
+        const rIn_x  = p.x + nx * halfW, rIn_z  = p.z + nz * halfW;
+        const rY_Out = terrain.height(rOut_x, rOut_z) + 0.045;
+        const rIn_y  = terrain.height(rIn_x,  rIn_z)  + 0.045;
+        // Mặt nhựa phủ kín tới sát bó vỉa (che mép răng cưa của lớp sơn địa hình), chia nhiều cột ngang để ôm theo độ dốc ngang
+        for (const c of ROAD_COLS) {
+          const vx = p.x + nx * halfW * c, vz = p.z + nz * halfW * c;
+          roadVerts.push(vx, terrain.height(vx, vz) + 0.045, vz);
+        }
+
+        const icY = rIn_y + curbH, ocY = rY_Out + curbH;
+        const ic2_x = p.x + nx * (halfW + curbW), ic2_z = p.z + nz * (halfW + curbW);
+        const oc2_x = p.x - nx * (halfW + curbW), oc2_z = p.z - nz * (halfW + curbW);
+        innerCurbVerts.push(rIn_x, icY, rIn_z, ic2_x, icY, ic2_z);
+        outerCurbVerts.push(rOut_x, ocY, rOut_z, oc2_x, ocY, oc2_z);
+
+        // Vỉa hè nằm ngang bằng mặt bó vỉa, cao hơn mặt cỏ một chút để không bị các tam giác địa hình che mất
+        const iw2_x = p.x + nx * (halfW + curbW + walkW), iw2_z = p.z + nz * (halfW + curbW + walkW);
+        innerWalkVerts.push(ic2_x, icY, ic2_z, iw2_x, Math.max(icY - 0.03, terrain.height(iw2_x, iw2_z) + 0.1), iw2_z);
+        const ow2_x = p.x - nx * (halfW + curbW + walkW), ow2_z = p.z - nz * (halfW + curbW + walkW);
+        outerWalkVerts.push(oc2_x, ocY, oc2_z, ow2_x, Math.max(ocY - 0.03, terrain.height(ow2_x, ow2_z) + 0.1), ow2_z);
+
+        if (i < N) {
+          // Dải trong chạy từ mép đường vào tâm, dải ngoài chạy từ mép đường ra ngoài: hai thứ tự đỉnh ngược nhau để cả hai pháp tuyến hướng lên
+          const k = i * 2, C = ROAD_COLS.length;
+          for (let c = 0; c < C - 1; c++) {
+            const a = i * C + c, b = a + C;
+            roadIndices.push(a, a + 1, b, a + 1, b + 1, b);
+          }
+          if (!cutOut(i) && !cutOut(i + 1)) {
+            outerCurbIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+            outerWalkIndices.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+          }
+          if (!cutIn(i) && !cutIn(i + 1)) {
+            innerCurbIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+            innerWalkIndices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2);
+          }
+        }
+      }
+
+      const ribbon = (verts, indices, mat, name) => {
+        const geo = new T.BufferGeometry();
+        geo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
+        geo.setIndex(indices);
+        geo.computeVertexNormals();
+        const mesh = new T.Mesh(geo, mat);
+        mesh.name = name;
+        mesh.receiveShadow = true;
+        group.add(mesh);
+        return mesh;
+      };
+      // Mặt nhựa vành đai không phải vật thể để chọn / ủi trong Studio (click xuyên xuống địa hình như trước)
+      ribbon(roadVerts, roadIndices, asphaltMat, 'ring-road-smooth-asphalt').userData.studioPassThrough = true;
+      ribbon(innerCurbVerts, innerCurbIndices, curbMat, 'ring-road-inner-curb');
+      ribbon(outerCurbVerts, outerCurbIndices, curbMat, 'ring-road-outer-curb');
+      ribbon(innerWalkVerts, innerWalkIndices, sidewalkMat, 'ring-road-inner-walkway');
+      ribbon(outerWalkVerts, outerWalkIndices, sidewalkMat, 'ring-road-outer-walkway');
+    }
+    // Vạch tim, vạch mép, vạch dừng và vạch qua đường của cả mạng lưới trong một InstancedMesh
+    group.add(createMarkingMesh(buildMarkingBoxes(net), whiteLineMat, 'road-markings-instanced'));
+    group.userData.junctions = net.junctions.map(j => ({ x: +j.x.toFixed(2), z: +j.z.toFixed(2), arms: j.arms.length, crosswalks: j.arms.filter(a => a.zebra).length }));
+    return group;
+  }
+
+  // Dựng lại mặt đường + vạch khi danh sách đường thay đổi (Studio vẽ / xóa / undo một con đường xe chạy)
+  let lastExtra = [];
+  function syncRoadNetwork(extra = lastExtra, force = false) {
+    lastExtra = extra;
+    const defs = collectRoadDefs(extra);
+    const signature = JSON.stringify([defs.map(d => [d.id, d.halfW, d.signature ?? null]), roads?.crossingRoads || []]);
+    if (signature === lastSignature && !force) return dynamicGroup; // force: địa hình vừa đổi cao độ, vạch phải đo lại
+    lastSignature = signature;
+    if (dynamicGroup) {
+      roadRoot.remove(dynamicGroup);
+      dynamicGroup.traverse(o => o.geometry?.dispose());
+    }
+    dynamicGroup = buildDynamic(defs);
+    roadRoot.add(dynamicGroup);
+    return dynamicGroup;
+  }
+  syncRoadNetwork();
+  if (roads) {
+    roads.syncRoadNetwork = syncRoadNetwork;
+    roads.getJunctions = () => dynamicGroup?.userData.junctions || [];
+  }
+  const ringPath = roads?.paths?.find(p => p.id === 'road:campus-ring');
 
   // =========================================================================
   // 2. LẮP ĐẶT TRỌN BỘ MODEL 3D TỪ BỘ ROAD_MODULAR CỦA SẾP
@@ -342,7 +321,7 @@ export async function createModularRoadSystem(scene, terrain, roads) {
   const postMat = new T.MeshStandardMaterial({ color: 0xdfd9cb, roughness: 0.8 }); // Cọc rào đá kem kiến trúc
   const railMat = new T.MeshStandardMaterial({ color: 0xb5ad98, roughness: 0.75 }); // Thanh rào ngang
   const treeTrunkMat = new T.MeshStandardMaterial({ color: 0x4a3b2c, roughness: 0.9 }); // Thân cây
-  const treeFoliageMat = new T.MeshStandardMaterial({ color: 0x3b7538, roughness: 0.85 }); // Tán cây xanh mát
+  const treeFoliageMat = new T.MeshStandardMaterial({ color: 0x5c9a3e, roughness: 0.85 }); // Tán cây xanh mát
 
   const fenceX = 52.1;
   const zStart = -34.0, zEnd = 10.0, postStep = 2.4;

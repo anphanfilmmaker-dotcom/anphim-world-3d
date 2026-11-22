@@ -16,11 +16,10 @@ export async function createVistaXDistrict(scene, terrain, roads, registry, P) {
   scene.add(root);
 
   // --- 1. HỆ THỐNG VẬT LIỆU CHUẨN ĐÔ THỊ ---
-  const asphaltRoadMat  = new T.MeshStandardMaterial({ color: 0x1e2530, roughness: 0.82, metalness: 0.1 });
+  const asphaltRoadMat  = new T.MeshStandardMaterial({ color: 0x4f6078, roughness: 0.86, metalness: 0.0 });
   const curbMat         = new T.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.85 });
   const stoneWalkMat    = new T.MeshStandardMaterial({ color: 0xdfd9c7, roughness: 0.88 });
   const creamPlinthMat  = new T.MeshStandardMaterial({ color: 0xede8db, roughness: 0.90 });
-  const yellowLineMat   = new T.MeshBasicMaterial({ color: 0xfacc15 });
   const whiteStripeMat  = new T.MeshBasicMaterial({ color: 0xf8fafc });
   const darkMetalMat    = new T.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.8 });
   const brandOrangeMat  = new T.MeshStandardMaterial({ color: 0xed8038, roughness: 0.65 });
@@ -90,43 +89,67 @@ export async function createVistaXDistrict(scene, terrain, roads, registry, P) {
   roadGroup.name = 'vistax-district-roads';
   root.add(roadGroup);
 
-  function createRoadSegment(x, z, lenX, lenZ, hasCenterLine = true) {
-    const rGroup = new T.Group();
-    addBox(rGroup, lenX, 0.16, lenZ, x, baseY, z, asphaltRoadMat);
-
-    if (hasCenterLine) {
-      if (lenX > lenZ && lenX > 7) {
-        const count = Math.floor(lenX / 4.2);
-        for (let i = 0; i < count; i++) {
-          const lx = x - lenX / 2 + 2.2 + i * 4.2;
-          addBox(rGroup, 2.4, 0.18, 0.22, lx, baseY, z, yellowLineMat);
-        }
-      } else if (lenZ > lenX && lenZ > 7) {
-        const count = Math.floor(lenZ / 4.2);
-        for (let i = 0; i < count; i++) {
-          const lz = z - lenZ / 2 + 2.2 + i * 4.2;
-          addBox(rGroup, 0.22, 0.18, 2.4, x, baseY, lz, yellowLineMat);
-        }
-      }
-    }
-    roadGroup.add(rGroup);
-    return rGroup;
-  }
-
   const rw = 4.8;
   const minX = cx - 14.5, maxX = cx + 14.5;
   const minZ = cz - 14.5, maxZ = cz + 14.5;
   const spanX = maxX - minX + rw;
   const spanZ = maxZ - minZ + rw;
+  const gateZ0 = 15.0; // trục cổng Đông: lối đi bộ chính băng qua đường tại đây
+
+  // Vạch tim đứt đoạn chỉ kẻ giữa hai góc cua (không chạy vào lòng góc) và ngắt quanh `skip` (chỗ có vạch qua đường)
+  function createRoadSegment(x, z, lenX, lenZ, skip = null) {
+    const rGroup = new T.Group();
+    addBox(rGroup, lenX, 0.16, lenZ, x, baseY, z, asphaltRoadMat);
+    const alongX = lenX > lenZ, len = Math.max(lenX, lenZ), mid = alongX ? x : z;
+    const usable = len - 2 * rw - 1.2, pitch = 4.2, count = Math.floor((usable + pitch - 2.0) / pitch);
+    for (let i = 0; i < count; i++) {
+      const c = mid + (i - (count - 1) / 2) * pitch;
+      if (skip && Math.abs(c - skip[0]) < skip[1] + 1.0) continue;
+      const dash = alongX ? addBox(rGroup, 2.0, 0.012, 0.14, c, baseY + 0.16, z, whiteStripeMat) : addBox(rGroup, 0.14, 0.012, 2.0, x, baseY + 0.16, c, whiteStripeMat);
+      dash.castShadow = false;
+    }
+    roadGroup.add(rGroup);
+    return rGroup;
+  }
 
   // 4 Cạnh đường bao quanh quận
-  createRoadSegment(cx, minZ, spanX, rw, true);
-  createRoadSegment(cx, maxZ, spanX, rw, true);
-  createRoadSegment(minX, cz, rw, spanZ, true);
-  createRoadSegment(maxX, cz, rw, spanZ, true);
+  createRoadSegment(cx, minZ, spanX, rw);
+  createRoadSegment(cx, maxZ, spanX, rw);
+  createRoadSegment(minX, cz, rw, spanZ);
+  createRoadSegment(maxX, cz, rw, spanZ, [gateZ0, 3.4]);
 
-  // Đường nhánh nối từ Vành đai chính vào Cổng Đông (-74.5, 15)
-  createRoadSegment(-57.5, 15.0, 10.0, rw, true); // cũ: -69.5
+  // Đường nhánh nối Cổng Đông với Vành đai chính: dừng đúng ở mép ngoài vành đai (không đè lên làn xe vành đai),
+  // hạ dốc xuống cao độ mặt vành đai bằng một đoạn vát ngắn. Vạch qua đường của nhánh do road-markings.js kẻ.
+  const ringCurve = roads?.paths?.find(p => p.id === 'road:campus-ring' && !p.hidden)?.curve;
+  let ringX = -52;
+  if (ringCurve) {
+    let best = Infinity;
+    for (const q of ringCurve.getSpacedPoints(720)) if (q.x < 0 && Math.abs(q.z - gateZ0) < best) { best = Math.abs(q.z - gateZ0); ringX = q.x; }
+  }
+  const linkX0 = maxX + rw / 2, rampX = ringX - 5.0, ringEdgeX = ringX - 4.15, topY = baseY + 0.16;
+  const ringY = terrain.height(ringEdgeX, gateZ0) + 0.05;
+  addBox(roadGroup, rampX - linkX0, 0.9, rw, (linkX0 + rampX) / 2, topY - 0.9, gateZ0, asphaltRoadMat);
+  {
+    const z0 = gateZ0 - rw / 2, z1 = gateZ0 + rw / 2, lowY = Math.min(ringY, topY) - 0.6;
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.Float32BufferAttribute([
+      rampX, topY, z0,  rampX, topY, z1,  ringEdgeX, ringY, z0,  ringEdgeX, ringY, z1,
+      rampX, lowY, z0,  ringEdgeX, lowY, z0,  rampX, lowY, z1,  ringEdgeX, lowY, z1
+    ], 3));
+    geo.setIndex([0, 1, 2, 2, 1, 3,  0, 2, 4, 4, 2, 5,  1, 6, 3, 3, 6, 7]);
+    geo.computeVertexNormals();
+    const ramp = new T.Mesh(geo, asphaltRoadMat);
+    ramp.name = 'vistax-link-ramp';
+    ramp.receiveShadow = true;
+    roadGroup.add(ramp);
+  }
+  if (roads && ringCurve) {
+    (roads.extraRoadDefs ||= []).push({
+      id: 'road:vistax-link', halfW: rw / 2, center: false, edges: false,
+      curve: new T.LineCurve3(new T.Vector3(linkX0, 0, gateZ0), new T.Vector3(ringX, 0, gateZ0)),
+      yAt: x => (x <= rampX ? topY : topY + (ringY - topY) * Math.min(1, (x - rampX) / (ringEdgeX - rampX))) + 0.006
+    });
+  }
 
   // Bó vỉa bê tông xung quanh viền ngoài đường xe
   addBox(roadGroup, spanX + 0.5, 0.24, 0.35, cx, baseY, minZ - rw / 2 - 0.17, curbMat);
@@ -134,10 +157,10 @@ export async function createVistaXDistrict(scene, terrain, roads, registry, P) {
   addBox(roadGroup, 0.35, 0.24, spanZ + 0.5, minX - rw / 2 - 0.17, baseY, cz, curbMat);
   addBox(roadGroup, 0.35, 0.24, spanZ + 0.5, maxX + rw / 2 + 0.17, baseY, cz, curbMat);
 
-  // Vạch kẻ đi bộ qua đường (Zebra Crosswalk) ngay trước cổng vào
+  // Vạch qua đường (zebra) băng qua đường bao phía Đông, nối đại lộ đi bộ với cổng: các vạch song song chiều xe chạy, xếp ngang mặt đường
   const cwGroup = new T.Group();
-  for (let s = -1.8; s <= 1.8; s += 0.7) {
-    addBox(cwGroup, 0.42, 0.18, 4.4, maxX - 1.5, baseY, 15.0 + s, whiteStripeMat);
+  for (let s = -1.8; s <= 1.81; s += 0.9) {
+    addBox(cwGroup, 0.45, 0.012, 2.6, maxX + s, baseY + 0.16, gateZ0, whiteStripeMat).castShadow = false;
   }
   roadGroup.add(cwGroup);
 

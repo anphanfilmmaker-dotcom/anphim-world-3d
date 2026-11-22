@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {applyCampusPaving} from './paving-pattern.js';
 export function createTerrain(scene,P,L){
  const smooth=t=>{t=T.MathUtils.clamp(t,0,1);return t*t*(3-2*t);};
  const riverZ=x=>67+5.2*Math.sin(x*.027)+1.5*Math.sin(x*.072),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
@@ -6,7 +7,7 @@ export function createTerrain(scene,P,L){
  if(L.schedule) pads.push({id:L.schedule.id,x:17,z:31.5,y:3.8,hx:2.2,hz:.8,feather:1.0});
  const districtPads=districtGroundPads(L);
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
- const zones=[{id:'forecourt',x:0,z:6,hx:8,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-24,z:-19,hx:9,hz:10,y:4},{id:'finance',x:-27,z:14,hx:8.5,hz:9,y:4},{id:'it',x:32.5,z:14,hx:10.5,hz:9.5,y:3.8},...pads];
+ const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-24,z:-19,hx:9,hz:10,y:4},{id:'finance',x:-27,z:14,hx:8.5,hz:9,y:4},{id:'it',x:32.5,z:14,hx:10.5,hz:9.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
  for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10)y=T.MathUtils.lerp(y,p.y,1-smooth(d/10));}
@@ -24,6 +25,7 @@ export function createTerrain(scene,P,L){
  const basePosArray=new Float32Array(baseCount*3);
  const origHeights=new Float32Array(baseCount);
  const baseColorArray=new Float32Array(baseCount*3);
+ const AO_REACH=2.6,AO_STRENGTH=.4;
  for(let i=0;i<baseCount;i++){
   const x=pos.getX(i),z=pos.getZ(i),y=designHeight(x,z);
   pos.setY(i,y);
@@ -36,20 +38,28 @@ export function createTerrain(scene,P,L){
   const n1 = Math.sin(x * 0.08) * Math.cos(z * 0.06);
   const n2 = Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5;
   const variation = n1 * 0.04 + n2 * 0.035;
-  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.92, 1.08);
-  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.92, 1.08);
-  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.92, 1.08);
+  // Contact AO nướng vào vertex color: tối dần mềm quanh chân mỗi công trình (bóng tiếp địa, không tốn GPU).
+  let ao = 1;
+  for (const p of pads) {
+    if (p.feather) continue;
+    const d = Math.hypot(Math.max(0, Math.abs(x - p.x) - (p.hx - .4)), Math.max(0, Math.abs(z - p.z) - (p.hz - .4)));
+    if (d < AO_REACH) ao = Math.min(ao, 1 - AO_STRENGTH * (1 - smooth(d / AO_REACH)));
+  }
+  baseColorArray[i*3]   = T.MathUtils.clamp(1.0 + variation * 0.85, 0.92, 1.08) * ao * ao;
+  baseColorArray[i*3+1] = T.MathUtils.clamp(1.0 + variation * 1.05, 0.92, 1.08) * ao;
+  baseColorArray[i*3+2] = T.MathUtils.clamp(1.0 + variation * 0.65, 0.92, 1.08) * ao;
  }
  geo.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(baseColorArray),3));
  // Sample the actual triangle plane from basePosArray using exact PlaneGeometry stepX/stepZ so height(x,z) matches rendered triangles 100%.
  function height(x,z){const u=T.MathUtils.clamp((x+190)/stepX,0,nx-.00001),v=T.MathUtils.clamp((z+170)/stepZ,0,nz-.00001),i=Math.floor(u),j=Math.floor(v),a=u-i,b=v-j,k=j*(nx+1)+i;const h00=basePosArray[k*3+1],h10=basePosArray[(k+1)*3+1],h01=basePosArray[(k+nx+1)*3+1],h11=basePosArray[(k+nx+2)*3+1];return a+b<=1?h00+(h10-h00)*a+(h01-h00)*b:h11+(h01-h11)*(1-a)+(h10-h11)*(1-b);}
  const materials = [
-    '#3a6948',  // 0: Nền cỏ xanh rừng đậm (Deep Forest Moss)
-    '#383f44',  // 1: Đường chính màu xám asphalt sẫm
+    '#6fa659',  // 0: Nền cỏ xanh tươi sáng theo ảnh tham chiếu (Campus Builder)
+    '#4f6078',  // 1: Đường chính màu xám xanh slate
     '#dca658',  // 2: Lối đi bộ màu vàng nung ấm (màu gốc sếp chọn)
-    '#b76e4b',  // 3: Vùng sinh hoạt chung màu gạch nung cam đất (màu gốc sếp chọn)
+    '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
+ applyCampusPaving(P,materials[3],materials[2]);
  geo.computeVertexNormals();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);
  const stairs=[],surfaceHeight=(x,z)=>{for(const s of stairs){const along=s.axis==='x'?x:z,across=s.axis==='x'?z:x;if(Math.abs(across-s.cross)<=s.width/2&&along>=s.start-1.2&&along<=s.end+1.2){const t=T.MathUtils.clamp((along-s.start)/(s.end-s.start),0,1);return s.high-Math.min(s.count,Math.floor(t*s.count))*s.rise;}}return height(x,z);};
  const courts=[],surfaces=[],bins=new Map(),midpointList=[];let pathList=[];

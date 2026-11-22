@@ -30,9 +30,29 @@ export function createArchitecture(P) {
   M.glass.color.set(P.colors.referenceGlass || '#2D8781'); // approved reference teal glass
 
   const boxes = new Map();
+  // Khối lớn (thân nhà, cánh nhà, tấm mái) được bo 4 cạnh đứng để ra dáng "chunky" như ảnh tham chiếu; chi tiết nhỏ vẫn là hộp vuông.
+  // Hình bo nằm trong mặt phẳng XZ, đùn theo Y và canh giữa quanh gốc, đúng quy ước của BoxGeometry.
+  // Mặt bên lùi vào 0.008: nhiều chi tiết (cánh kính, băng tường) được dựng trùng mặt với thân nhà, lùi vào để chúng luôn nằm trên, không bị chớp mặt.
+  function chunkyBox(w, h, d) {
+    const r = Math.min(0.45, w * 0.12, d * 0.12), hw = w / 2 - 0.008, hd = d / 2 - 0.008, shape = new T.Shape();
+    shape.moveTo(-hw + r, -hd);
+    shape.lineTo(hw - r, -hd);
+    shape.absarc(hw - r, -hd + r, r, -Math.PI / 2, 0);
+    shape.lineTo(hw, hd - r);
+    shape.absarc(hw - r, hd - r, r, 0, Math.PI / 2);
+    shape.lineTo(-hw + r, hd);
+    shape.absarc(-hw + r, hd - r, r, Math.PI / 2, Math.PI);
+    shape.lineTo(-hw, -hd + r);
+    shape.absarc(-hw + r, -hd + r, r, Math.PI, Math.PI * 1.5);
+    const geo = new T.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 3 });
+    geo.rotateX(-Math.PI / 2);
+    geo.translate(0, -h / 2, 0);
+    // Trả về BufferGeometry thường: main.js nhận diện "vai" HQ bằng geometry.type === 'ExtrudeGeometry'
+    return new T.BufferGeometry().copy(geo);
+  }
   function box(g, w, h, d, x, y, z, m = M.cream) {
-    const k = [w, h, d].join('/');
-    if (!boxes.has(k)) boxes.set(k, new T.BoxGeometry(w, h, d));
+    const chunky = w >= 2.4 && d >= 2.4 && h >= 0.15 && m !== M.glass, k = [w, h, d, chunky].join('/');
+    if (!boxes.has(k)) boxes.set(k, chunky ? chunkyBox(w, h, d) : new T.BoxGeometry(w, h, d));
     const b = new T.Mesh(boxes.get(k), m);
     b.position.set(x, y + h / 2, z);
     b.castShadow = b.receiveShadow = true;
@@ -856,7 +876,7 @@ export function createArchitecture(P) {
 
     // 2. Fortified Plinth & Bunker Body (8.4m x 5.4m x 8.4m)
     box(g, 9.0, 0.45, 9.0, 0, 0, 0, M.stone);
-    box(g, 8.0, 4.8, 8.0, 0, 0.45, -0.2, M.metal);
+    box(g, 8.0, 4.8, 8.0, 0, 0.45, -0.2, M.cream); // thân kem theo ảnh tham chiếu; mặt cửa kho giữ tông tối
 
     // 3. 4 Heavy Corner Reinforcement Buttresses
     const buttressesG = new T.Group();
@@ -869,12 +889,12 @@ export function createArchitecture(P) {
 
     // 4. Chunky Parapet & Cornice
     box(g, 8.8, 0.45, 8.8, 0, 5.25, -0.2, M.stone);
-    box(g, 9.0, 0.10, 9.0, 0, 5.70, -0.2, M.orange);
+    box(g, 9.0, 0.30, 9.0, 0, 5.50, -0.2, M.orange); // dày 0.3: tấm 0.1 quá mỏng nên mặt mái tự đổ bóng lốm đốm
 
     // 5. Massive Circular Vault Portal Structure
     const blastDoorG = new T.Group();
     blastDoorG.userData.toggleKey = 'blastDoor';
-    box(blastDoorG, 5.6, 4.2, 0.7, 0, 0.5, 3.9, M.stone);
+    box(blastDoorG, 5.6, 4.2, 0.7, 0, 0.5, 3.9, M.metal);
     const portal = new T.Mesh(new T.CylinderGeometry(2.1, 2.1, 0.55, 32), M.metal);
     portal.rotation.x = Math.PI / 2;
     portal.position.set(0, 2.7, 4.3);
@@ -1481,6 +1501,10 @@ export function createArchitecture(P) {
     box(g, 9.0, 0.45, 0.1, 0, 6.55, 3.75, M.stone);
     for (const [rx, rz] of [[1.8, 1.2], [2.8, 1.2]]) cylinder(g, 0.4, 0.9, rx, 6.55, rz, M.dark);
     sign(g, 'AI INNOVATION HUB', 4.0, 0.65, 0, 2.7, 3.9);
+    // Lan can mái bao kín + vườn mái xanh (các tòa trong ảnh tham chiếu đều có mái hoàn thiện); thêm sau cùng để giữ partId cũ
+    box(g, 9.0, 0.45, 0.1, 0, 6.55, -4.15, M.stone);
+    for (const x of [-4.45, 4.45]) box(g, 0.1, 0.45, 8.0, x, 6.55, -0.2, M.stone);
+    box(g, 2.6, 0.2, 3.6, 2.9, 6.55, -2.1, M.moss);
     const socket = new T.Object3D();
     socket.name = 'entry-socket';
     socket.position.set(0, 0, 4.6);
@@ -1820,6 +1844,19 @@ export function createArchitecture(P) {
     cylinder(penthouseG, 0.40, 0.10, -1.2, 8.45, -1.9, M.dark, 16);
     g.add(penthouseG);
 
+    // Sân mái trước khối kỹ thuật: lan can kem, dàn pin mặt trời và bồn cây (mái trong ảnh tham chiếu không để trống).
+    // Thêm sau cùng: partId của Studio đánh theo thứ tự mesh, chi tiết mới không được chen vào giữa.
+    const roofDeckG = new T.Group();
+    roofDeckG.userData.toggleKey = 'roofEquipment';
+    box(roofDeckG, 12.4, 0.32, 0.16, 0, 7.37, 3.46, M.cream);
+    for (const x of [-6.12, 6.12]) box(roofDeckG, 0.16, 0.32, 8.4, x, 7.37, -0.66, M.cream);
+    roofKitbash(roofDeckG, 12.2, 8.2, 7.33, {
+      solarCount: 3, solarStartX: -4.4, solarZ: 2.0,
+      hvac: false,
+      planter: true, planterX: 3.9, planterZ: 2.1
+    });
+    g.add(roofDeckG);
+
     // Socket vị trí nhân vật bước vào sảnh
     const socket = new T.Object3D();
     socket.name = 'entry-socket';
@@ -1951,6 +1988,15 @@ export function createArchitecture(P) {
     box(roofG, 2.2, 0.85, 1.6, 2.0, 7.94, -1.6, M.metal);
     cylinder(roofG, 0.38, 0.10, 1.5, 8.80, -1.6, M.dark, 16);
     cylinder(roofG, 0.38, 0.10, 2.5, 8.80, -1.6, M.dark, 16);
+    // Dàn pin mặt trời, giếng trời kính và bồn cây mái
+    roofKitbash(roofG, 9.4, 7.0, 8.30, {
+      solarCount: 2, solarStartX: -3.2, solarZ: -1.7,
+      hvac: false,
+      planter: true, planterX: -2.6, planterZ: 1.7
+    });
+    box(roofG, 2.6, 0.22, 1.8, 2.0, 8.36, 1.5, M.stone);
+    box(roofG, 2.3, 0.16, 1.5, 2.0, 8.54, 1.5, M.glass);
+    box(roofG, 0.08, 0.2, 1.5, 2.0, 8.54, 1.5, M.cream);
     g.add(roofG);
 
     // Socket vị trí nhân vật bước vào sảnh

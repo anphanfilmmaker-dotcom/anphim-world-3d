@@ -1,26 +1,27 @@
-import {createModularRoadSystem} from './modular-roads.js?rev=1';
-import {createHQGardens} from './hq-gardens.js?rev=61';
+import {createModularRoadSystem} from './modular-roads.js?rev=14';
+import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=104';
-import {createLandscapePolish} from './landscape-polish.js?rev=112';
+import {createCampusEditor} from './campus-editor.js?rev=121';
+import {createLandscapePolish} from './landscape-polish.js?rev=118';
+import {createCampusGreenery} from './campus-greenery.js?rev=11';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
 import {runSpatialLint} from './spatial-lint.js?rev=1';
 import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
-import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v4';
+import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v7';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v28_restored';
-import {createAdapter} from './materials.js?rev=8';
+import {createArchitecture} from './architecture.js?rev=v35';
+import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq15';
+import {createTerrain} from './terrain.js?rev=hq17';
 import {createRoads} from './roads.js?rev=8';
-import {createLandscape} from './landscape.js?rev=up3';
-import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median1';
+import {createLandscape} from './landscape.js?rev=up4';
+import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
 import {dataConnector} from './data-connector.js';
 import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
@@ -28,6 +29,7 @@ import {CockpitFrame} from './cockpit-frame.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
+import {districtPlan} from './district-layout.js';
 
 window.THREE = T;
 
@@ -89,7 +91,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v9'), fetchJSON('./campus-palette.json?rev=finalPaletteV3')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV5')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
@@ -102,15 +104,18 @@ async function main() {
   const renderer = new T.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  // Bóng đổ mềm kiểu diorama: PCF + shadow.radius (PCFSoft bỏ qua radius). ?shadow=soft|vsm để so sánh A/B.
+  const urlShadow = new URLSearchParams(window.location.search).get('shadow') || 'pcf';
+  renderer.shadowMap.type = urlShadow === 'vsm' ? T.VSMShadowMap : (urlShadow === 'soft' ? T.PCFSoftShadowMap : T.PCFShadowMap);
   renderer.outputColorSpace = T.SRGBColorSpace;
   document.querySelector('#scene').append(renderer.domElement);
 
-  // P3: Ánh sáng chuẩn mỹ thuật: hemisphere hai màu (trời xanh nhạt, đất ấm), sun ấm ~#fff2d6
-  // Calibrated so unshadowed grass pixel reaches hex #3a6948 [58, 105, 72] with NeutralToneMapping exposure 1.0
-  const hemi = new T.HemisphereLight(0xe9f0ff, 0xd6c496, 1.62);
+  // Ánh sáng lấy từ campus-palette.json (lighting): hemisphere trời xanh nhạt / đất ấm + sun ấm.
+  // Cân chỉnh để cỏ ngoài nắng ra ~#74ab47 và cỏ trong bóng ~#3c6944 (ảnh tham chiếu) với NeutralToneMapping exposure 1.0
+  const LR = P.lighting, lightColor = k => new T.Color(P.colors[k] || k);
+  const hemi = new T.HemisphereLight(lightColor(LR.skyColor), lightColor(LR.groundColor), LR.hemisphereIntensity);
   scene.add(hemi);
-  const sun = new T.DirectionalLight(0xffe9bf, 3.65);
+  const sun = new T.DirectionalLight(lightColor(LR.sunColor), LR.sunIntensity);
 
   // P3: Hệ thống Tone Mapping A/B/C debug flag
   function setToneMappingMode(mode) {
@@ -132,15 +137,16 @@ async function main() {
   window.__setToneMappingMode = setToneMappingMode;
   const urlTone = new URLSearchParams(window.location.search).get('tone') || 'B';
   setToneMappingMode(urlTone);
-  sun.position.set(-80, 130, 70);
+  sun.position.set(...LR.sunPosition);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.mapSize.set(LR.shadowMapSize, LR.shadowMapSize);
   sun.shadow.camera.left = sun.shadow.camera.bottom = -130;
   sun.shadow.camera.right = sun.shadow.camera.top = 130;
   sun.shadow.camera.far = 380;
   sun.shadow.normalBias = 0.035;
   sun.shadow.bias = -0.0001;
-  sun.shadow.radius = 1.6;
+  sun.shadow.radius = LR.shadowRadius;
+  sun.shadow.blurSamples = LR.shadowBlurSamples;
   scene.add(sun);
 
   const camera = new T.OrthographicCamera(-100, 100, 50, -50, 0.1, 800);
@@ -935,6 +941,7 @@ async function main() {
   await createLandscapePolish(scene, P, L, terrain, roads, registry, layers, report, A);
   await createHQGardens(scene,terrain,roads,L,report);
   await createModularRoadSystem(scene, terrain, roads);
+  createCampusGreenery(scene, L, terrain, roads, landscape, layers, report);
   console.log('[STEP 6.5] HQ gardens created');
   scene.traverse(o => {
     if (o.name === 'hq-arrival-stair-terrace' || o.parent?.name === 'hq-arrival-stair-terrace') {
@@ -992,6 +999,34 @@ async function main() {
   // Client districts around the ring road: land from the topology, clients and projects from the data.
   const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
   window.__clientDistricts = clientDistricts;
+  // Where a district's gate road or a branch road leaves the ring, the ring opens its curb and sidewalk and gets
+  // its junction markings; the district draws its own road, so its lines are left to it.
+  const syncDistrictRoads = () => {
+    const plan = districtPlan(L);
+    if (!plan) return;
+    const inUse = new Set(clientDistricts.districts.filter(d => d.client).map(d => d.id));
+    const gates = plan.slots.filter(s => s.ringXZ && inUse.has(s.id)), half = plan.template.roadWidth / 2;
+    roads.crossingRoads = [
+      ...gates.map(s => ({points: [s.ringXZ, s.gateXZ], halfW: half})),
+      ...(plan.accessRoads || []).map(r => ({points: r.points, halfW: r.width / 2}))
+    ];
+    const polyline = pts => {
+      const path = new T.CurvePath();
+      for (let i = 0; i < pts.length - 1; i++)
+        path.add(new T.LineCurve3(new T.Vector3(pts[i][0], 0, pts[i][1]), new T.Vector3(pts[i + 1][0], 0, pts[i + 1][1])));
+      return path;
+    };
+    const districtDef = (id, pts, halfW) => ({
+      id, districtGate: true, markings: false, halfW, signature: JSON.stringify(pts), curve: polyline(pts),
+      yAt: (x, z) => terrain.height(x, z) + 0.15
+    });
+    roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(
+      gates.map(s => districtDef('road:district-gate:' + s.id, [s.ringXZ, s.gateXZ], half)),
+      (plan.accessRoads || []).map(r => districtDef(r.id, r.points, r.width / 2))
+    );
+    roads.syncRoadNetwork?.();
+  };
+  syncDistrictRoads();
   cutawayAnimator = new CutawayAnimator(scene, camera, controls, buildingObjects, setSpan, () => span, director);
   window.__cutawayAnimator = cutawayAnimator;
   window.__inspector = inspector;
@@ -1031,7 +1066,7 @@ async function main() {
 
   // Campus-view frame: resource bar, missions, hovered building, quick jump
   const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
-  clientDistricts.onChange = () => cockpitFrame.setBuildings(frameBuildings());
+  clientDistricts.onChange = () => { cockpitFrame.setBuildings(frameBuildings()); syncDistrictRoads(); };
   cockpitFrame = new CockpitFrame({
     dataConnector,
     buildings: frameBuildings(),

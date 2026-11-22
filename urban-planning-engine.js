@@ -187,6 +187,7 @@ export function createUrbanPlanningEngine(L, terrain) {
         if (o.parent?.name === "hq-smooth-road-and-curbs" ||
             (o.parent?.name === "u-turn-central-island" && o.userData.arrivalMedianPlant)) return;
         if (o.isInstancedMesh) {
+          if (o.userData?.keepInArrivalZone) return;
           let updated = false;
           for (let i = 0; i < o.count; i++) {
             o.getMatrixAt(i, m);
@@ -207,6 +208,7 @@ export function createUrbanPlanningEngine(L, terrain) {
         } else if (o.isMesh) {
           // 2. Quét dọn dẹp tuyệt đối toàn bộ khu vực U-turn và sảnh chính
           const isAllowedInfrastructure = 
+            o.userData?.keepInArrivalZone ||
             o.name === 'continuous-ground' ||
             o.name === 'river-only' ||
             o.name === 'smooth-u-turn-asphalt' ||

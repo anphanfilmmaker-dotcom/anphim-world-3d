@@ -1,5 +1,7 @@
 import * as T from 'three';
 import { TransformControls } from './vendor/TransformControls.js';
+import { applyCampusPaving } from './paving-pattern.js';
+import { buildCourtFurniture } from './court-furniture.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { getStudioModelById, loadStudioCatalog } from './asset-pack-extractor.js?rev=146';
 import {
@@ -57,6 +59,13 @@ export function createCampusEditor({
   const modifiedHeightIndices = new Set();
   const modifiedColorIndices = new Set();
 
+  // Sân sơn thẳng lên địa hình / thềm đá: kiểu sơn thuộc về thiết kế gốc, không nằm trong bản lưu của editor
+  function courtPaintMeta(c) {
+    const meta = {};
+    if (c.kind) meta.kind = c.kind;
+    if (c.useGroundTriangles) meta.useGroundTriangles = true;
+    return meta;
+  }
   // Baseline snapshot of native Orange Courts & Yellow Walkways (before any localStorage edits)
   const initialNativeCourts = (terrain && terrain.courts) ? terrain.courts.map(c => ({
     id: c.id,
@@ -66,7 +75,8 @@ export function createCampusEditor({
     d: c.d,
     r: c.r ?? 1.5,
     rotY: c.rotY || 0,
-    hidden: false
+    hidden: false,
+    ...courtPaintMeta(c)
   })) : [];
   const initialNativeWalks = (roads && roads.paths) ? roads.paths.filter(p => p.class === 1).map(p => ({
     id: p.id,
@@ -130,6 +140,19 @@ export function createCampusEditor({
     showToast('Đã ghi nhận thao tác', '#047857');
   }
 
+  // Sau Undo/Redo, đưa gizmo về đúng vị trí dữ liệu của sân/điểm đường đang chọn; nếu không, syncUI() sẽ ghi vị trí cũ của gizmo đè lên dữ liệu vừa khôi phục.
+  function syncNativeProxyToTarget() {
+    if (selectedObject !== nativeProxyObj) return;
+    if (selectedNativeCourt) {
+      nativeProxyObj.position.x = selectedNativeCourt.x;
+      nativeProxyObj.position.z = selectedNativeCourt.z;
+      nativeProxyObj.rotation.y = selectedNativeCourt.rotY || 0;
+    } else if (selectedNativeWalk) {
+      const pt = selectedNativeWalk.path.points[selectedNativeWalk.pointIndex];
+      if (pt) { nativeProxyObj.position.x = pt[0]; nativeProxyObj.position.z = pt[1]; }
+    }
+  }
+
   function executeUndo() {
     if (undoStack.length === 0) {
       showToast('Không còn thao tác để Undo', '#64748b');
@@ -140,6 +163,8 @@ export function createCampusEditor({
       action.undo();
       redoStack.push(action);
       showToast('↩️ Đã Undo', '#0284c7');
+      syncNativeProxyToTarget();
+      syncRoadMarkings();
       syncUI();
       return { ok: true, action: action.type };
     }
@@ -156,6 +181,8 @@ export function createCampusEditor({
       action.redo();
       undoStack.push(action);
       showToast('↪️ Đã Redo', '#0284c7');
+      syncNativeProxyToTarget();
+      syncRoadMarkings();
       syncUI();
       return { ok: true, action: action.type };
     }
@@ -861,7 +888,7 @@ export function createCampusEditor({
 
   // Base terrain material[0] is #4f805a. Compensating vertexColor = desiredColor / baseGrassColor
   // guarantees that in Three.js fragment shader (diffuseColor.rgb *= vColor), the ground renders the exact target color!
-  const baseGrassCol = new T.Color('#4f805a');
+  const baseGrassCol = terrain?.materials?.[0]?.color?.clone() || new T.Color('#6fa659');
   function makeCompensatedVertexColor(hexStr) {
     const c = new T.Color(hexStr);
     return {
@@ -1254,8 +1281,8 @@ export function createCampusEditor({
   }
 
   const roadMaterials = {
-    // 1. Đường nhựa đen chuẩn Campus (#535b55) + Vạch kẻ trắng
-    asphalt:         makeRoadMaterial(0x535b55, 0.88, -2),
+    // 1. Đường nhựa slate cùng màu vành đai (#4f6078) + Vạch kẻ trắng
+    asphalt:         makeRoadMaterial(0x4f6078, 0.88, -2),
     asphaltStripe:   makeRoadMaterial(0xf8fafc, 0.35, -4),
 
     // 2. Đường bê tông nội khu
@@ -1274,11 +1301,13 @@ export function createCampusEditor({
 
     // 6. Đường đi bộ màu vàng (#dca658) kèm 2 mép vàng nhạt (#f6dfa4) & Hộp sân màu cam (#b76e4b)
     campusYellow:       makeRoadMaterial(0xdca658, 0.90, -3),
-    campusYellowBorder: makeRoadMaterial(0x808d59, 0.86, -2),
-    campusOrange:       makeRoadMaterial(0xb76e4b, 0.90, -4)
+    campusYellowBorder: makeRoadMaterial(0xf2d99b, 0.86, -2),
+    campusOrange:       makeRoadMaterial(0xe09468, 0.90, -4)
   };
 
   // (Đã gỡ texture gạch lát theo yêu cầu sếp - giữ màu phẳng gốc)
+  // Lưới gạch thủ tục theo ảnh tham chiếu Campus Builder; tắt bằng campus-palette.json → paving.tiles = false để về màu phẳng.
+  applyCampusPaving(P, roadMaterials.campusOrange, roadMaterials.campusYellow);
     // Set fine polygon offset to avoid any micro-flickering against terrain
     roadMaterials.campusYellow.polygonOffset = true;
     roadMaterials.campusYellow.polygonOffsetFactor = -5;
@@ -1372,7 +1401,7 @@ export function createCampusEditor({
         const b = a + 1;
         const c = a + stride;
         const d = c + 1;
-        indices.push(a, c, b, b, d, c);
+        indices.push(a, c, b, b, c, d); // cả hai tam giác cùng quay mặt lên (tam giác thứ hai trước đây lật úp nên bị tô tối thành ô caro)
       }
     }
     const geo = new T.BufferGeometry();
@@ -1457,14 +1486,15 @@ export function createCampusEditor({
       }
     } else {
       // Standard single-surface slab for Orange / Asphalt / Concrete / Brick / Plaza tiles
-      const baseSlab = makeTerrainConformingQuad(cx - hs, cz - hs, cx + hs, cz + hs, 0.038, baseMat, 6);
+      const drivable = type === 'road_asphalt' || type === 'road_car';
+      const baseSlab = makeTerrainConformingQuad(cx - hs, cz - hs, cx + hs, cz + hs, drivable ? 0.085 : 0.038, baseMat, 6);
       tileGroup.add(baseSlab);
     }
 
     // 2. Smart Auto-Connecting Road Lane Markings ONLY for Asphalt Car Roads
     if (type === 'road_asphalt' || type === 'road_car') {
       const sw = Math.min(0.09, stepSize * 0.045);
-      const stripeY = 0.052;
+      const stripeY = 0.1;
       const deg = (top ? 1 : 0) + (bottom ? 1 : 0) + (left ? 1 : 0) + (right ? 1 : 0);
 
       if (deg === 0 || ((top || bottom) && !left && !right)) {
@@ -1477,12 +1507,15 @@ export function createCampusEditor({
         if (left) tileGroup.add(makeTerrainConformingQuad(cx - hs * 0.70, cz - sw, cx + sw, cz + sw, stripeY, roadMaterials.asphaltStripe, 3));
         if (right) tileGroup.add(makeTerrainConformingQuad(cx - sw, cz - sw, cx + hs * 0.70, cz + sw, stripeY, roadMaterials.asphaltStripe, 3));
       } else if (deg >= 3) {
-        const barOffset = hs * 0.66;
-        const barLen = hs * 0.46;
-        if (top) tileGroup.add(makeTerrainConformingQuad(cx - barLen, cz - barOffset - sw, cx + barLen, cz - barOffset + sw, stripeY, roadMaterials.asphaltStripe, 2));
-        if (bottom) tileGroup.add(makeTerrainConformingQuad(cx - barLen, cz + barOffset - sw, cx + barLen, cz + barOffset + sw, stripeY, roadMaterials.asphaltStripe, 2));
-        if (left) tileGroup.add(makeTerrainConformingQuad(cx - barOffset - sw, cz - barLen, cx - barOffset + sw, cz + barLen, stripeY, roadMaterials.asphaltStripe, 2));
-        if (right) tileGroup.add(makeTerrainConformingQuad(cx + barOffset - sw, cz - barLen, cx + barOffset + sw, cz + barLen, stripeY, roadMaterials.asphaltStripe, 2));
+        // Ô giao lộ (ngã ba / ngã tư): mỗi nhánh nối vào có một vạch qua đường (zebra) nằm sát mép ô, lòng giao lộ để trống
+        const z0 = hs * 0.52, z1 = hs * 0.94, bw = hs * 0.07;
+        for (const f of [-0.36, -0.12, 0.12, 0.36]) {
+          const o = f * hs;
+          if (top) tileGroup.add(makeTerrainConformingQuad(cx + o - bw, cz - z1, cx + o + bw, cz - z0, stripeY, roadMaterials.asphaltStripe, 2));
+          if (bottom) tileGroup.add(makeTerrainConformingQuad(cx + o - bw, cz + z0, cx + o + bw, cz + z1, stripeY, roadMaterials.asphaltStripe, 2));
+          if (left) tileGroup.add(makeTerrainConformingQuad(cx - z1, cz + o - bw, cx - z0, cz + o + bw, stripeY, roadMaterials.asphaltStripe, 2));
+          if (right) tileGroup.add(makeTerrainConformingQuad(cx + z0, cz + o - bw, cx + z1, cz + o + bw, stripeY, roadMaterials.asphaltStripe, 2));
+        }
       }
     }
 
@@ -1663,19 +1696,23 @@ export function createCampusEditor({
     const cr = Math.min(c.r ?? 1.5, Math.max(0.05, hw - 0.05), Math.max(0.05, hd - 0.05));
 
     // Construct clean 2D rounded rectangle shape (zero degenerate corner clamping)
-    const shape = new T.Shape();
-    shape.moveTo(-hw + cr, -hd);
-    shape.lineTo(hw - cr, -hd);
-    shape.absarc(hw - cr, -hd + cr, cr, -Math.PI / 2, 0, false);
-    shape.lineTo(hw, hd - cr);
-    shape.absarc(hw - cr, hd - cr, cr, 0, Math.PI / 2, false);
-    shape.lineTo(-hw + cr, hd);
-    shape.absarc(-hw + cr, hd - cr, cr, Math.PI / 2, Math.PI, false);
-    shape.lineTo(-hw, -hd + cr);
-    shape.absarc(-hw + cr, -hd + cr, cr, Math.PI, Math.PI * 1.5, false);
-
-    const geo = new T.ShapeGeometry(shape, 12);
-    geo.rotateX(-Math.PI / 2);
+    const roundedRect = grow => {
+      const w = hw + grow, d = hd + grow, r = cr + grow;
+      const shape = new T.Shape();
+      shape.moveTo(-w + r, -d);
+      shape.lineTo(w - r, -d);
+      shape.absarc(w - r, -d + r, r, -Math.PI / 2, 0, false);
+      shape.lineTo(w, d - r);
+      shape.absarc(w - r, d - r, r, 0, Math.PI / 2, false);
+      shape.lineTo(-w + r, d);
+      shape.absarc(-w + r, d - r, r, Math.PI / 2, Math.PI, false);
+      shape.lineTo(-w, -d + r);
+      shape.absarc(-w + r, -d + r, r, Math.PI, Math.PI * 1.5, false);
+      const g = new T.ShapeGeometry(shape, 12);
+      g.rotateX(-Math.PI / 2);
+      return g;
+    };
+    const geo = roundedRect(0);
 
     const rot = c.rotY || 0;
     const cos = rot ? Math.cos(rot) : 1;
@@ -1701,6 +1738,27 @@ export function createCampusEditor({
     const mesh = new T.Mesh(geo, roadMaterials.campusOrange);
     mesh.receiveShadow = true;
     mesh.renderOrder = 4; // Render above yellow walkways (2) & yellow borders (3)
+
+    // Bó vỉa sáng bao quanh sân (theo ảnh tham chiếu): cùng hình bo góc, nới rộng 0.3, nằm ngay dưới mặt sân
+    const curbGeo = roundedRect(0.3);
+    const curbPos = curbGeo.attributes.position;
+    for (let i = 0; i < curbPos.count; i++) {
+      const lx = curbPos.getX(i), lz = curbPos.getZ(i);
+      curbPos.setXYZ(i, c.x + lx * cos - lz * sin, courtLevelY - 0.02, c.z + lx * sin + lz * cos);
+    }
+    curbGeo.computeVertexNormals();
+    const curb = new T.Mesh(curbGeo, roadMaterials.campusYellowBorder);
+    curb.receiveShadow = true;
+    curb.renderOrder = 3;
+    curb.name = `smooth_court_curb_${c.id}`;
+    curb.userData.isCourtCurb = true; // bó vỉa đi theo sân: không phải vật thể chọn/ủi riêng
+    mesh.add(curb);
+    // Ghế băng + bồn cây là con của mặt sân: dời / ẩn / ủi sân thì chúng đi theo, bấm vào chúng = bấm vào sân
+    const furniture = buildCourtFurniture(c, { roads, terrain, levelY: courtLevelY });
+    if (furniture) {
+      furniture.userData.isCourtCurb = true;
+      mesh.add(furniture);
+    }
     mesh.name = `smooth_court_${c.id}`;
     mesh.userData.isSmoothCourtMesh = true;
     mesh.userData.courtId = c.id;
@@ -1719,6 +1777,11 @@ export function createCampusEditor({
         if (c.hidden) continue;
         const cm = buildSmoothCourtMesh(c);
         if (cm) nativeCourtsSmoothGroup.add(cm);
+        else if (c.useGroundTriangles) {
+          // Sân sơn thẳng lên địa hình không có mesh riêng: đồ đạc bám cao độ mặt đất, không phải vật thể chọn/ủi
+          const furniture = buildCourtFurniture(c, { roads, terrain, sampleY: (x, z) => sampleGroundSurfaceY(x, z) + 0.02 });
+          if (furniture) { furniture.raycast = () => {}; nativeCourtsSmoothGroup.add(furniture); }
+        }
       }
     }
 
@@ -2175,18 +2238,9 @@ export function createCampusEditor({
     return false;
   }
 
-    // Seamless rounded end cap for walkway ribbon
-    // =========================================================================
-  // ULTRA-CLEAN SINGLE-MESH ROAD & WALKWAY GENERATOR (ZERO-Z-FIGHTING)
-  // - 1 single BufferGeometry with vertex colors
-  // - 100% CCW upward normals: Tri 1 (p00, p01, p10), Tri 2 (p01, p11, p10)
-  // - Crisp borders with shared edge coordinates (zero gap, zero tearing)
-  // - Zero brown spots / zero overlapping disks or rings
-  // =========================================================================
-  function generateRoadMesh(points, width, type = 'road_yellow', options = {}) {
+  // Lọc điểm trùng và tách polyline tại các khúc quay đầu gấp: dùng chung cho mesh mặt đường và vạch kẻ đường
+  function splitRoadChains(points) {
     if (!points || points.length < 2) return null;
-    const isYellowWalk = type === 'road_yellow' || type === 'road_walk';
-
     // 1. Deduplicate consecutive points
     const cleanPts = [points[0]];
     for (let i = 1; i < points.length; i++) {
@@ -2219,6 +2273,25 @@ export function createCampusEditor({
     }
     if (currentChain.length >= 2) rawChains.push(currentChain);
     if (rawChains.length === 0) return null;
+    return { cleanPts, rawChains };
+
+  }
+
+    // Seamless rounded end cap for walkway ribbon
+    // =========================================================================
+  // ULTRA-CLEAN SINGLE-MESH ROAD & WALKWAY GENERATOR (ZERO-Z-FIGHTING)
+  // - 1 single BufferGeometry with vertex colors
+  // - 100% CCW upward normals: Tri 1 (p00, p01, p10), Tri 2 (p01, p11, p10)
+  // - Crisp borders with shared edge coordinates (zero gap, zero tearing)
+  // - Zero brown spots / zero overlapping disks or rings
+  // =========================================================================
+  function generateRoadMesh(points, width, type = 'road_yellow', options = {}) {
+    if (!points || points.length < 2) return null;
+    const isYellowWalk = type === 'road_yellow' || type === 'road_walk';
+
+    const chains = splitRoadChains(points);
+    if (!chains) return null;
+    const { cleanPts, rawChains } = chains;
 
     // 3. Setup styling and dimensions
     const roadW = Math.max(0.6, width || 2.0);
@@ -2433,6 +2506,16 @@ export function createCampusEditor({
     currentRoadPoints = [];
     currentRoadMesh = null;
 
+    // The path registered in roads.paths goes with the road on undo / redo, as in deleteCustomRoad
+    const createdPath = roads?.paths?.find(p => p.id === roadRecord.id) || null;
+    const setCreatedPath = attached => {
+      if (!createdPath) return;
+      const pIdx = roads.paths.indexOf(createdPath);
+      if (attached && pIdx === -1) roads.paths.push(createdPath);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      else return;
+      terrain.rebuild(roads.paths);
+    };
     pushUndo({
       type: 'road_create',
       undo: () => {
@@ -2441,12 +2524,16 @@ export function createCampusEditor({
           const r = customRoadsList.splice(rIdx, 1)[0];
           if (r.mesh) roadsGroup.remove(r.mesh);
         }
+        setCreatedPath(false);
         updateHierarchyUI();
+        saveStudioState();
       },
       redo: () => {
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
-        customRoadsList.push(roadRecord);
+        if (!customRoadsList.includes(roadRecord)) customRoadsList.push(roadRecord);
+        setCreatedPath(true);
         updateHierarchyUI();
+        saveStudioState();
       }
     });
 
@@ -2483,6 +2570,83 @@ export function createCampusEditor({
       }
     }
     rebuildNativeWalkwaysAndCourtsMeshes();
+    syncRoadMarkings(true);
+  }
+
+  // Dựng lại mesh của một tuyến tự vẽ sau khi points đổi (ủi một khúc, undo)
+  function updateCustomRoadMesh(r) {
+    const clickIdx = r.mesh ? clickable.indexOf(r.mesh) : -1;
+    if (r.mesh) {
+      roadsGroup.remove(r.mesh);
+      r.mesh.traverse(o => { if (o.isMesh) o.geometry?.dispose(); });
+    }
+    r.mesh = generateRoadMesh(r.points, r.width, r.type);
+    if (r.mesh) {
+      r.mesh.userData.isCustomRoad = true;
+      r.mesh.userData.roadId = r.id;
+      roadsGroup.add(r.mesh);
+    }
+    if (clickIdx > -1) {
+      if (r.mesh) clickable[clickIdx] = r.mesh;
+      else clickable.splice(clickIdx, 1);
+    }
+    if (!customRoadsList.includes(r)) customRoadsList.push(r);
+    const path = roads?.paths?.find(x => x.id === r.id);
+    if (path) {
+      path.points = r.points.map(pt => [...pt]);
+      path.curve = new T.CatmullRomCurve3(path.points.map(pt => new T.Vector3(pt[0], 0, pt[1])), false, 'centripetal');
+      terrain.rebuild(roads.paths);
+    }
+    updateHierarchyUI();
+  }
+
+  // Gắn / gỡ một tuyến tự vẽ khỏi scene và danh sách (dùng cho undo/redo, không ghi thêm mục undo)
+  function setCustomRoadAttached(rec, attached) {
+    const k = customRoadsList.indexOf(rec);
+    if (attached) {
+      if (k === -1) customRoadsList.push(rec);
+      if (rec.mesh) roadsGroup.add(rec.mesh);
+    } else {
+      if (k > -1) customRoadsList.splice(k, 1);
+      if (rec.mesh) roadsGroup.remove(rec.mesh);
+    }
+    if (rec.path && roads?.paths) {
+      const pIdx = roads.paths.indexOf(rec.path);
+      if (attached && pIdx === -1) roads.paths.push(rec.path);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      terrain.rebuild(roads.paths);
+    }
+    updateHierarchyUI();
+  }
+
+  // routeLike: tuyến gốc đang có trong roads.paths (đường vẽ bằng chuột) -> nhánh tách ra cũng được đăng ký để người đi bộ / địa hình dùng tiếp
+  function createCustomSplineRoad(points, width, type, routeLike = null) {
+    const mesh = generateRoadMesh(points, width, type);
+    if (!mesh) return null;
+    const roadRecord = {
+      id: `road_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      name: (type === 'road_asphalt' || type === 'road_car') ? 'Đường xe chạy' : 'Lối đi bộ',
+      type,
+      width,
+      points: points.map(pt => [...pt]),
+      mesh
+    };
+    mesh.userData.isCustomRoad = true;
+    mesh.userData.roadId = roadRecord.id;
+    roadsGroup.add(mesh);
+    customRoadsList.push(roadRecord);
+    if (routeLike && roads?.paths) {
+      roadRecord.path = {
+        ...routeLike,
+        id: roadRecord.id,
+        points: roadRecord.points.map(pt => [...pt]),
+        curve: new T.CatmullRomCurve3(roadRecord.points.map(pt => new T.Vector3(pt[0], 0, pt[1])), false, 'centripetal')
+      };
+      roads.paths.push(roadRecord.path);
+      terrain.rebuild(roads.paths);
+    }
+    updateHierarchyUI();
+    return roadRecord;
   }
 
   function deleteCustomRoad(roadId) {
@@ -2490,20 +2654,26 @@ export function createCampusEditor({
     if (idx === -1) return false;
     const roadRecord = customRoadsList.splice(idx, 1)[0];
     if (roadRecord.mesh) roadsGroup.remove(roadRecord.mesh);
-    if (roads && roads.paths) {
-      const pIdx = roads.paths.findIndex(p => p.id === roadId);
-      if (pIdx > -1) {
-        roads.paths.splice(pIdx, 1);
-        terrain.rebuild(roads.paths);
-      }
-    }
+    // Tuyến có đăng ký trong roads.paths (vẽ bằng chuột) thì đi cùng: xóa, undo, redo đều giữ đồng bộ
+    const path = roads?.paths?.find(p => p.id === roadId) || null;
+    const setPath = attached => {
+      if (!path) return;
+      const pIdx = roads.paths.indexOf(path);
+      if (attached && pIdx === -1) roads.paths.push(path);
+      else if (!attached && pIdx > -1) roads.paths.splice(pIdx, 1);
+      else return;
+      terrain.rebuild(roads.paths);
+    };
+    setPath(false);
 
     pushUndo({
       type: 'road_delete',
       undo: () => {
         if (roadRecord.mesh) roadsGroup.add(roadRecord.mesh);
-        customRoadsList.push(roadRecord);
+        if (!customRoadsList.includes(roadRecord)) customRoadsList.push(roadRecord);
+        setPath(true);
         updateHierarchyUI();
+        saveStudioState();
       },
       redo: () => {
         const i = customRoadsList.findIndex(r => r.id === roadId);
@@ -2511,7 +2681,9 @@ export function createCampusEditor({
           customRoadsList.splice(i, 1);
           if (roadRecord.mesh) roadsGroup.remove(roadRecord.mesh);
         }
+        setPath(false);
         updateHierarchyUI();
+        saveStudioState();
       }
     });
 
@@ -3311,6 +3483,7 @@ export function createCampusEditor({
   }
 
   function updateHierarchyUI() {
+    syncRoadMarkings(); // mọi thay đổi danh sách đường đều đi qua đây
     const listEl = document.querySelector('#hierarchy-list');
     if (!listEl) return;
 
@@ -3514,8 +3687,30 @@ export function createCampusEditor({
   }
 
   let saveDebounceTimer = null;
+  // Đưa các đường xe chạy do Studio vẽ vào cơ chế vạch kẻ chung (road-markings.js): chỗ chúng chạm / cắt nhau
+  // hoặc chạm vành đai sẽ tự có vạch dừng và vạch qua đường; vạch tim liền cũ của mesh được ẩn đi.
+  function syncRoadMarkings(force = false) {
+    if (!roads?.syncRoadNetwork) return;
+    const defs = [];
+    for (const r of customRoadsList) {
+      const drivable = r.type === 'road_asphalt' || r.type === 'road_car';
+      if (!drivable || !r.mesh?.parent || r.mesh.visible === false || (r.width || 6) < 3) continue;
+      const chains = splitRoadChains(r.points);
+      if (!chains) continue;
+      const stripe = r.mesh.getObjectByName('road_lane_stripes');
+      if (stripe) stripe.visible = false;
+      // Cùng cách tách khúc với generateRoadMesh để vạch nằm đúng trên mặt nhựa ở khúc quay đầu gấp
+      chains.rawChains.forEach((chain, i) => defs.push({
+        id: `${r.id}#${i}`, group: r.id, halfW: (r.width || 6) / 2, signature: JSON.stringify(chain),
+        curve: new T.CatmullRomCurve3(chain.map(p => new T.Vector3(p[0], 0, p[1])), false, 'centripetal')
+      }));
+    }
+    roads.syncRoadNetwork(defs, force);
+  }
+
   function saveStudioState(force = false) {
     markStudioDirty();
+    syncRoadMarkings();
     if (force) {
       if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
       return doActualSave(true);
@@ -3609,6 +3804,8 @@ export function createCampusEditor({
           const mesh = generateRoadMesh(r.points, r.width || 6.0, r.type);
           if (mesh) {
             roadsGroup.add(mesh);
+            mesh.userData.isCustomRoad = true;
+            mesh.userData.roadId = r.id;
             customRoadsList.push({
               id: r.id || `road_${Date.now()}`,
               name: r.name || (r.type === 'road_car' ? 'Đường xe' : 'Lối đi bộ'),
@@ -3762,7 +3959,8 @@ export function createCampusEditor({
             d: sc.d,
             r: sc.r ?? 1.5,
             rotY: sc.rotY || 0,
-            hidden: Boolean(sc.hidden)
+            hidden: Boolean(sc.hidden),
+            ...courtPaintMeta(initialNativeCourts.find(ic => ic.id === sc.id) || {})
           });
         }
       } else {
@@ -3786,8 +3984,6 @@ export function createCampusEditor({
         if (sw.id === 'walk:ecosystem-loop' && Array.isArray(sw.points)) {
           sw.points = sw.points.map(pt => (pt[0] === 19 && pt[1] === 14 ? [19, 15] : pt[0] === 9 && pt[1] === 14 ? [9, 15] : pt));
         }
-        if (sw.id === 'walk:commons-finance') sw.points = [[-10, 9.2], [-9.5, 9.8]];
-        if (sw.id === 'walk:commons-IT') sw.points = [[10, 9.2], [9.5, 9.8]];
       }
       const visibleWalks = validWalks.filter(sw => !sw.hidden);
       const preservedDoorPaths = roads.paths.filter(p => p.class === 1 && p.id && p.id.startsWith('door:'));
@@ -3836,6 +4032,7 @@ export function createCampusEditor({
       window.rebuildCirculationNetwork();
     }
 
+    syncRoadMarkings();
     updateHierarchyUI();
     showToast('✅ Đã phục hồi dữ liệu Campus!', '#0284c7');
     return { ok: true };
@@ -3939,6 +4136,9 @@ export function createCampusEditor({
       return { ok: true, count: list.length, tiles: list };
     },
 
+    // Giao lộ mà cơ chế vạch kẻ đang nhận diện: toạ độ, số nhánh (3 = ngã ba, 4 = ngã tư), số vạch qua đường
+    getRoadJunctions: () => ({ ok: true, junctions: roads?.getJunctions ? roads.getJunctions() : [] }),
+
     createPlaza: async ({ points = [], width = 12.0, name = null }) => {
       return await agentAPI.createRoad({ type: 'plaza_park', points, width, name: name || 'Sàn công viên' });
     },
@@ -3950,6 +4150,7 @@ export function createCampusEditor({
       const roadMesh = generateRoadMesh(points, width, type);
       if (!roadMesh) return { ok: false, error: 'Failed to generate road mesh' };
       roadsGroup.add(roadMesh);
+      roadMesh.userData.isCustomRoad = true;
 
       const roadRecord = {
         id: `road_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -3960,6 +4161,8 @@ export function createCampusEditor({
         mesh: roadMesh
       };
       customRoadsList.push(roadRecord);
+      roadMesh.userData.roadId = roadRecord.id;
+      syncRoadMarkings();
 
       pushUndo({
         type: 'agent_road_create',
@@ -5302,11 +5505,14 @@ export function createCampusEditor({
       if (c.isMesh && c.material) {
         // Clone shared material on first highlight so we don't turn all bushes/trees red at once
         if (highlight && !c.userData._matClonedForHighlight) {
-          if (Array.isArray(c.material)) {
-            c.material = c.material.map(m => m.clone());
-          } else {
-            c.material = c.material.clone();
-          }
+          // Material.clone() bỏ onBeforeCompile: giữ lại để bản sao vẫn có lưới gạch (paving-pattern.js)
+          const cloneKeepingShader = m => {
+            const k = m.clone();
+            k.onBeforeCompile = m.onBeforeCompile;
+            k.customProgramCacheKey = m.customProgramCacheKey;
+            return k;
+          };
+          c.material = Array.isArray(c.material) ? c.material.map(cloneKeepingShader) : cloneKeepingShader(c.material);
           c.userData._matClonedForHighlight = true;
         }
         const mats = Array.isArray(c.material) ? c.material : [c.material];
@@ -5374,7 +5580,8 @@ export function createCampusEditor({
     // 1. Raycast all scene objects first (trees, bushes, benches, road meshes)
     const allHits = raycasterInstance.intersectObjects(scene.children, true);
     for (const h of allHits) {
-      const o = h.object;
+      // Bấm vào bó vỉa = bấm vào chính sân của nó
+      const o = h.object?.userData?.isCourtCurb ? h.object.parent : h.object;
       if (!o || !o.visible) continue;
       if (
         o === tMesh ||
@@ -5401,6 +5608,21 @@ export function createCampusEditor({
       }
       if (hiddenAncestor) continue;
       if (isProtectedBuildingObject(o)) continue;
+      if (o.userData?.studioPassThrough) continue; // vạch sơn / mặt nhựa vành đai: nhìn xuyên qua để chọn đúng thứ bên dưới
+
+      // Case A0: mặt sân cam dựng mesh riêng -> ủi qua trạng thái court.hidden (được lưu và dựng lại), không chỉ ẩn mesh
+      if (o.userData?.isSmoothCourtMesh) {
+        const court = terrain?.courts?.find(c => c.id === o.userData.courtId);
+        if (court) {
+          return {
+            kind: 'nativeCourt',
+            court,
+            object: o,
+            label: `🟧 Hộp sân màu cam (${court.id})`,
+            point: h.point
+          };
+        }
+      }
 
       // Case A1: SimCity Grid Road Tile Mesh
       let cur = o;
@@ -5641,7 +5863,9 @@ export function createCampusEditor({
         let addedRoad = null;
 
         if (!pts || pts.length <= 2) {
-          deleteCustomRoad(r.id);
+          deleteCustomRoad(r.id); // tự ghi undo và báo toast
+          saveStudioState();
+          return true;
         } else if (i === 0) {
           r.points = pts.slice(1);
           updateCustomRoadMesh(r);
@@ -5653,22 +5877,25 @@ export function createCampusEditor({
           const branch2 = pts.slice(i + 1);
           r.points = branch1;
           updateCustomRoadMesh(r);
-          addedRoad = createCustomSplineRoad(branch2, r.width, r.roadType);
+          addedRoad = createCustomSplineRoad(branch2, r.width, r.type, roads?.paths?.find(x => x.id === r.id) || null);
         }
 
         saveStudioState();
+        const newPts = r.points.map(pt => [...pt]);
         pushUndo({
           type: 'bulldoze_custom_road_segment',
           undo: () => {
-            r.points = oldPts;
+            if (addedRoad) setCustomRoadAttached(addedRoad, false);
+            r.points = oldPts.map(pt => [...pt]);
             updateCustomRoadMesh(r);
-            if (addedRoad) {
-              deleteCustomRoad(addedRoad.id);
-            }
             saveStudioState();
           },
+          // Dựng lại đúng kết quả đã ủi (không gọi lại executeBulldozeTarget: nó sẽ tạo thêm một nhánh và một mục undo mới)
           redo: () => {
-            executeBulldozeTarget(target);
+            r.points = newPts.map(pt => [...pt]);
+            updateCustomRoadMesh(r);
+            if (addedRoad) setCustomRoadAttached(addedRoad, true);
+            saveStudioState();
           }
         });
         showToast(`🚜 Đã ủi khúc đường tự vẽ [${i + 1}] giữa 2 mối nối! (Ctrl+Z để khôi phục)`, '#dc2626');
@@ -6697,6 +6924,16 @@ export function createCampusEditor({
         btn.style.borderColor = isAct ? '#34d399' : '#475569';
       }
     });
+
+    // The options drawer stays hidden for every tool except Roads, where it holds the road type and the drawing mode
+    if (bottomDrawer) {
+      const showDrawer = editModeActive && targetTab === 'roads';
+      bottomDrawer.hidden = !showDrawer;
+      bottomDrawer.style.display = showDrawer ? 'block' : 'none';
+      // Sit just above the dock, whatever height the dock has at this window size
+      const dockTop = document.querySelector('#simcity-dock')?.getBoundingClientRect().top;
+      if (showDrawer && dockTop > 0) bottomDrawer.style.bottom = Math.round(window.innerHeight - dockTop + 8) + 'px';
+    }
 
     const roadMode = document.querySelector('input[name="road-draw-mode"]:checked')?.value || 'grid';
     const propMode = document.querySelector('input[name="prop-place-mode"]:checked')?.value || 'single';

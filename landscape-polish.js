@@ -56,13 +56,13 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
 
   // 1. MATERIALS
   const bushMat1 = new T.MeshStandardMaterial({
-    color: 0x3b7538, // Rich organic foliage green
+    color: 0x5c9a3e, // Rich organic foliage green
     roughness: 0.86,
     metalness: 0.02
   });
 
   const bushMat2 = new T.MeshStandardMaterial({
-    color: 0x2b5c2a, // Deep forest green
+    color: 0x3f7f3a, // Deep forest green
     roughness: 0.88,
     metalness: 0.02
   });
@@ -347,11 +347,11 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
   }
 
   // The median planting fits inside the straight inner curb.
-  const medianLeaves = new T.MeshStandardMaterial({color:0x718e3d,flatShading:true});
+  const medianLeaves = new T.MeshStandardMaterial({color:0x6fae3f,flatShading:true});
   const medianTrunk = new T.MeshStandardMaterial({color:0x885d37});
   const medianCrown = new T.IcosahedronGeometry(1,1);
-  for (const [x,z,r,h] of [[0,26.7,1.35,3.7],[-1.6,28.6,.78,1.55],[1.5,28.5,.7,1.2],[-.4,30.1,.62,.85],[-1.35,25.3,.55,.7],[1.45,25.1,.5,.65]]) {
-    if (Math.abs(x) + r >= 3.5 || z - r <= 24.5 || z + r >= 31.2) continue;
+  for (const [x,z,r,h] of [[0,26.9,1.45,3.9],[-1.55,28.9,1,2.5],[1.55,28.8,.95,2.3],[-.3,29.9,.5,.75],[-1.4,25.9,.55,.8],[1.45,25.8,.5,.7],[.2,25.2,.45,.65]]) {
+    if (Math.abs(x) + r >= 3.5 || z - r <= 24.5 || z + r >= 31.2) continue; // tán cây không vượt mép đảo
     const ground = terrain.height(x,z) + .06;
     const trunkHeight = h * .42;
     const trunk = new T.Mesh(new T.CylinderGeometry(r * .11,r * .17,trunkHeight,6),medianTrunk);
@@ -363,6 +363,85 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
     trunk.userData.arrivalMedianPlant = crown.userData.arrivalMedianPlant = true;
     islandGroup.add(trunk,crown);
   }
+
+  // Bó vỉa sáng viền quanh đảo, bám theo mép trong của đường vòng đón khách: che mép cỏ răng cưa nơi cỏ gặp mặt đường
+  const arrivalPath = roads?.paths?.find(p => p.id === 'road:HQ-arrival' && p.curve && !p.hidden);
+  if (arrivalPath) {
+    const ringPath = roads.paths.find(p => p.id === 'road:campus-ring' && p.curve && !p.hidden);
+    const ringPts = ringPath ? ringPath.curve.getSpacedPoints(600) : [];
+    const half = (arrivalPath.width || 4) / 2, CURB_W = .45, RING_CLEAR = (ringPath?.width || 8.4) / 2 + .1;
+    const a0 = arrivalPath.curve.getPointAt(0), a1 = arrivalPath.curve.getPointAt(1), apex = arrivalPath.curve.getPointAt(.5);
+    const midX = ((a0.x + a1.x) / 2 + apex.x) / 2, midZ = ((a0.z + a1.z) / 2 + apex.z) / 2;
+    const rows = [];
+    for (let i = 0; i <= 120; i++) {
+      const q = arrivalPath.curve.getPointAt(i / 120), t = arrivalPath.curve.getTangentAt(i / 120);
+      if (ringPts.some(r => Math.hypot(r.x - q.x, r.z - q.z) < RING_CLEAR)) continue;
+      let nx = -t.z, nz = t.x;
+      if ((midX - q.x) * nx + (midZ - q.z) * nz < 0) { nx = -nx; nz = -nz; }
+      rows.push([q.x + nx * (half - .1), q.z + nz * (half - .1), q.x + nx * (half - .1 + CURB_W), q.z + nz * (half - .1 + CURB_W)]);
+    }
+    if (rows.length > 2) {
+      // Khép kín cạnh đáy đảo (phía đường chính) bằng một đoạn thẳng
+      const first = rows[0], last = rows[rows.length - 1], dx = first[0] - last[0], dz = first[1] - last[1], len = Math.hypot(dx, dz) || 1;
+      let nx = -dz / len, nz = dx / len;
+      if ((midX - last[0]) * nx + (midZ - last[1]) * nz < 0) { nx = -nx; nz = -nz; }
+      for (let i = 1; i < 16; i++) {
+        const x = last[0] + dx * i / 16, z = last[1] + dz * i / 16;
+        rows.push([x, z, x + nx * CURB_W, z + nz * CURB_W]);
+      }
+      rows.push(first);
+      const verts = [], indices = [];
+      rows.forEach(([x0, z0, x1, z1], i) => {
+        verts.push(x0, terrain.height(x0, z0) + .1, z0, x1, terrain.height(x1, z1) + .1, z1);
+        if (i) { const k = (i - 1) * 2; indices.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+      });
+      const curbGeo = new T.BufferGeometry();
+      curbGeo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
+      curbGeo.setIndex(indices);
+      curbGeo.computeVertexNormals();
+      const curb = new T.Mesh(curbGeo, new T.MeshStandardMaterial({color: 0xd9d4c8, roughness: .85, side: T.DoubleSide}));
+      curb.name = 'u-turn-island-curb';
+      curb.receiveShadow = true;
+      curb.userData.arrivalMedianPlant = true;
+      islandGroup.add(curb);
+    }
+  }
+
+  // Viền rào cắt tỉa ôm theo mép đảo (thân thẳng + đầu cong) và vài tảng đá cảnh, theo ảnh tham chiếu
+  const medianHedge = new T.MeshStandardMaterial({color:0x3f8a3d,roughness:.9,flatShading:true});
+  const medianRock = new T.MeshStandardMaterial({color:0xa3a9ae,roughness:.95,flatShading:true});
+  const hedgeUnit = new T.BoxGeometry(1,1,1), rockUnit = new T.IcosahedronGeometry(1,0);
+  const HEDGE_R = 2.95, HEDGE_T = .45, HEDGE_H = .5, HEDGE_END = 30.75;
+  function medianPiece(geo, mat, x, z, sx, sy, sz, yaw) {
+    const m = new T.Mesh(geo, mat);
+    m.position.set(x, terrain.height(x,z) + sy / 2 - .05, z);
+    m.scale.set(sx, sy, sz);
+    m.rotation.y = yaw;
+    m.castShadow = m.receiveShadow = true;
+    m.userData.arrivalMedianPlant = true;
+    islandGroup.add(m);
+  }
+  const straight = Math.round((HEDGE_END - iz) / 1.05), segLen = (HEDGE_END - iz) / straight;
+  for (let i = 0; i < straight; i++) for (const side of [-1,1])
+    medianPiece(hedgeUnit, medianHedge, side * HEDGE_R, iz + (i + .5) * segLen, HEDGE_T, HEDGE_H, segLen + .03, 0);
+  const arcN = 9, chord = 2 * HEDGE_R * Math.sin(Math.PI / arcN / 2) + .08;
+  for (let i = 0; i < arcN; i++) {
+    const a = Math.PI * (i + .5) / arcN;
+    medianPiece(hedgeUnit, medianHedge, -Math.cos(a) * HEDGE_R, iz - Math.sin(a) * HEDGE_R, chord, HEDGE_H, HEDGE_T, Math.PI / 2 - a);
+  }
+  const closeN = 6, closeLen = (HEDGE_R * 2 - HEDGE_T) / closeN;
+  for (let i = 0; i < closeN; i++)
+    medianPiece(hedgeUnit, medianHedge, -HEDGE_R + HEDGE_T / 2 + (i + .5) * closeLen, HEDGE_END - HEDGE_T / 2, closeLen + .03, HEDGE_H, HEDGE_T, 0);
+  for (const [x,z,s,yaw] of [[-1.05,30,.36,.4],[.75,29.95,.3,1.7],[1.25,26.9,.32,2.6],[-1.5,27.1,.26,.9],[-.2,23.4,.34,2.1],[.9,23.1,.24,.2]])
+    medianPiece(rockUnit, medianRock, x, z, s * 1.2, s * .8, s, yaw);
+  // Lớp bụi thấp phủ kín lòng đảo và một cây thông nhỏ: đảo trong ảnh tham chiếu trồng dày, không lộ nền cỏ
+  // Mỗi bụi cách tâm đá, cây và đoạn rào bên cạnh hơn 0.65: công cụ ủi lưu vết xoá theo bán kính (tối thiểu 0.6) quanh tâm vật bị xoá
+  const medianShrub = new T.MeshStandardMaterial({color:0x4d9a3f,roughness:.9,flatShading:true});
+  const medianPine = new T.MeshStandardMaterial({color:0x2f7a46,roughness:.9,flatShading:true});
+  for (const [x,z,s,dark] of [[-1.9,24.7,.5,1],[1.9,24.5,.48,0],[0,22.7,.5,1],[-1.25,23.5,.42,0],[1.3,23.7,.4,1],[-2.1,26.6,.44,0],[2.15,27.5,.44,1],[-2.1,29.85,.4,1],[2.1,29.85,.4,0],[.45,28.45,.38,1],[-.65,24.4,.38,0]])
+    medianPiece(medianCrown, dark ? medianHedge : medianShrub, x, z, s, s * .8, s, x * 3 + z);
+  medianPiece(new T.ConeGeometry(1,1,7), medianPine, -2.05, 25.6, .55, 2.1, .55, 0);
+  medianPiece(new T.ConeGeometry(1,1,7), medianPine, 2.1, 26.1, .45, 1.6, .45, 0);
 
   // 7. ROOFTOP GREEN GARDENS (Vườn cây trên mái các khối terrace)
   const roofGardens = new T.Group();
