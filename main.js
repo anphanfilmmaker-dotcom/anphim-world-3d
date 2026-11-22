@@ -16,7 +16,7 @@ import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v42';
-import {createAdapter} from './materials.js?rev=10';
+import {createAdapter, nightWindowGlow} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
 import {createTerrain} from './terrain.js?rev=hq18';
 import {createRoads} from './roads.js?rev=8';
@@ -26,6 +26,7 @@ import {dataConnector} from './data-connector.js';
 import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
+import {createDayNight} from './day-night.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
@@ -1175,6 +1176,14 @@ async function main() {
   }
   dataConnector.subscribe(refreshInside);
 
+  // Day and night: sky, sun and sky light, lamps and windows (day-night.js); switched from the cockpit frame
+  const dayNight = createDayNight({
+    scene, sun, hemi, palette: P, groundHeight: terrain.height, windowGlow: nightWindowGlow,
+    onChange: () => { report.dayNight = dayNight.mode; cockpitFrame?.renderDayNight(); window.requestRender?.(); sync(); }
+  });
+  report.dayNight = dayNight.mode;
+  window.__dayNight = dayNight;
+
   // Campus-view frame: resource bar, missions, hovered building, quick jump
   const frameBuildings = () => [...L.buildings, {...L.schedule, kind: 'facility'}, ...marketingRoom, ...clientDistricts.buildings];
   clientDistricts.onChange = () => { cockpitFrame.setBuildings(frameBuildings()); syncDistrictRoads(); };
@@ -1182,6 +1191,7 @@ async function main() {
     dataConnector,
     buildings: frameBuildings(),
     onMoneyToggle: () => refreshInside(),
+    dayNight,
     onEnterBuilding: b => inspector(buildingObjects.get(b.id)?.userData.binding || b),
     getDistricts: () => clientDistricts.districts,
     onEnterDistrict: d => {
@@ -1195,6 +1205,7 @@ async function main() {
     }
   });
   window.__cockpitFrame = cockpitFrame;
+  if (cutawayAnimator) cutawayAnimator.dayNight = dayNight;
   buildingPanels = new BuildingPanels({dataConnector, frame: cockpitFrame});
   window.__buildingPanels = buildingPanels;
 
@@ -1558,7 +1569,8 @@ async function main() {
     const networkMoving = network?.tick(now * 0.001) === true;
     const biomesMoving = updateBiomeAnimations();
     const statesMoving = stateVisuals.tick(now * 0.001);
-    const active = cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
+    const skyMoving = dayNight.tick(now);
+    const active = skyMoving || cameraMoving || networkMoving || biomesMoving || statesMoving || insideMoving || now < activeUntil;
     if (active || now - lastRender >= IDLE_RENDER_MS) {
       lastRender = now;
       drawFrame();
