@@ -6916,6 +6916,9 @@ export function createCampusEditor({
       const showDrawer = editModeActive && targetTab === 'roads';
       bottomDrawer.hidden = !showDrawer;
       bottomDrawer.style.display = showDrawer ? 'block' : 'none';
+      // Sit just above the dock, whatever height the dock has at this window size
+      const dockTop = document.querySelector('#simcity-dock')?.getBoundingClientRect().top;
+      if (showDrawer && dockTop > 0) bottomDrawer.style.bottom = Math.round(window.innerHeight - dockTop + 8) + 'px';
     }
 
     const roadMode = document.querySelector('input[name="road-draw-mode"]:checked')?.value || 'grid';
