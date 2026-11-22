@@ -2,7 +2,7 @@ import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
 import {createCampusEditor} from './campus-editor.js?rev=122';
-import {createLandscapePolish} from './landscape-polish.js?rev=118';
+import {createLandscapePolish} from './landscape-polish.js?rev=119';
 import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
@@ -10,15 +10,15 @@ import {runSpatialLint} from './spatial-lint.js?rev=1';
 import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
-import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v8';
+import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v9';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v42';
+import {createArchitecture} from './architecture.js?rev=v43';
 import {createAdapter} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq18';
+import {createTerrain} from './terrain.js?rev=hq19';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -91,7 +91,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV6')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v11'), fetchJSON('./campus-palette.json?rev=finalPaletteV6')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
