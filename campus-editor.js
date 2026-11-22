@@ -6911,6 +6911,13 @@ export function createCampusEditor({
       }
     });
 
+    // The options drawer stays hidden for every tool except Roads, where it holds the road type and the drawing mode
+    if (bottomDrawer) {
+      const showDrawer = editModeActive && targetTab === 'roads';
+      bottomDrawer.hidden = !showDrawer;
+      bottomDrawer.style.display = showDrawer ? 'block' : 'none';
+    }
+
     const roadMode = document.querySelector('input[name="road-draw-mode"]:checked')?.value || 'grid';
     const propMode = document.querySelector('input[name="prop-place-mode"]:checked')?.value || 'single';
     const folMode = document.querySelector('input[name="foliage-place-mode"]:checked')?.value || 'single';
