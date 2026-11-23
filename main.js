@@ -1083,6 +1083,7 @@ async function main() {
   // Khu nhà mẫu (District Showcase) đã được gỡ bỏ theo yêu cầu sếp
 
   const [opGraph, sysGraph] = await Promise.all([fetchJSON("./operational-graph.json"), fetchJSON("./system-graph.json")]);
+  dataConnector.setSystemGraph(sysGraph);
   const groundDebug = createGroundDebug(scene,terrain,roads,buildingObjects,report);
   const router = createPedestrianRouter(roads.paths, L.buildings, terrain.surfaceHeight);
   console.log('[STEP 7] router created');

@@ -100,7 +100,7 @@ export function sectionOf(host) {
 /**
  * The plan of one storey: null when its walls enclose no usable floor (a signboard, an open frame), else
  * {geometry: the enclosed floor as a flat mesh in plan coordinates, inner: {x0, x1, z0, z1} its bounds,
- *  rect: {cx, cz, hx, hz} the largest free rectangle on it}.
+ *  rect: {cx, cz, hx, hz} the largest free rectangle on it, areas: [{cx, cz, hx, hz, size}] the same for each room of the storey}.
  */
 export function planOf(section, floor) {
   if (section.plans[floor] !== undefined) return section.plans[floor];
@@ -116,6 +116,9 @@ export function planOf(section, floor) {
     if (Math.max(ay, by, cy) < y1 || Math.min(ay, by, cy) > y2) continue;
     const ax = tris[i], az = tris[i + 2], ux = tris[i + 3] - ax, uy = by - ay, uz = tris[i + 5] - az;
     const wx = tris[i + 6] - ax, wy = cy - ay, wz = tris[i + 8] - az;
+    // The underside of something that starts above the floor (a glass band, a lintel, a canopy) stands on nothing
+    const ny = uz * wx - ux * wz;
+    if (ny < 0 && -ny > 0.95 * Math.hypot(uy * wz - uz * wy, ny, ux * wy - uy * wx)) continue;
     const edge = Math.max(Math.hypot(ux, uy, uz), Math.hypot(wx, wy, wz), Math.hypot(wx - ux, wy - uy, wz - uz));
     const n = Math.min(500, Math.max(1, Math.ceil(edge / (CELL * 0.45))));
     for (let a = 0; a <= n; a++) {
@@ -206,6 +209,35 @@ export function planOf(section, floor) {
   const rect = {cx: x0 + (rx + rw / 2) * CELL, cz: z0 + (rz + rh / 2) * CELL, hx: rw * CELL / 2 - 0.3, hz: rh * CELL / 2 - 0.3};
   if (rect.hx < 0.6 || rect.hz < 0.6) return (section.plans[floor] = null);
 
+  // Every room of the storey with its own largest free rectangle, widest room first: a wing is furnished like the main block
+  const areas = [];
+  for (let id = 1; id <= rooms; id++) {
+    let size = 0, top = null;
+    heights.fill(0);
+    for (let z = 0; z < H; z++) {
+      for (let x = 0; x < W; x++) {
+        const mine = inside[z * W + x] && label[z * W + x] === id;
+        heights[x] = mine ? heights[x] + 1 : 0;
+        size += mine ? 1 : 0;
+      }
+      const stack = [];
+      for (let x = 0; x <= W; x++) {
+        const h = x < W ? heights[x] : 0;
+        let start = x;
+        while (stack.length && stack[stack.length - 1][1] >= h) {
+          const [sx, sh] = stack.pop(), value = Math.min(x - sx, 3 * sh) * Math.min(sh, 3 * (x - sx));
+          if (value > (top?.value || 0)) top = {value, x: sx, z: z - sh + 1, w: x - sx, h: sh};
+          start = sx;
+        }
+        stack.push([start, h]);
+      }
+    }
+    if (!top) continue;
+    const area = {cx: x0 + (top.x + top.w / 2) * CELL, cz: z0 + (top.z + top.h / 2) * CELL, hx: top.w * CELL / 2 - 0.3, hz: top.h * CELL / 2 - 0.3, size: size * CELL * CELL};
+    if (area.hx >= 0.5 && area.hz >= 0.5) areas.push(area);
+  }
+  areas.sort((a, b) => b.size - a.size);
+
   // The floor: one strip per run of inside cells, runs that repeat on the next row joined into one
   const position = [], uv = [], inner = {x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity};
   const quad = (xa, xb, za, zb) => {
@@ -231,7 +263,7 @@ export function planOf(section, floor) {
   geometry.setAttribute('position', new T.Float32BufferAttribute(position, 3));
   geometry.setAttribute('uv', new T.Float32BufferAttribute(uv, 2));
   geometry.computeVertexNormals();
-  return (section.plans[floor] = {geometry, inner, rect, rooms});
+  return (section.plans[floor] = {geometry, inner, rect, rooms, areas});
 }
 
 /**

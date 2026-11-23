@@ -21,6 +21,7 @@ const POST_STATUS = {
   published: {label: 'ĐÃ ĐĂNG', tone: 'ok', filter: 'Đã đăng'}
 };
 const NONE = '<span class="bp-none">Chưa kết nối</span>';
+const SOURCE = {api: 'Trực tiếp từ dashboard', snapshot: 'Bản chụp dữ liệu', offline: null};
 
 const STYLE = `
 #cockpit-frame-root{
@@ -84,6 +85,11 @@ button.bp-rowbtn:hover,.bp-rowbtn[aria-pressed=true]{border-color:rgba(247,148,2
 .bp-post .bp-img{height:54px;border-radius:7px;margin:6px 0;background:rgba(255,255,255,.08) center/cover;display:grid;place-items:center;color:var(--cf-mute);font-size:9.5px}
 .bp-post p{margin:0 0 6px;font-weight:600;line-height:1.3}
 .bp-post .cf-btn{height:26px;padding:0 8px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid var(--cf-line);font-size:10.5px;white-space:normal;justify-content:center}
+.bp-search{width:100%;height:28px;padding:0 10px;margin-bottom:7px;border-radius:99px;background:var(--cf-bg2);border:1px solid var(--cf-line);font:inherit;font-size:11.5px;color:var(--cf-text)}
+.bp-rowbtn[data-tone=alert]{border-color:var(--cf-alert)}
+.bp-rowbtn[data-tone=warn]{border-color:rgba(247,148,29,.7)}
+.bp-kv{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12px}
+.bp-kv b{text-align:right}
 .bp-flash{animation:bp-flash 1.4s ease-out}
 @keyframes bp-flash{0%,40%{box-shadow:0 0 0 2px var(--cf-accent);background:rgba(247,148,29,.22)}100%{box-shadow:0 0 0 2px transparent}}
 }
@@ -163,7 +169,7 @@ export class BuildingPanels {
     const storeys = count > 1 ? `<div class="bp-chips bp-storeys" role="group" aria-label="Tầng đang xem">${Array.from({length: count}, (_, i) =>
       `<button class="bp-chip" data-storey="${i}" aria-pressed="${i === current}">Tầng ${i + 1}</button>`).join('')}</div>` : '';
     const head = `<h2 class="bp-title">${esc(v.title)}</h2><div class="bp-subtitle">${esc(v.subtitle)}</div>${storeys}`;
-    if (!v.connected) {
+    if (!v.connected && !v.facility) {
       this.left.innerHTML = head + `<div class="cf-empty">Tòa này chưa có dữ liệu từ dashboard.</div>`;
       this.right.innerHTML = this.sec('Chi tiết') + `<div class="cf-empty">Chưa kết nối.</div>` + this.actions(this.open(v.page, 'Mở dashboard'));
       return true;
@@ -180,7 +186,13 @@ export class BuildingPanels {
   focus(f) {
     if (!f) return;
     const root = this.frame.root;
-    const el = (f.id != null && root.querySelector(`.bp-side [data-focus="${f.section}:${CSS.escape(String(f.id))}"]`))
+    const row = () => f.id != null && root.querySelector(`.bp-side [data-focus="${f.section}:${CSS.escape(String(f.id))}"]`);
+    if (!row() && (this.state.q || this.state.only)) {
+      // the row is filtered out of the list: drop the filter so the click still lands on it
+      this.state.q = this.state.only = null;
+      this.render();
+    }
+    const el = row()
       || root.querySelector(`.bp-side [data-focus="${f.section}"]`)
       || (FOCUS_LIST[f.section] && root.querySelector(`.bp-side [data-focus="${FOCUS_LIST[f.section]}"]`));
     if (!el) return;
@@ -188,7 +200,7 @@ export class BuildingPanels {
     el.classList.remove('bp-flash');
     void el.offsetWidth;
     el.classList.add('bp-flash');
-    if (el.matches('tr[data-set]')) el.click();
+    if (el.matches('tr[data-set]') || (el.matches('.bp-pick') && el.getAttribute('aria-pressed') !== 'true')) el.click();
   }
 
   // ---- pieces --------------------------------------------------------------------
@@ -399,6 +411,119 @@ export class BuildingPanels {
 
   // ---- events --------------------------------------------------------------------
 
+  /** A fact line: label on the left, value (or "Chưa kết nối") on the right. `html` is trusted markup. */
+  kv(label, value, html) {
+    return `<div class="bp-kv"><span>${esc(label)}</span><b>${value == null || value === '' ? NONE : html ? value : esc(value)}</b></div>`;
+  }
+
+  /** A row that jumps to another building; `tag` is trusted markup shown before the arrow. */
+  jump(id, sub, tag = '', tone = '', focus = '') {
+    const b = this.frame.byId.get(id);
+    if (!b) return '';
+    return `<button class="bp-rowbtn" data-enter="${esc(b.id)}" data-tone="${tone}"${focus ? ` data-focus="${esc(focus)}"` : ''}><span class="cf-row"><b class="cf-fill">${esc(this.frame.label(b))}</b>${tag}<span class="cf-go">→ Đến tòa</span></span>${sub ? `<small>${esc(sub)}</small>` : ''}</button>`;
+  }
+
+  stateTag(st) {
+    return `<span class="cf-tag" data-tone="${st.tone}">${esc(st.label.toUpperCase())}</span>`;
+  }
+
+  drive(v) {
+    const d = v.drive, q = (this.state.q || '').trim().toLowerCase(), only = this.state.only;
+    const left = this.sec('Tình trạng & việc cần anh') + this.tiles([
+      {label: 'Có thư mục Drive', value: `${d.withDrive}/${d.total}`}, {label: 'Chưa có link Drive', value: d.missing, tone: d.missing ? 'warn' : ''}]) +
+      `<div class="bp-box" style="margin-top:6px">${this.kv('Dung lượng đã dùng', d.storage)}</div>` +
+      this.missions(v.missions, 'Cần anh xử lý', 'Không có việc nào ở Kho Drive.');
+    const show = p => (!only || p.status === only) && (!q || [p.name, p.client].some(x => String(x || '').toLowerCase().includes(q)));
+    const groups = d.groups.map(g => ({...g, projects: g.projects.filter(show)})).filter(g => g.projects.length);
+    const row = p => {
+      const on = p.id === this.state.project;
+      const own = on && this.frame.buildings.find(x => x.kind === 'project' && this.data.getProject(x.projectId)?.id === p.id);
+      return `<button class="bp-rowbtn bp-pick" data-set="project" data-val="${esc(p.id)}" data-focus="project:${esc(p.id)}" aria-pressed="${on}" data-tone="${p.hasDrive ? '' : 'warn'}">
+        <span class="cf-row"><b class="cf-fill">${esc(p.name)}</b><span class="cf-tag" data-tone="${STATUS_TONE[p.status] || 'info'}">${esc(String(p.status || '').toUpperCase())}</span></span>
+        <small>${p.hasDrive ? 'Đã có thư mục Drive' : 'Chưa có link Drive'}</small></button>` + (on ? `<div class="bp-box" style="margin:-2px 0 7px">
+        ${p.files.map(f => this.kv(f.title, f.status)).join('') || '<span class="bp-none">Chưa có file giấy tờ trong dữ liệu</span>'}
+        ${this.actions(p.hasDrive ? `<a class="cf-btn" href="${esc(p.driveUrl)}" target="_blank" rel="noopener">Mở Drive ↗</a>` : '<span class="cf-btn" aria-disabled="true" title="Dự án chưa có link Drive trong dữ liệu">Mở Drive ↗</span>',
+          own ? `<button class="cf-btn" data-enter="${esc(own.id)}">→ Đến tòa dự án</button>` : '')}</div>` : '');
+    };
+    const right = this.sec('Dự án theo khách hàng', `${d.withDrive}/${d.total} có thư mục`, 'projects') +
+      `<input class="bp-search" type="search" data-filter="q" value="${esc(this.state.q || '')}" placeholder="Tìm dự án hoặc khách hàng" aria-label="Tìm dự án">
+      <div class="bp-chips"><select data-filter="only" aria-label="Trạng thái"><option value="">Mọi trạng thái</option>${d.statuses.map(x => `<option${only === x ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>` +
+      (groups.map(g => this.sec(g.client, g.projects.length + ' dự án') + g.projects.map(row).join('')).join('') || '<div class="cf-empty">Không có dự án nào khớp.</div>') +
+      this.actions(this.open(v.page, 'Mở Giấy tờ bên dashboard', true));
+    return [left, right];
+  }
+
+  hermes(v) {
+    const h = v.hermes, posts = h.posts, wait = h.pendingPosts;
+    const expense = i => {
+      const e = i.expense;
+      return `<div class="bp-rowbtn" data-tone="warn" data-focus="expense:${esc(i.id)}"><span class="cf-row"><b class="cf-fill">${esc(e?.description || i.mission.title)}</b><b class="bp-amt" data-tone="out">${e?.amountFormatted ? esc(this.frame.money(e.amountFormatted)) : NONE}</b></span>
+        <small>${esc([e?.date || i.mission.date, i.project?.name || 'Chưa gắn dự án'].filter(Boolean).join(' · '))}</small></div>`;
+    };
+    const left = this.sec('Tình trạng & việc cần anh') + this.tiles([
+      {label: 'Hermes', value: h.state.label, tone: h.state.tone === 'ok' ? '' : h.state.tone === 'idle' ? '' : h.state.tone},
+      {label: 'Khoản chi thiếu thông tin', value: h.inputs.length, tone: h.inputs.length ? 'warn' : ''},
+      {label: 'Bài chờ anh duyệt', value: wait ? wait.length : null, tone: wait?.length ? 'warn' : ''}], 3) +
+      this.sec('Lần quét mail gần nhất', null, 'scan') + `<div class="bp-box">${h.mailScan ? esc(h.mailScan) : NONE}</div>` +
+      this.sec('Cần anh bổ sung', h.inputs.length + ' khoản', 'missions') + (h.inputs.map(i => this.mission(i.mission)).join('') || '<div class="cf-empty">Không có khoản chi nào thiếu thông tin.</div>');
+    const right = this.sec('Kết quả quét mail', h.inputs.length + ' khoản thiếu thông tin', 'expenses') + `<div class="bp-box" style="margin-bottom:6px">${h.mailScan ? esc(h.mailScan) : NONE}</div>` +
+      (h.inputs.map(expense).join('') || '<div class="cf-empty">Không có khoản chi nào thiếu thông tin.</div>') + this.jump(v.bankId, 'Bổ sung khoản chi ở đây') +
+      this.sec('Bài Hermes soạn', posts ? posts.length + ' bài' : 'chưa kết nối', 'posts') + (!posts ? '<div class="cf-empty">Chưa kết nối danh sách bài viết.</div>' :
+        posts.map(p => `<div class="bp-rowbtn" data-focus="post:${esc(p.id)}"><span class="cf-row"><span class="cf-fill">${esc(p.title)}</span><span class="cf-tag" data-tone="${(POST_STATUS[p.status] || POST_STATUS.pending).tone}">${(POST_STATUS[p.status] || POST_STATUS.pending).label}</span></span>
+          <small>${esc([p.page, p.date].filter(Boolean).join(' · '))}</small></div>`).join('') || '<div class="cf-empty">Hermes chưa soạn bài nào.</div>') + this.jump(v.marketingId, 'Duyệt bài ở đây') +
+      this.sec('Hệ thống', null, 'system') + `<div class="bp-box" style="margin-bottom:6px">${this.kv('Sao lưu', h.backup)}${this.kv('Độ trễ database', h.dbLatency)}</div>` +
+      this.jump(v.hostId, 'Máy chủ đang chạy Hermes', this.stateTag(h.host), h.host.key === 'down' ? 'alert' : '') +
+      this.actions(this.open(v.page, 'Mở Tổng quan bên dashboard', true));
+    return [left, right];
+  }
+
+  /** Database, Oracle Cloud, Google Cloud and Telegram share one panel; `extra` is the part of its own each adds on the right. */
+  system(v, extra) {
+    const s = v.system, down = s.key === 'down';
+    const left = this.sec('Tình trạng & việc cần anh') + this.tiles([
+      {label: 'Trạng thái', value: s.label, tone: s.tone === 'warn' || s.tone === 'alert' ? s.tone : ''}, {label: 'Kiểm tra gần nhất', value: s.lastCheck}]) +
+      `<div class="bp-box" style="margin-top:6px">${s.detail ? esc(s.detail) : NONE}</div>` +
+      this.missions(v.missions, 'Cần anh xử lý', 'Không có việc nào ở tòa này.') +
+      this.sec('Phụ trách', null, 'agents') + (v.agents.map(a => this.agent(a)).join('') || '<div class="cf-empty">Chưa có agent nào được gán cho tòa này.</div>');
+    const right = this.sec('Phục vụ cho', v.serves.length + ' tòa' + (down ? ' · đang bị ảnh hưởng' : ''), 'serves') +
+      (v.serves.map(x => this.jump(x.id, x.label, down ? '<span class="cf-tag" data-tone="alert">BỊ ẢNH HƯỞNG</span>' : '', down ? 'alert' : '', 'serve:' + x.id)).join('') || '<div class="cf-empty">Chưa có tòa nào dựa vào hệ thống này.</div>') +
+      extra + this.actions(s.adminUrl ? `<a class="cf-btn cf-primary" href="${esc(s.adminUrl)}" target="_blank" rel="noopener">Mở trang quản trị ↗</a>` :
+        '<span class="cf-btn" aria-disabled="true" title="Chưa có địa chỉ trang quản trị">Mở trang quản trị ↗</span>');
+    return [left, right];
+  }
+
+  services(v, title) {
+    return this.sec(title, null, 'services') + v.services.map(x => x.buildingId && this.frame.byId.get(x.buildingId) ?
+      this.jump(x.buildingId, x.name === this.frame.label(this.frame.byId.get(x.buildingId)) ? '' : x.name, this.stateTag(x.state), x.state.key === 'down' ? 'alert' : '', 'service:' + x.id) :
+      `<div class="bp-rowbtn" data-focus="service:${esc(x.id)}"><span class="cf-row"><b class="cf-fill">${esc(x.name)}</b>${this.stateTag(x.state)}</span></div>`).join('');
+  }
+
+  database(v) {
+    return this.system(v, this.sec('Dữ liệu', null, 'data') + `<div class="bp-box">${this.kv('Nguồn dữ liệu', SOURCE[v.source])}${this.kv('Cập nhật gần nhất', v.updatedAt && new Date(v.updatedAt).toLocaleString('vi-VN'))}
+      ${this.kv('Độ trễ', v.latency)}</div>` + this.sec('Sao lưu', null, 'backup') + `<div class="bp-box" data-tone="${v.backupOk === false ? 'warn' : ''}">${v.backup ? esc(v.backup) : NONE}</div>`);
+  }
+
+  oracle(v) {
+    return this.system(v, this.services(v, 'Dịch vụ chạy trên Oracle'));
+  }
+
+  google(v) {
+    return this.system(v, this.services(v, 'Drive và Gmail'));
+  }
+
+  telegram(v) {
+    const s = v.system;
+    return this.system(v, this.sec('Bot', null, 'bot') + `<div class="bp-box">${this.kv('Nhận lệnh', s.key === 'down' ? 'Không nhận lệnh' : s.key ? 'Đang nhận lệnh' : null)}
+      ${this.kv('Tin nhắn gần nhất', v.lastMessage)}${this.kv('Lệnh gần nhất', v.lastCommand)}</div>`);
+  }
+
+  reserve(v) {
+    const left = this.sec('Tình trạng') + `<div class="bp-box">${NONE}</div>
+      <div class="bp-subtitle" style="margin-top:8px">Khi có nguồn dữ liệu, tòa này sẽ hiện tổng dự trữ, từng tài khoản / khoản mục và ngày đáo hạn.</div>`;
+    const right = this.sec('Liên quan', null, 'vault') + this.jump(v.bankId, 'Thu chi và dòng tiền') + this.actions(this.open(v.financePage, 'Mở Tài chính bên dashboard', true));
+    return [left, right];
+  }
+
   onClick(e) {
     const storey = e.target.closest('[data-storey]');
     if (storey) return this.onStorey?.(+storey.dataset.storey);
@@ -415,7 +540,7 @@ export class BuildingPanels {
     if (!set) return;
     const {set: key, val} = set.dataset;
     const value = key === 'day' ? +val : val;
-    this.state[key] = key === 'day' && this.state.day === value ? null : value;
+    this.state[key] = (key === 'day' || set.matches('.bp-pick')) && this.state[key] === value ? null : value;
     if (key === 'tab') for (const k of ['month', 'project', 'category', 'method']) delete this.state[k];
     this.render();
   }
