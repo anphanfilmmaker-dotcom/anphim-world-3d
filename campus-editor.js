@@ -3909,7 +3909,8 @@ export function createCampusEditor({
           continue;
         }
         const obj = spawnAsset(a.type, a.position[0], a.position[2], a.scale || 1.0, a.rotationY, a.id);
-        if (obj) {
+        // On land re-laid since the state was saved the saved height is the old ground's: the prop stays on the new ground.
+        if (obj && [-0.5, 0.5].every(i => [-0.5, 0.5].every(j => landKept(a.position[0] + i * GRID.stepX, a.position[2] + j * GRID.stepZ, landOf(savedState))))) {
           obj.position.y = a.position[1];
         }
       }

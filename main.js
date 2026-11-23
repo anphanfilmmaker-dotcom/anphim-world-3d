@@ -1,7 +1,7 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=128';
+import {createCampusEditor} from './campus-editor.js?rev=129';
 import {createLandscapePolish} from './landscape-polish.js?rev=119';
 import {createCampusGreenery} from './campus-greenery.js?rev=13';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -18,7 +18,7 @@ import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v43';
 import {createAdapter, nightWindowGlow} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq25';
+import {createTerrain} from './terrain.js?rev=hq26';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
