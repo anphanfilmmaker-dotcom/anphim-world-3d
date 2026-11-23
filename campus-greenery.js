@@ -52,13 +52,13 @@ export function createCampusGreenery(scene, L, terrain, roads, landscape, layers
 
   // Đất của các quận khách hàng và đường dẫn vào chúng (cổng, đường nhánh) là của client-districts.js: không trồng gì lên đó
   const plan = districtPlan(L);
-  for (const p of districtGroundPads(L, 1)) rects.push({x: p.x, z: p.z, hx: p.hx, hz: p.hz, cos: 1, sin: 0});
   const districtRoad = (pts, half) => {
     for (let i = 0; i < pts.length - 1; i++) {
       const [ax, az] = pts[i], [bx, bz] = pts[i + 1], len = Math.hypot(bx - ax, bz - az) || 1;
       rects.push({x: (ax + bx) / 2, z: (az + bz) / 2, hx: len / 2 + half, hz: half, cos: (bx - ax) / len, sin: -(bz - az) / len});
     }
   };
+  for (const p of districtGroundPads(L, 1)) { if (p.path) districtRoad(p.path, p.half); else rects.push({x: p.x, z: p.z, hx: p.hx, hz: p.hz, cos: 1, sin: 0}); }
   for (const slot of plan?.slots || []) if (slot.ringXZ) districtRoad([slot.ringXZ, slot.gateXZ], plan.template.roadWidth / 2 + plan.template.sidewalkWidth + 1);
   for (const r of plan?.accessRoads || []) districtRoad(r.points, r.width / 2 + 2.5);
 

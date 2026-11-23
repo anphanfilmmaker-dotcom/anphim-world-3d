@@ -121,6 +121,58 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     return {add, box, flat, disc, solid, build};
   }
 
+  /**
+   * A batch for one district, placed along its road: x is s, the distance along the road from the gate, and z is o,
+   * the offset to its side, so a piece keeps its place and turns with the road on a bend. `strip` lays a band along
+   * the road from s0 to s1; `raw` is the same batch in the district's plain (u, v).
+   */
+  function along(road) {
+    const raw = batch();
+    const box = (material, w, h, d, s, y, o, ry = 0) => {
+      if (!road.clear(s, o)) return;
+      const [u, v] = road.map(s, o);
+      raw.box(material, w, h, d, u, y, v, ry + road.heading(s));
+    };
+    const solid = (material, g, s, y, o) => {
+      if (!road.clear(s, o)) return;
+      const [u, v] = road.map(s, o), turn = road.heading(s);
+      if (turn) g.rotateY(turn);
+      raw.solid(material, g, u, y, v);
+    };
+    const disc = (material, r, s, y, o, seg) => { const [u, v] = road.map(s, o); raw.disc(material, r, u, y, v, seg); };
+    const strip = (material, s0, s1, o, width, y, h) => {
+      if (s1 <= s0) return;
+      if (!road.curved) return raw.box(material, s1 - s0, h, width, (s0 + s1) / 2, y, o);
+      const n = Math.ceil(s1 - s0), pos = [], nor = [], top = y + h;
+      const tri = (a, b, c) => {
+        const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+        const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, l = Math.hypot(nx, ny, nz) || 1;
+        pos.push(...a, ...b, ...c);
+        for (let i = 0; i < 3; i++) nor.push(nx / l, ny / l, nz / l);
+      };
+      const cut = i => {
+        const at = s0 + (s1 - s0) * i / n, [lu, lv] = road.map(at, o - width / 2), [ru, rv] = road.map(at, o + width / 2);
+        return {lb: [lu, y, lv], lt: [lu, top, lv], rb: [ru, y, rv], rt: [ru, top, rv]};
+      };
+      let a = cut(0);
+      tri(a.lb, a.rb, a.lt); tri(a.rb, a.rt, a.lt);
+      for (let i = 1; i <= n; i++) {
+        const b = cut(i);
+        tri(a.lt, a.rt, b.lt); tri(a.rt, b.rt, b.lt);
+        tri(a.lb, a.lt, b.lb); tri(a.lt, b.lt, b.lb);
+        tri(a.rb, b.rb, a.rt); tri(a.rt, b.rb, b.rt);
+        a = b;
+      }
+      tri(a.lb, a.lt, a.rb); tri(a.rb, a.lt, a.rt);
+      const g = new T.BufferGeometry();
+      g.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+      g.setAttribute('normal', new T.Float32BufferAttribute(nor, 3));
+      g.setAttribute('uv', new T.Float32BufferAttribute(new Float32Array(pos.length / 3 * 2), 2));
+      raw.add(material, g);
+    };
+    return {raw, box, solid, disc, strip, flat: raw.flat, build: raw.build};
+  }
+
   const roundedRect = (u0, v0, u1, v1, r) => {
     const s = new T.Shape();
     // Shape y becomes -z once laid flat, so v is negated here.
@@ -327,30 +379,43 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     group.name = slot.id;
     group.position.set(slot.gateXZ[0], frame.y, slot.gateXZ[1]);
     group.rotation.y = frame.rotY;
-    const {depth, half} = frame, b = batch(), flatB = batch();
-    const open = openLotCount(slot, tpl, used), roadEnd = spineEnd(tpl, open);
+    const {depth, half, road} = frame, b = along(road), flatB = along(road);
+    const open = openLotCount(slot, tpl, used), roadEnd = spineEnd(slot, tpl, open);
     const rw = tpl.roadWidth / 2, sw = tpl.sidewalkWidth, loop = tpl.walkLoopOffset, lots = slotLots(slot, tpl);
+    // Everything below is placed by (s, o): s metres along the district's road from the gate, o metres to its side.
+    // On a road with lots on one side only, that side gets the sidewalk, the lamps and the walking loop.
+    const sides = road.lotSide ? [road.lotSide] : [-1, 1];
     const [lotW, lotD] = tpl.lotSize, accent = mat(land.accent), rand = seeded(slot.id);
 
     // The ground itself is the terrain, coloured by world-landscape.js for this slot's landscape.
 
     // Walking loop behind the lots, with spokes back to the sidewalks.
-    const ring = roundedRect(5 - 0.8, -loop - 0.8, depth - 3 + 0.8, loop + 0.8, 5);
-    ring.holes.push(roundedRect(5 + 0.8, -loop + 0.8, depth - 3 - 0.8, loop - 0.8, 4.2));
-    flatB.flat(M.walk, ring, 0.07);
+    if (road.curved) {
+      for (const s of sides) flatB.strip(M.walk, 5, depth - 3, s * loop, 1.6, 0.06, 0.012);
+      for (const u of road.joins ? [] : [5, depth - 3]) flatB.box(M.walk, 1.6, 0.012, (road.lotSide ? loop - rw - sw : 2 * loop) + 1.6, u, 0.06, road.lotSide * (loop + rw + sw) / 2);
+    } else {
+      const ring = roundedRect(5 - 0.8, -loop - 0.8, depth - 3 + 0.8, loop + 0.8, 5);
+      ring.holes.push(roundedRect(5 + 0.8, -loop + 0.8, depth - 3 - 0.8, loop - 0.8, 4.2));
+      flatB.flat(M.walk, ring, 0.07);
+    }
     const spokes = [];
     for (let u = tpl.firstLotAt; u <= depth - 6; u += 2 * tpl.lotPitch) spokes.push(u);
-    for (const u of spokes) for (const s of [-1, 1]) flatB.box(M.walk, 1.3, 0.05, loop - rw - sw, u, 0.03, s * (rw + sw + (loop - rw - sw) / 2));
+    for (const u of spokes) for (const s of sides) flatB.box(M.walk, 1.3, 0.05, loop - rw - sw, u, 0.03, s * (rw + sw + (loop - rw - sw) / 2));
 
     // Gate plaza, road with centre line, turnaround, sidewalks, crossings.
     flatB.flat(M.plaza, roundedRect(tpl.gatePlaza[0], -12, tpl.gatePlaza[1], 12, 1.2), 0.09);
-    b.box(M.asphalt, roadEnd + 1.5, 0.12, tpl.roadWidth, (roadEnd - 1.5) / 2, 0, 0);
-    flatB.disc(M.asphalt, tpl.turnaroundRadius, roadEnd, 0.125, 0);
-    b.solid(mat(land.verge), new T.CylinderGeometry(1.8, 1.8, 0.3, 18), roadEnd, 0.2, 0);
+    b.strip(M.asphalt, -1.5, roadEnd, 0, tpl.roadWidth, 0, 0.12);
+    // A road that comes back on itself needs no turnaround.
+    if (!road.joins) {
+      flatB.disc(M.asphalt, tpl.turnaroundRadius, roadEnd, 0.125, 0);
+      b.solid(mat(land.verge), new T.CylinderGeometry(1.8, 1.8, 0.3, 18), roadEnd, 0.2, 0);
+    }
     for (let u = 1.5; u < roadEnd - tpl.turnaroundRadius - 1; u += 3.2) if (!spokes.some(c => Math.abs(u + 0.8 - c) < 2.2)) flatB.box(M.line, 1.6, 0.01, 0.16, u + 0.8, 0.125, 0);
     for (const s of [-1, 1]) {
-      b.box(M.walk, roadEnd - tpl.gatePlaza[1] - 3, 0.2, sw, (roadEnd + tpl.gatePlaza[1] - 3) / 2, 0, s * (rw + sw / 2));
-      b.box(M.curb, roadEnd - 3, 0.22, 0.18, (roadEnd - 3) / 2, 0, s * (rw + 0.09));
+      // Where the road comes back on itself, the kerbs stop short so they do not run across the junction.
+      const end = roadEnd - (road.joins ? tpl.roadWidth : 3);
+      if (sides.includes(s)) b.strip(M.walk, tpl.gatePlaza[1], end, s * (rw + sw / 2), sw, 0, 0.2);
+      b.strip(M.curb, road.joins && !sides.includes(s) ? tpl.gatePlaza[1] + tpl.roadWidth : 0, end, s * (rw + 0.09), 0.18, 0, 0.22);
     }
     for (const u of spokes.filter(u => u < roadEnd - tpl.turnaroundRadius)) for (let i = -2; i <= 2; i++) flatB.box(M.line, 2.2, 0.012, 0.55, u, 0.125, i * 1.1);
     for (let i = -2; i <= 2; i++) flatB.box(M.line, 2.2, 0.012, 0.55, -1.6, 0.125, i * 1.1);
@@ -358,10 +423,10 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     // Street lamps along the road.
     const lampHeads = [];
     for (let u = 16, k = 0; u < roadEnd - 4; u += 12, k++) {
-      const s = k % 2 ? 1 : -1, v = s * (rw + sw - 0.3);
+      const s = road.lotSide || (k % 2 ? 1 : -1), v = s * (rw + sw - 0.3);
       b.box(M.pole, 0.14, 4.2, 0.14, u, 0.2, v);
       b.box(M.pole, 0.1, 0.1, 1.1, u, 4.3, v - s * 0.5);
-      lampHeads.push([u, 4.26, v - s * 0.85]);
+      lampHeads.push([...road.map(u, v - s * 0.85), road.heading(u)]);
     }
 
     // Gate: two pillars, a beam and the client's name on both faces.
@@ -391,10 +456,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     // Lots: a paved pad with its number when the road reaches it, a pegged outline when it is kept for later.
     const peg = mat(0xf28c28);
     for (const lot of lots) {
-      const front = lot.v - lot.side * lotD / 2;
+      // A lot is a rectangle beside the road: `on(a, c)` is the point a metres along it and c metres across from its centre.
+      const turn = Math.atan2(-lot.tv, lot.tu), on = (a, c) => [lot.u + a * lot.tu - c * lot.tv, lot.v + a * lot.tv + c * lot.tu];
+      const raw = (batchOf, material, w, h, d, a, y, c) => { const [u, v] = on(a, c); batchOf.raw.box(material, w, h, d, u, y, v, turn); };
       if (lot.n <= open) {
-        b.box(mat(land.lot), lotW, 0.16, lotD, lot.u, 0.02, lot.v);
-        b.box(M.walk, 1.4, 0.05, tpl.lotSetback - rw - sw + 0.1, lot.u, 0.03, lot.side * (rw + sw + (tpl.lotSetback - rw - sw) / 2));
+        raw(b, mat(land.lot), lotW, 0.16, lotD, 0, 0.02, 0);
+        b.box(M.walk, 1.4, 0.05, tpl.lotSetback - rw - sw + 0.1, lot.s, 0.03, lot.side * (rw + sw + (tpl.lotSetback - rw - sw) / 2));
         const plate = board('lot:' + lot.n, 1.5, 0.9, 80, (ctx, w, h) => {
           ctx.fillStyle = '#20262d';
           ctx.fillRect(0, 0, w, h);
@@ -405,24 +472,31 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
           ctx.fillText(String(lot.n).padStart(2, '0'), w / 2, h / 2 + 3);
         });
         plate.rotation.x = -Math.PI / 2;
-        plate.rotation.z = lot.side > 0 ? Math.PI : 0;
-        plate.position.set(lot.u - lotW / 2 + 1.1, 0.195, front + lot.side * 0.75);
+        plate.rotation.z = turn + (lot.side > 0 ? Math.PI : 0);
+        const [pu, pv] = on(-lotW / 2 + 1.1, -lot.side * (lotD / 2 - 0.75));
+        plate.position.set(pu, 0.195, pv);
         group.add(plate);
       } else {
-        for (const du of [-1, 1]) for (const dv of [-1, 1]) b.box(peg, 0.16, 0.7, 0.16, lot.u + du * lotW / 2, 0.04, lot.v + dv * lotD / 2);
-        for (const du of [-1, 1]) for (let i = 0; i < 4; i++) flatB.box(M.line, 0.14, 0.012, 1.2, lot.u + du * lotW / 2, 0.05, lot.v + (i - 1.5) * 2.6);
-        for (const dv of [-1, 1]) for (let i = 0; i < 3; i++) flatB.box(M.line, 1.2, 0.012, 0.14, lot.u + (i - 1) * 2.8, 0.05, lot.v + dv * lotD / 2);
+        for (const du of [-1, 1]) for (const dv of [-1, 1]) raw(b, peg, 0.16, 0.7, 0.16, du * lotW / 2, 0.04, dv * lotD / 2);
+        for (const du of [-1, 1]) for (let i = 0; i < 4; i++) raw(flatB, M.line, 0.14, 0.012, 1.2, du * lotW / 2, 0.05, (i - 1.5) * 2.6);
+        for (const dv of [-1, 1]) for (let i = 0; i < 3; i++) raw(flatB, M.line, 1.2, 0.012, 0.14, (i - 1) * 2.8, 0.05, dv * lotD / 2);
       }
     }
 
     // Trees: a row along both long edges, a few at the far end, a grove on the land kept for later.
     const spots = [];
-    const spot = (u, v, s = 1) => spots.push({u: u + (rand() - 0.5) * 0.9, v: v + (rand() - 0.5) * 0.9, r: rand(), s: s * (0.82 + rand() * 0.4)});
+    // A tree keeps to its place beside the road: on the inside of a tight bend, where that place is on the road again, it is left out.
+    const spot = (u, v, s = 1) => {
+      const [pu, pv] = road.map(u, v), jitter = [(rand() - 0.5) * 0.9, (rand() - 0.5) * 0.9, rand(), s * (0.82 + rand() * 0.4)];
+      if (road.clear(u, v)) spots.push({u: pu + jitter[0], v: pv + jitter[1], r: jitter[2], s: jitter[3]});
+    };
+    // Inside a road that comes back on itself: a green with a few trees, the park of a later step.
+    if (road.joins) for (const [u, v] of road.inside(7)) spots.push({u: u + (rand() - 0.5) * 2, v: v + (rand() - 0.5) * 2, r: rand(), s: 0.9 + rand() * 0.4});
     for (let u = 3; u <= depth - 3; u += land.tree === 'pine' ? 4 : 6) for (const v of [-21.4, 21.4]) spot(u, v);
-    for (const v of [-13, -7, 7, 13]) spot(depth - 1.6, v);
+    if (!road.joins) for (const v of [-13, -7, 7, 13]) spot(depth - 1.6, v);
     if (land.tree === 'pine' || land.tree === 'snowpine') for (let u = 6; u <= depth - 4; u += 7) for (const v of [-23.4, 23.4]) spot(u + 3, v, 0.8);
     for (let u = roadEnd + 9; u < depth - 5; u += 6.5) for (const v of [-13.5, -4.5, 4.5, 13.5]) if (rand() < 0.55) spot(u, v);
-    spot(roadEnd, 0, 0.9);
+    if (!road.joins) spot(roadEnd, 0, 0.9);
     for (const s of [-1, 1]) spot(6.2, s * 10, 0.85);
     plantTrees(group, land.tree, land.canopy, spots);
 
@@ -432,7 +506,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     b.build(group);
     if (lampHeads.length) {
       const heads = new T.InstancedMesh(LAMP_HEAD, M.lampHead, lampHeads.length), m = new T.Matrix4();
-      lampHeads.forEach((at, i) => heads.setMatrixAt(i, m.makeTranslation(...at)));
+      lampHeads.forEach(([u, v, turn], i) => heads.setMatrixAt(i, m.makeRotationY(turn).setPosition(u, 4.26, v)));
       heads.name = 'district-lamp-heads';
       group.add(heads);
     }
@@ -636,7 +710,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         const lot = lots[n - 1], [x, z] = frame.toWorld(lot.u, lot.v);
         const g = buildProjectBuilding(p, land, p.id);
         g.position.set(x, frame.y + 0.18, z);
-        g.rotation.y = frame.rotY + (lot.side > 0 ? Math.PI : 0);
+        g.rotation.y = frame.rotY + Math.atan2(-lot.tv, lot.tu) + (lot.side > 0 ? Math.PI : 0);
         const id = 'bld:project:proj_' + String(num).padStart(2, '0');
         const binding = {id, legacyId: 'proj_' + String(num).padStart(2, '0'), projectId: p.id, kind: 'project', name: p.name, clientLabel: client.name, department: slot.id, lotId: lot.id, grade: 'B', position: [x, frame.y + 0.18, z], front: '+Z', level: 0};
         g.name = id;
@@ -656,9 +730,10 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
           fitText(ctx, p.name, w - 34, 30, 700);
           ctx.fillText(p.name, 22, h / 2 + 1);
         });
-        const [sx, sz] = frame.toWorld(lot.u + 2.2, lot.v - lot.side * (tpl.lotSize[1] / 2 - 0.5));
+        const across = -lot.side * (tpl.lotSize[1] / 2 - 0.5);
+        const [sx, sz] = frame.toWorld(lot.u + 2.2 * lot.tu - across * lot.tv, lot.v + 2.2 * lot.tv + across * lot.tu);
         sign.position.set(sx, frame.y + 1.25, sz);
-        sign.rotation.y = frame.rotY + (lot.side > 0 ? 0 : Math.PI);
+        sign.rotation.y = frame.rotY + Math.atan2(-lot.tv, lot.tu) + (lot.side > 0 ? 0 : Math.PI);
         const post = new T.Mesh(new T.BoxGeometry(0.12, 0.9, 0.12), M.pole);
         post.position.set(sx, frame.y + 0.62, sz);
         signs.add(sign, post);
@@ -795,10 +870,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
    */
   function clearLand() {
     const zones = [...districts.values()].filter(d => d.client).map(d => {
-      const f = slotFrame(d.slot, tpl), cos = Math.cos(f.rotY), sin = Math.sin(f.rotY), [gx, gz] = d.slot.gateXZ;
+      // The district's land, and the ground past the far end of its road, which is its backdrop.
+      const f = slotFrame(d.slot, tpl), [eu, ev, tu, tv] = f.road.at(f.depth);
       return (x, z) => {
-        const u = (x - gx) * cos - (z - gz) * sin, v = (x - gx) * sin + (z - gz) * cos;
-        return (u >= -4 && u <= f.depth + 4 && Math.abs(v) <= f.half + 4) || (u > f.depth && u <= f.depth + 36 && Math.abs(v) <= f.half + 14);
+        if (f.gap(x, z) <= 4) return true;
+        const [u, v] = f.toLocal(x, z), past = (u - eu) * tu + (v - ev) * tv;
+        return !f.road.joins && past > 0 && past <= 36 && Math.abs((u - eu) * tv - (v - ev) * tu) <= f.half + 14;
       };
     });
     const lines = [...(plan.accessRoads || []).map(r => [r.points, r.width / 2 + tpl.sidewalkWidth + 1])];

@@ -17,7 +17,7 @@ export function createTerrain(scene,P,L){
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
  // District pads: the nearest one sets the level, so two pads close together do not pull each other's ground.
- {let m=0,lv=0,sh=0;for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10){const k=1-smooth(d/10),w=k/(d*d+1e-4);m=Math.max(m,k);lv+=w*p.y;sh+=w;}}if(sh)y=T.MathUtils.lerp(y,lv/sh,m);}
+ {let m=0,lv=0,sh=0;for(const p of districtPads){const d=p.gap(x,z);if(d<10){const k=1-smooth(d/10),w=k/(d*d+1e-4);m=Math.max(m,k);lv+=w*p.y;sh+=w;}}if(sh)y=T.MathUtils.lerp(y,lv/sh,m);}
  // Landscapes around the client districts and on to the far mountains and the sea.
  y=world.shape(x,z,y);
  // Four continuous working terraces, stitched to existing fixed building platforms.

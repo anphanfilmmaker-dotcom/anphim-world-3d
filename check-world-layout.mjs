@@ -4,7 +4,8 @@
  *   node check-world-layout.mjs [git ref to compare ids against, default origin/main]
  * 1. Identity: buildings, district slots and lots keep their ids, labels, clients and lot counts.
  * 2. Projects: every project of the live data lands on the same lot id as before.
- * 3. Land: every lot stands on its level pad, above water, clear of other districts and of the roads.
+ * 3. Land: every lot stands on its level pad, above water, clear of other districts and of the roads;
+ *    along a district's own road, curved or straight, lot 1 is nearest the gate and no lot touches another or the road.
  * 4. Roads: each district with a client is reached by road; roads stay dry except on a bridge.
  */
 import {readFileSync} from 'node:fs';
@@ -66,16 +67,32 @@ const segGap = (x, z, a, b) => { const dx = b[0] - a[0], dz = b[1] - a[1], t = M
 const roads = plan.accessRoads || [], roadGap = (x, z) => Math.min(...roads.map(r => Math.min(...r.points.slice(1).map((p, i) => segGap(x, z, r.points[i], p))) - r.width / 2));
 const ring = L.roadPlan?.ringCorners, ringBox = ring && [Math.min(...ring.map(p => p[0])), Math.min(...ring.map(p => p[1])), Math.max(...ring.map(p => p[0])), Math.max(...ring.map(p => p[1]))];
 const frames = plan.slots.map(s => ({slot: s, frame: slotFrame(s, tpl)}));
-const inSlot = ({frame}, x, z, grow = 0) => Math.abs(x - frame.center[0]) <= frame.halfExtent[0] + grow && Math.abs(z - frame.center[1]) <= frame.halfExtent[1] + grow;
+// On a district's land, `inset` metres or more from its edge (the land is the strip along its road).
+const inSlot = ({frame}, x, z, inset = 0) => [[0, 0], [inset, 0], [-inset, 0], [0, inset], [0, -inset]].every(([dx, dz]) => frame.gap(x + dx, z + dz) === 0);
 let lotCount = 0, worstStep = 0, nearestRoad = Infinity;
 for (const f of frames) {
   const {slot, frame} = f, [lotW, lotD] = tpl.lotSize;
-  for (const g of frames) if (g !== f && slot.id < g.slot.id) check(Math.abs(frame.center[0] - g.frame.center[0]) >= frame.halfExtent[0] + g.frame.halfExtent[0] || Math.abs(frame.center[1] - g.frame.center[1]) >= frame.halfExtent[1] + g.frame.halfExtent[1], `${slot.label} overlaps ${g.slot.label}`);
-  if (ringBox) check(frame.center[0] + frame.halfExtent[0] < ringBox[0] || frame.center[0] - frame.halfExtent[0] > ringBox[2] || frame.center[1] + frame.halfExtent[1] < ringBox[1] || frame.center[1] - frame.halfExtent[1] > ringBox[3], `${slot.label} overlaps the campus ring road`);
-  for (const lot of slotLots(slot, tpl)) {
+  // The land of a district: no other district on it, and clear of the campus ring road.
+  for (let x = frame.center[0] - frame.halfExtent[0]; x <= frame.center[0] + frame.halfExtent[0]; x += 2) for (let z = frame.center[1] - frame.halfExtent[1]; z <= frame.center[1] + frame.halfExtent[1]; z += 2) {
+    if (frame.gap(x, z) > 0) continue;
+    for (const g of frames) if (g !== f && slot.id < g.slot.id) check(!inSlot(g, x, z, 1), `${slot.label} overlaps ${g.slot.label} at (${x.toFixed(0)}, ${z.toFixed(0)})`);
+    if (ringBox) check(x < ringBox[0] || x > ringBox[2] || z < ringBox[1] || z > ringBox[3], `${slot.label} overlaps the campus ring road at (${x.toFixed(0)}, ${z.toFixed(0)})`);
+  }
+  const lots = slotLots(slot, tpl), road = frame.road, clear = tpl.roadWidth / 2 + tpl.sidewalkWidth;
+  // Lot 1 is nearest the gate and the numbers run on along the road; no lot touches another or the district's own road.
+  check(lots.every((l, i) => !i || l.s >= lots[i - 1].s), `${slot.label}: lot numbers do not run along the road from the gate`);
+  check(lots[0].s <= tpl.firstLotAt + tpl.lotPitch / 2 + 1e-6, `${slot.label}: lot 1 is not the first lot from the gate`);
+  const sat = (p, q) => [p, q].some(r => r.some((c, i) => { const d = r[(i + 1) % 4], nu = d[1] - c[1], nv = c[0] - d[0], l = Math.hypot(nu, nv); return (r === p ? q : p).every(e => ((e[0] - c[0]) * nu + (e[1] - c[1]) * nv) / l >= 1); }));
+  for (const lot of lots) {
     lotCount++;
+    for (const other of lots) if (other.n > lot.n) check(sat(lot.c, other.c), `${lot.id} is less than 1 m from ${other.id}`);
+    for (let i = 0; i < 4; i++) for (const t of [0, 0.5]) {
+      const a = lot.c[i], b = lot.c[(i + 1) % 4], u = a[0] + (b[0] - a[0]) * t, v = a[1] + (b[1] - a[1]) * t;
+      check(road.gapTo(u, v) >= clear, `${lot.id} is ${road.gapTo(u, v).toFixed(1)} m from the centre of its own road`);
+      check(road.land(u, v) === 0, `${lot.id} is off the land of ${slot.label}`);
+    }
     for (const du of [-0.5, 0, 0.5]) for (const dv of [-0.5, 0, 0.5]) {
-      const [x, z] = frame.toWorld(lot.u + du * lotW, lot.v + dv * lotD), y = terrain.height(x, z);
+      const [x, z] = frame.toWorld(lot.u + du * lotW * lot.tu - dv * lotD * lot.tv, lot.v + du * lotW * lot.tv + dv * lotD * lot.tu), y = terrain.height(x, z);
       worstStep = Math.max(worstStep, Math.abs(y - frame.y));
       check(Math.abs(y - frame.y) < 0.35, `${lot.id} is not level: ground ${y.toFixed(2)} m, pad ${frame.y} m at (${x.toFixed(0)}, ${z.toFixed(0)})`);
       check(!wet(x, z), `${lot.id} is in water at (${x.toFixed(0)}, ${z.toFixed(0)})`);
@@ -86,8 +103,13 @@ for (const f of frames) {
     }
   }
   // The district's own road, gate to turnaround, stays on dry level ground too.
-  const end = spineEnd(tpl, openLotCount(slot, tpl, now.used[slot.id] || 0)) + tpl.turnaroundRadius;
-  for (let u = 0; u <= end; u += 2) { const [x, z] = frame.toWorld(u, 0); check(!wet(x, z), `${slot.label} internal road is in water at (${x.toFixed(0)}, ${z.toFixed(0)})`); }
+  const end = spineEnd(slot, tpl, slot.lots) + (road.joins ? 0 : tpl.turnaroundRadius);
+  check(end <= road.len + tpl.turnaroundRadius + 1e-6 && lots[lots.length - 1].s + lotW / 2 <= road.len + 1e-6, `${slot.label}: the road is too short for its ${slot.lots} lots`);
+  for (let s = 0; s <= end; s += 2) for (const o of [-tpl.roadWidth / 2, 0, tpl.roadWidth / 2]) {
+    const [x, z] = frame.toWorld(...road.map(s, o)), y = terrain.height(x, z);
+    check(!wet(x, z), `${slot.label} internal road is in water at (${x.toFixed(0)}, ${z.toFixed(0)})`);
+    check(Math.abs(y - frame.y) < 0.35, `${slot.label} internal road is not level at (${x.toFixed(0)}, ${z.toFixed(0)}): ground ${y.toFixed(2)} m`);
+  }
   if (slot.clientId) check(!!slot.ringXZ || roads.some(r => { const e = r.points[r.points.length - 1]; return e[0] === slot.gateXZ[0] && e[1] === slot.gateXZ[1]; }), `${slot.label} (${slot.clientId}) has no road to its gate`);
 }
 notes.push(`land: ${lotCount} lots on their pads (largest step ${worstStep.toFixed(2)} m), dry, nearest access road ${nearestRoad.toFixed(1)} m from a lot`);
@@ -109,7 +131,7 @@ for (const road of roads) {
       const x = a[0] + (b[0] - a[0]) * d / len, z = a[1] + (b[1] - a[1]) * d / len;
       check(!wet(x, z), `${road.id} is in water at (${x.toFixed(0)}, ${z.toFixed(0)})`);
       // A road only enters the district it leads to, at its gate.
-      for (const f of frames) if (inSlot(f, x, z, -1)) check(false, `${road.id} runs through ${f.slot.label} at (${x.toFixed(0)}, ${z.toFixed(0)})`);
+      for (const f of frames) if (inSlot(f, x, z, 1)) check(false, `${road.id} runs through ${f.slot.label} at (${x.toFixed(0)}, ${z.toFixed(0)})`);
     }
   }
 }
