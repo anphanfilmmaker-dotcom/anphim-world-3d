@@ -3,15 +3,18 @@ import * as T from 'three';
 /**
  * interior-builder.js: the room shown when a campus building is inspected, in the style of The Sims.
  *
- * - The floor plan is the outline of the building itself (footprintOf), scaled evenly to working size.
+ * - The house is the campus building itself, cut open (building-section.js); this file fills it: furniture
+ *   and people on the largest free floor area of the storey, turned so that its front is the building's gate.
+ *   A building with no floor to stand on (a signboard) gets a room drawn from its outline instead (roomPlan).
  * - Nothing in the room shows text or numbers; those are in the left/right panels. Furniture and moving
  *   people show how the building works, and each one stands for a record of dataConnector.getBuildingView().
  * - Clickable things carry userData.focus = {section, id}; the panels jump to that entry.
- * - Walls between the camera and the room drop to a low stub, also while the camera is rotated.
  */
 
-const FLOOR_Y = 0.14, WALL_H = 3.2, STUB_H = 0.4, WALL_T = 0.22;
+export const FLOOR_Y = 0.14;
+const WALL_H = 3.2, STUB_H = 0.4, WALL_T = 0.22;
 const MIN_W = 12, MIN_D = 9, MAX_ASPECT = 1.7;
+const WORK_HX = 5.2, WORK_HZ = 4.2;   // half sizes the furniture layouts are drawn for
 const PRIORITY = {high: 0xef5350, medium: 0xffb020, low: 0x4fa3ff};
 const STYLE = {
   hq: [0xf3ead9, 0xd9b98f], bank: [0xe7edf2, 0xcfd8df], documents: [0xe9f0e4, 0xd6bb94], project: [0xeceff1, 0xd3d8dc],
@@ -81,6 +84,96 @@ export function roomPlan(footprint, width = MIN_W, depth = MIN_D) {
   return {outline: pts.map(([x, z]) => [x * s, z * s]), hx: bw * k * s / 2, hz: bd * k * s / 2, span: (bw + bd) * s / Math.SQRT2 * 1.05};
 }
 
+/**
+ * Fits the furniture layouts onto a free floor rectangle {cx, cz, hx, hz} of a real building: the layout's
+ * front (+z) is turned to the side the gate is on, and where the floor is smaller than the layouts need,
+ * furniture and people are drawn smaller so they keep their proportion to the building.
+ * `size` sets that scale instead (the storeys above use the scale of the ground floor).
+ * Returns {hx, hz, doorX: in layout metres, scale, turn: rotation of the layout on the floor}.
+ */
+export function fitRoom(rect, gate, size = 0) {
+  const dx = gate[0] - rect.cx, dz = gate[1] - rect.cz;
+  const side = Math.abs(dz) / rect.hz >= Math.abs(dx) / rect.hx ? (dz >= 0 ? 0 : 2) : (dx >= 0 ? 1 : 3);
+  const turn = side * Math.PI / 2;
+  const [hx, hz] = side % 2 ? [rect.hz, rect.hx] : [rect.hx, rect.hz];
+  const scale = size || Math.max(0.22, Math.min(1, hx / WORK_HX, hz / WORK_HZ));
+  return {hx: hx / scale, hz: hz / scale, scale, turn, doorX: (dx * Math.cos(turn) - dz * Math.sin(turn)) / scale};
+}
+
+/** The floor of a storey (geometry from building-section planOf), tiled in the colour of the building type. */
+export function buildFloor(geometry, type) {
+  const tile = document.createElement('canvas');
+  tile.width = tile.height = 64;
+  const tc = tile.getContext('2d');
+  tc.fillStyle = '#fff'; tc.fillRect(0, 0, 64, 64);
+  tc.strokeStyle = 'rgba(0,0,0,.13)'; tc.lineWidth = 2; tc.strokeRect(0, 0, 64, 64);
+  const tiles = new T.CanvasTexture(tile);
+  tiles.wrapS = tiles.wrapT = T.RepeatWrapping; tiles.colorSpace = T.SRGBColorSpace;
+  const floor = new T.Mesh(geometry, new T.MeshStandardMaterial({color: (STYLE[type] || [0, 0xd0cbc0])[1], map: tiles, roughness: 0.65}));
+  floor.receiveShadow = true;
+  floor.userData.interior = true;
+  return floor;
+}
+
+/**
+ * The lot a house stands on while it is open, in place of the campus: plain ground, a path from the gate,
+ * and a few trees as symbols. Drawn in plan coordinates around the building's position; `gate` is [x, z].
+ * userData.update(camera, shown 0..1): trees between the camera and the house stay low.
+ */
+export function buildLot(radius, gate, seed = '') {
+  const g = new T.Group();
+  g.name = 'interior-lot';
+  const flat = color => new T.MeshStandardMaterial({color, roughness: 1, transparent: true});
+  const M = {grass: flat(0xcfe1c3), rim: flat(0xbcd3b0), path: flat(0xe9dcc4), trunk: flat(0xa39382), leafA: flat(0x9cc79b), leafB: flat(0x86b68d)};
+  const disc = (r, material, y) => {
+    const m = new T.Mesh(new T.CircleGeometry(r, 64), material);
+    m.rotation.x = -Math.PI / 2; m.position.y = y; m.receiveShadow = true;
+    g.add(m);
+  };
+  disc(radius, M.rim, 0);
+  disc(radius - 0.35, M.grass, 0.01);
+  const reach = Math.hypot(gate[0], gate[1]) || 1, dir = [gate[0] / reach, gate[1] / reach];
+  const path = new T.Mesh(new T.PlaneGeometry(2.4, Math.max(0.5, radius - 0.35 - reach)), M.path);
+  path.rotation.set(-Math.PI / 2, 0, -Math.atan2(dir[0], dir[1]));
+  path.position.set(dir[0] * (reach + radius - 0.35) / 2, 0.02, dir[1] * (reach + radius - 0.35) / 2);
+  path.receiveShadow = true;
+  g.add(path);
+
+  let h = 2166136261;
+  for (const c of String(seed)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  const rnd = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) + 0x9e3779b9 | 0) >>> 0) / 4294967296;
+  const trees = [], n = Math.max(7, Math.round(radius * 0.8));
+  for (let i = 0; i < n; i++) {
+    const a = (i + rnd() * 0.6) / n * Math.PI * 2, x = Math.sin(a), z = Math.cos(a);
+    if (x * dir[0] + z * dir[1] > 0.9) continue;
+    const tree = new T.Group(), size = 0.8 + rnd() * 0.5, r = radius - 1.3 - rnd() * 1.2;
+    const trunk = new T.Mesh(new T.CylinderGeometry(0.12, 0.16, 1, 8), M.trunk);
+    trunk.position.y = 0.5;
+    const crown = rnd() < 0.35 ? new T.Mesh(new T.ConeGeometry(0.85, 2.3, 7), M.leafB) : new T.Mesh(new T.IcosahedronGeometry(1, 0), M.leafA);
+    crown.position.y = crown.geometry.type === 'ConeGeometry' ? 1.9 : 1.75;
+    trunk.castShadow = crown.castShadow = true;
+    tree.add(trunk, crown);
+    tree.position.set(x * r, 0.01, z * r);
+    tree.rotation.y = rnd() * 6;
+    tree.userData.size = size; tree.userData.k = 1;
+    g.add(tree);
+    trees.push(tree);
+  }
+  g.traverse(o => { o.userData.interior = true; });
+  const eye = new T.Vector3(), at = new T.Vector3(), centre = new T.Vector3();
+  g.userData.update = (camera, shown) => {
+    g.updateMatrixWorld();
+    eye.copy(camera.position).sub(g.getWorldPosition(centre)).setY(0).normalize();
+    for (const material of Object.values(M)) material.opacity = shown;
+    for (const tree of trees) {
+      tree.getWorldPosition(at).sub(centre).setY(0).normalize();
+      tree.userData.k += ((at.dot(eye) > 0.1 ? 0.4 : 1) - tree.userData.k) * 0.15;
+      tree.scale.setScalar(Math.max(0.001, tree.userData.size * tree.userData.k * shown));
+    }
+  };
+  return g;
+}
+
 export function buildInterior(view, plan = roomPlan()) {
   const g = new T.Group();
   g.name = `interior_${view.id}`;
@@ -131,49 +224,60 @@ export function buildInterior(view, plan = roomPlan()) {
     return [o.position.x + lx * c + lz * s, o.position.z - lx * s + lz * c];
   };
 
-  // ---- shell: floor in the building's outline, walls that drop on the camera side ----
-  const tile = document.createElement('canvas');
-  tile.width = tile.height = 64;
-  const tc = tile.getContext('2d');
-  tc.fillStyle = '#fff'; tc.fillRect(0, 0, 64, 64);
-  tc.strokeStyle = 'rgba(0,0,0,.13)'; tc.lineWidth = 2; tc.strokeRect(0, 0, 64, 64);
-  const tiles = new T.CanvasTexture(tile);
-  tiles.wrapS = tiles.wrapT = T.RepeatWrapping; tiles.repeat.set(0.8, 0.8); tiles.colorSpace = T.SRGBColorSpace;
-  const slab = new T.Mesh(
-    new T.ExtrudeGeometry(new T.Shape(outline.map(([x, z]) => new T.Vector2(x, -z))), {depth: 0.7, bevelEnabled: false}),
-    [mat(floorColor, {map: tiles, roughness: 0.65}), M.plinth]);
-  slab.rotation.x = -Math.PI / 2; slab.position.y = FLOOR_Y - 0.7; slab.receiveShadow = true;
-  g.add(slab);
+  // ---- a room of its own (only for a building that cannot be opened): floor in the building's outline,
+  //      walls that drop on the camera side, a door frame on the front wall ----
+  let door, doorRot, byDoor;
+  if (outline) {
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 64;
+    const tc = tile.getContext('2d');
+    tc.fillStyle = '#fff'; tc.fillRect(0, 0, 64, 64);
+    tc.strokeStyle = 'rgba(0,0,0,.13)'; tc.lineWidth = 2; tc.strokeRect(0, 0, 64, 64);
+    const tiles = new T.CanvasTexture(tile);
+    tiles.wrapS = tiles.wrapT = T.RepeatWrapping; tiles.repeat.set(0.8, 0.8); tiles.colorSpace = T.SRGBColorSpace;
+    const slab = new T.Mesh(
+      new T.ExtrudeGeometry(new T.Shape(outline.map(([x, z]) => new T.Vector2(x, -z))), {depth: 0.7, bevelEnabled: false}),
+      [mat(floorColor, {map: tiles, roughness: 0.65}), M.plinth]);
+    slab.rotation.x = -Math.PI / 2; slab.position.y = FLOOR_Y - 0.7; slab.receiveShadow = true;
+    g.add(slab);
 
-  const walls = outline.map((a, i) => {
-    const b = outline[(i + 1) % outline.length], dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
-    const n = [dz / len, -dx / len];
-    const mesh = box(g, len + WALL_T, 1, WALL_T, M.wall, (a[0] + b[0]) / 2 + n[0] * WALL_T / 2, 0, (a[1] + b[1]) / 2 + n[1] * WALL_T / 2);
-    mesh.rotation.y = -Math.atan2(dz, dx);
-    return {mesh, n, len, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], h: 0};
-  });
-  const eye = new T.Vector3();
-  anim.push((t, camera) => {
-    if (camera) eye.copy(camera.position).sub(g.position); else eye.set(1, 1, 1);
-    const k = Math.hypot(eye.x, eye.z) || 1;
-    for (const w of walls) {
-      const target = (w.n[0] * eye.x + w.n[1] * eye.z) / k > 0.05 ? STUB_H : WALL_H;
-      w.h = w.h ? w.h + (target - w.h) * 0.2 : target;
-      w.mesh.scale.y = w.h; w.mesh.position.y = FLOOR_Y + w.h / 2;
-    }
-  });
+    const walls = outline.map((a, i) => {
+      const b = outline[(i + 1) % outline.length], dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+      const n = [dz / len, -dx / len];
+      const mesh = box(g, len + WALL_T, 1, WALL_T, M.wall, (a[0] + b[0]) / 2 + n[0] * WALL_T / 2, 0, (a[1] + b[1]) / 2 + n[1] * WALL_T / 2);
+      mesh.rotation.y = -Math.atan2(dz, dx);
+      return {mesh, n, len, mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], h: 0};
+    });
+    const eye = new T.Vector3();
+    anim.push((t, camera) => {
+      if (camera) eye.copy(camera.position).sub(g.position); else eye.set(1, 1, 1);
+      const k = Math.hypot(eye.x, eye.z) || 1;
+      for (const w of walls) {
+        const target = (w.n[0] * eye.x + w.n[1] * eye.z) / k > 0.05 ? STUB_H : WALL_H;
+        w.h = w.h ? w.h + (target - w.h) * 0.2 : target;
+        w.mesh.scale.y = w.h; w.mesh.position.y = FLOOR_Y + w.h / 2;
+      }
+    });
 
-  // The door is on the longest wall facing the campus front (+z); people come and go through it.
-  const front = walls.filter(w => w.n[1] > 0.5).sort((a, b) => b.len - a.len)[0] || walls[0];
-  const along = [-front.n[1], front.n[0]];
-  const door = [front.mid[0] - front.n[0] * 0.9, front.mid[1] - front.n[1] * 0.9];
-  const doorRot = -Math.atan2(along[1], along[0]);
-  const dg = group(front.mid[0], front.mid[1], doorRot);
-  box(dg, 1.7, 0.03, 1.0, mat(0x7a4b3a), 0, 0.015, -0.55);
-  for (const x of [-0.95, 0.95]) box(dg, 0.14, 2.3, 0.14, M.woodDark, x, 1.15, 0.1);
-  box(dg, 2.04, 0.14, 0.14, M.woodDark, 0, 2.3, 0.1);
-  /** Point near the door: `side` along the wall, `inward` into the room. */
-  const byDoor = (side, inward = 0.9) => [front.mid[0] + along[0] * side - front.n[0] * inward, front.mid[1] + along[1] * side - front.n[1] * inward];
+    // The door is on the longest wall facing the campus front (+z); people come and go through it.
+    const front = walls.filter(w => w.n[1] > 0.5).sort((a, b) => b.len - a.len)[0] || walls[0];
+    const along = [-front.n[1], front.n[0]];
+    door = [front.mid[0] - front.n[0] * 0.9, front.mid[1] - front.n[1] * 0.9];
+    doorRot = -Math.atan2(along[1], along[0]);
+    const dg = group(front.mid[0], front.mid[1], doorRot);
+    box(dg, 1.7, 0.03, 1.0, mat(0x7a4b3a), 0, 0.015, -0.55);
+    for (const x of [-0.95, 0.95]) box(dg, 0.14, 2.3, 0.14, M.woodDark, x, 1.15, 0.1);
+    box(dg, 2.04, 0.14, 0.14, M.woodDark, 0, 2.3, 0.1);
+    /** Point near the door: `side` along the wall, `inward` into the room. */
+    byDoor = (side, inward = 0.9) => [front.mid[0] + along[0] * side - front.n[0] * inward, front.mid[1] + along[1] * side - front.n[1] * inward];
+
+  } else {
+    // Inside the real building the front of the work area (+z) faces its gate, which is at x = plan.doorX
+    const dx = Math.min(Math.max(plan.doorX || 0, Math.min(0, L + 4.5)), Math.max(0, R - 3.1));
+    door = [dx, F - 0.9];
+    doorRot = -Math.PI;
+    byDoor = (side, inward = 0.9) => [dx - side, F - inward];
+  }
 
   // ---- people ----
   function person(shirt, focus) {
@@ -544,9 +648,16 @@ export function buildInterior(view, plan = roomPlan()) {
     }
   };
 
-  if (rooms[view.type]) rooms[view.type](); else empty();
+  /** A storey above the ground floor: desks standing ready. What the building does is shown downstairs. */
+  function upstairs() {
+    const cols = Math.max(1, Math.min(4, Math.floor((2 * hx - 1.2) / 2.6))), rows = Math.max(1, Math.min(2, Math.floor((2 * hz - 2.2) / 2.8)));
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) desk((c - (cols - 1) / 2) * 2.6, B + 1.3 + r * 2.8, 0);
+    plant(L + 0.7, F - 0.7); plant(R - 0.7, F - 0.7);
+  }
+
+  if (plan.floor > 0) upstairs(); else if (rooms[view.type]) rooms[view.type](); else empty();
   // A deep building leaves room in front of the work area: a waiting corner by the door
-  if (rooms[view.type] && F > 6.2) {
+  if (rooms[view.type] && !plan.floor && F > 6.2) {
     const lounge = group(R - 2.2, F - 1.6, 0);
     box(lounge, 3.2, 0.02, 2.2, mat(0x8fb3c9, {roughness: 1}), 0, 0.01, 0);
     box(lounge, 2.2, 0.4, 0.8, M.chair, 0, 0.2, -0.6);
@@ -558,12 +669,4 @@ export function buildInterior(view, plan = roomPlan()) {
   g.userData.update = (t, camera) => { for (const fn of anim) fn(t, camera); };
   g.userData.update(performance.now() / 1000);
   return g;
-}
-
-/** What a pointer ray hits in the room: undefined (nothing), null (room, nothing clickable) or {section, id}. */
-export function pickFocus(interior, raycaster) {
-  let o = raycaster.intersectObject(interior, true)[0]?.object;
-  if (!o) return undefined;
-  while (o && o !== interior && !o.userData.focus) o = o.parent;
-  return o?.userData.focus || null;
 }

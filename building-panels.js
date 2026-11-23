@@ -55,6 +55,7 @@ button.bp-rowbtn:hover,.bp-rowbtn[aria-pressed=true]{border-color:rgba(247,148,2
 .bp-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
 .bp-chip,.bp-chips select{height:25px;padding:0 9px;border-radius:99px;background:var(--cf-bg2);border:1px solid var(--cf-line);font:inherit;font-size:11px;color:var(--cf-text);max-width:100%}
 .bp-chips select option{color:#111}
+.bp-storeys{margin:8px 0 0}
 .bp-chip[aria-pressed=true]{background:var(--cf-accent);color:#1b2428;border-color:transparent}
 .bp-table{width:100%;border-collapse:collapse;font-size:11px}
 .bp-table th{font-size:9px;color:var(--cf-mute);font-weight:800;padding:2px 0;text-align:center}
@@ -103,6 +104,8 @@ export class BuildingPanels {
     this.frame = frame;
     this.building = null;
     this.state = {};
+    this.storeys = {count: 1, current: 0};   // storeys of the open building (setStoreys); onStorey(n) is called to show one
+    this.onStorey = null;
     const style = document.createElement('style');
     style.id = 'building-panels-style';
     style.textContent = STYLE;
@@ -132,6 +135,12 @@ export class BuildingPanels {
     return this.render();
   }
 
+  /** The storeys the open building offers, and the one on screen; more than one shows the storey buttons. */
+  setStoreys(count, current) {
+    this.storeys = {count, current};
+    if (this.building) this.render();
+  }
+
   hide() {
     this.building = null;
     this.setOpen(false);
@@ -150,7 +159,10 @@ export class BuildingPanels {
     if (!v) return false;
     this.view = v;
     const keep = [this.left.scrollTop, this.right.scrollTop];
-    const head = `<h2 class="bp-title">${esc(v.title)}</h2><div class="bp-subtitle">${esc(v.subtitle)}</div>`;
+    const {count, current} = this.storeys;
+    const storeys = count > 1 ? `<div class="bp-chips bp-storeys" role="group" aria-label="Tầng đang xem">${Array.from({length: count}, (_, i) =>
+      `<button class="bp-chip" data-storey="${i}" aria-pressed="${i === current}">Tầng ${i + 1}</button>`).join('')}</div>` : '';
+    const head = `<h2 class="bp-title">${esc(v.title)}</h2><div class="bp-subtitle">${esc(v.subtitle)}</div>${storeys}`;
     if (!v.connected) {
       this.left.innerHTML = head + `<div class="cf-empty">Tòa này chưa có dữ liệu từ dashboard.</div>`;
       this.right.innerHTML = this.sec('Chi tiết') + `<div class="cf-empty">Chưa kết nối.</div>` + this.actions(this.open(v.page, 'Mở dashboard'));
@@ -388,6 +400,8 @@ export class BuildingPanels {
   // ---- events --------------------------------------------------------------------
 
   onClick(e) {
+    const storey = e.target.closest('[data-storey]');
+    if (storey) return this.onStorey?.(+storey.dataset.storey);
     const month = e.target.closest('[data-month]');
     if (month) {
       const step = +month.dataset.month, t = this.data.getToday();
