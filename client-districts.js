@@ -941,20 +941,25 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       }
       return false;
     });
-    // In front of and behind the sign of each empty slot, so that it reads from both sides.
-    for (const d of districts.values()) if (!d.client) {
+    // In front of and behind the sign of each empty slot, so that it reads from both sides. Only scenery goes from
+    // here: what was placed there in Studio stays.
+    const signs = [...districts.values()].filter(d => !d.client).map(d => {
       const f = slotFrame(d.slot, tpl);
-      zones.push((x, z) => { const [u, v] = f.toLocal(x, z); return u >= -4 && u <= 26 && Math.abs(v) <= 7; });
-    }
+      return (x, z) => { const [u, v] = f.toLocal(x, z); return u >= -4 && u <= 26 && Math.abs(v) <= 7; };
+    });
     // Round each landmark too, and along the path that leads to it.
     for (const d of districts.values()) for (const mark of d.client && d.slot.landmarks || []) {
       const rings = landmarkClearings(mark);
       zones.push((x, z) => rings.some(([px, pz, r]) => Math.hypot(x - px, z - pz) <= r));
     }
-    const taken = (x, z, wet = false) => zones.some(inside => inside(x, z)) || onRoad(x, z) || (!wet && terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
+    const taken = (x, z, wet = false, placed = false) => zones.some(inside => inside(x, z)) || (!placed && signs.some(inside => inside(x, z))) || onRoad(x, z) || (!wet && terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
     const m = new T.Matrix4(), w = new T.Matrix4(), p = new T.Vector3(), gone = new T.Matrix4().makeScale(0, 0, 0);
     const mine = o => {
       for (let q = o; q; q = q.parent) if (q === root || q.name === 'state-visuals' || q.userData.binding) return true;
+      return false;
+    };
+    const placed = o => {
+      for (let q = o; q; q = q.parent) if (q.userData.isCustomAsset) return true;
       return false;
     };
     scene.updateMatrixWorld(true);
@@ -976,7 +981,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
       if (o.geometry.boundingSphere.radius * o.getWorldScale(p).x > 12) return;
       o.getWorldPosition(p);
-      if (taken(p.x, p.z)) o.visible = false;
+      if (taken(p.x, p.z, false, placed(o))) o.visible = false;
     });
   }
 
