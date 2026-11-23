@@ -4,7 +4,7 @@
  *   node check-data-contract.mjs [file, default live_campus_data.json]
  *   node check-data-contract.mjs --write-doc     rewrites the field tables of DATA_CONTRACT.md from the contract
  * Exits 1 when the file breaks the contract, when the check itself no longer catches broken data
- * (it first damages a good copy in known ways), or when DATA_CONTRACT.md is out of date.
+ * (it damages a small good dataset of its own in known ways), or when DATA_CONTRACT.md is out of date.
  */
 import {readFileSync, writeFileSync} from 'node:fs';
 import {CONTRACT, NOTES, validateCampusData, describeContract} from './data-contract.js';
@@ -51,7 +51,27 @@ try {
 }
 
 // ---- the check itself: a good copy damaged in known ways must fail ----
-const good = data && result.ok ? data : JSON.parse(readFileSync('live_campus_data.json', 'utf8'));
+// Its own small dataset, so the check does not depend on what the checked file happens to contain.
+const project = (id, name) => ({
+  id, name, client: 'AN PHIM', status: 'Đang làm', budget: 45000000, budgetFormatted: '45.000.000 đ', received: 0, receivedFormatted: '0 đ',
+  duedate: '11/12/2026', driveUrl: 'https://example.com/drive/' + id,
+  milestones: [{date: '01/12/2026', name: 'Quay', completed: false}], documents: [{title: 'Hợp đồng', status: 'Đã ký'}]
+});
+const good = {
+  updatedAt: '2026-11-21T16:00:00',
+  kpi: {cashAvailable: 1, cashAvailableFormatted: '1 đ', receivable: 1, receivableFormatted: '1 đ', activeProjectsCount: 2, missingDocumentsCount: 0, pendingActionsCount: 1},
+  clients: [{id: 'anphim', name: 'AN PHIM'}],
+  projects: [project('proj_1', 'Phim A'), project('proj_2', 'Phim B')],
+  recentExpenses: [], allExpenses: [], allIncomes: [],
+  dailyBriefing: {
+    tramanh: {activeProjectsSummary: '2 dự án', pendingActionsSummary: '1 việc', highlights: []},
+    hermes: {systemStatus: 'ổn', mailScanStatus: 'ổn', dbLatency: '40ms', backupStatus: 'ổn'}
+  },
+  missions: [{id: 'm1', title: 'Gửi báo giá', priority: 'high', projectId: 'proj_1', done: false}],
+  notifications: [{id: 'n1', level: 'info', text: 'Đã sao lưu', time: '21/11/2026 08:30'}],
+  aiWorkforce: [], systems: [], scheduleToday: [],
+  workspace: {baseUrl: 'https://example.com/workspace', pages: {home: {label: 'Trang chủ', path: '/'}}, buildingPages: {'bld:facility:hq': 'home'}}
+};
 const DAMAGE = [
   ['thiếu hẳn key projects', d => { delete d.projects; }],
   ['projects là object thay vì danh sách', d => { d.projects = {}; }],
@@ -75,7 +95,8 @@ for (const [name, damage] of DAMAGE) {
   const r = validateCampusData(damage(copy) ?? copy, {buildingIds});
   if (r.ok) fails.push(`check không bắt được: ${name}`); else caught++;
 }
-if (!validateCampusData(good, {buildingIds}).ok) fails.push('live_campus_data.json (bản mẫu để thử check) không đạt contract');
+const self = validateCampusData(good, {buildingIds});
+if (!self.ok) fails.push('bộ dữ liệu tự kiểm của check không đạt contract: ' + self.errors.join('; '));
 
 // ---- report ----
 const count = k => Array.isArray(data?.[k]) ? data[k].length : 0;
