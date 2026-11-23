@@ -879,11 +879,11 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       for (let d = 9, k = 0; d < len - 6; d += 18, k++) {
         const s = k % 2 ? 1 : -1, reach = road.width / 2 + tpl.sidewalkWidth + 0.25, p = at(d, s * reach), mid = at(d, 0);
         if (!free(p, 0.6)) continue;
-        const onDeck = terrain.height(...mid) < roadHeight(...mid) - 0.3, foot = onDeck ? roadHeight(...mid) + 0.5 : terrain.height(...p) - 0.1;
+        const onDeck = terrain.height(...mid) < roadHeight(...mid) - 0.3, foot = onDeck ? roadHeight(...mid) + 1.1 : terrain.height(...p) - 0.1, tall = onDeck ? 3.6 : 4.4;
         const arm = at(d, s * (reach - 0.9)), turn = Math.atan2(-(arm[1] - p[1]), arm[0] - p[0]);
-        posts.box(M.pole, 0.14, 4.4, 0.14, p[0], foot, p[1]);
-        posts.box(M.pole, 1.1, 0.1, 0.1, (p[0] + arm[0]) / 2, foot + 4.3, (p[1] + arm[1]) / 2, turn);
-        heads.push([arm[0], foot + 4.26, arm[1], turn + Math.PI / 2]);
+        posts.box(M.pole, 0.14, tall, 0.14, p[0], foot, p[1]);
+        posts.box(M.pole, 1.1, 0.1, 0.1, (p[0] + arm[0]) / 2, foot + tall - 0.1, (p[1] + arm[1]) / 2, turn);
+        heads.push([arm[0], foot + tall - 0.14, arm[1], turn + Math.PI / 2]);
       }
     }
     posts.build(branchDress);
