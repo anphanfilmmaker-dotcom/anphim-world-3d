@@ -8,7 +8,7 @@ export function createTerrain(scene,P,L){
  const districtPads=districtGroundPads(L);
  const GROUND=[-190,-170,190,170],world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
- const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-24,z:-19,hx:9,hz:10,y:4},{id:'finance',x:-27,z:14,hx:8.5,hz:9,y:4},{id:'it',x:32.5,z:14,hx:10.5,hz:9.5,y:3.8},...pads];
+ const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-26,z:-21,hx:12.5,hz:11.5,y:4},{id:'finance',x:-28.5,z:14,hx:11.5,hz:13.5,y:4},{id:'it',x:33.5,z:11.5,hx:13.5,hz:11.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
  // District pads: the nearest one sets the level, so two pads close together do not pull each other's ground.
@@ -63,7 +63,7 @@ export function createTerrain(scene,P,L){
  const materials = [
     '#6fa659',  // 0: Nền cỏ xanh tươi sáng theo ảnh tham chiếu (Campus Builder)
     '#4f6078',  // 1: Đường chính màu xám xanh slate
-    '#dca658',  // 2: Lối đi bộ màu vàng nung ấm (màu gốc sếp chọn)
+    P.colors.walk || '#dca658',  // 2: Lối đi bộ màu vàng (campus-palette.json → colors.walk)
     '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));

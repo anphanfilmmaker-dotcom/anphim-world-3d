@@ -2041,22 +2041,24 @@ export function createArchitecture(P) {
   //   của lô (bằng nửa chiều sâu lô cũ). Khối đế vẫn đứng đúng vị trí topology và cửa chính ở chỗ cũ; lô chỉ nới về phía cánh và ra sau.
   // Kích thước theo đơn vị mô hình, sát tỉ lệ thật (hệ số co khi đặt vào lô ~0.9-1) để tầng, ô kính và gờ mái to, dày khối như ảnh mẫu
   const SMALL_BUILDINGS = {
-    documents: {w: 5.0, d: 4.6, fh: 2.3, cols: 2, stripe: true, podium: 2, tower: {floors: 1, span: 0.62, side: 1, roof: 'units'},
+    documents: {scale: 1.25, w: 5.0, d: 4.6, fh: 2.3, cols: 2, stripe: true, podium: 2, tower: {floors: 1, span: 0.62, side: 1, roof: 'units'},
       wing: {side: -1, len: 5.6, d: 4.0, at: 'back', floors: 2, fh: 1.95, cols: 3, roof: 'lounge'}, plot: [10.5, 6.13], plotHeight: 9.2, front: 3.065},
-    drive: {w: 5.6, d: 5.4, fh: 2.7, cols: 3, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 2.2, span: 0.55, side: -1, roof: 'ac'},
+    drive: {scale: 1.25, w: 5.6, d: 5.4, fh: 2.7, cols: 3, garage: true, podium: 1, terrace: 'solar', tower: {floors: 1, fh: 2.2, span: 0.55, side: -1, roof: 'ac'},
       wing: {side: 1, len: 4.8, d: 4.2, at: 'back', floors: 1, fh: 2.7, cols: 2, roof: 'garden'}, plot: [10.0, 6.4], plotHeight: 6.4, front: 1.66},
-    google: {w: 3.2, d: 6.2, fh: 2.2, cols: 2, stripe: true, podium: 3, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD',
+    google: {scale: 1.25, w: 3.2, d: 6.2, fh: 2.2, cols: 2, stripe: true, podium: 3, roof: 'solar', deck: true, sign: 'GOOGLE CLOUD',
       wing: {side: 1, len: 4.8, d: 4.2, at: 'front', floors: 2, fh: 2.1, cols: 3, roof: 'solar'}, plot: [8.2, 7.2], plotHeight: 8.2, front: 2.5},
-    proj_24: {w: 5.6, d: 5.0, fh: 2.3, cols: 2, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [6.2, 5.77], plotHeight: 8.4},
-    proj_25: {w: 5.6, d: 4.2, fh: 2.3, cols: 3, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4], plotHeight: 5.6},
-    proj_05: {w: 3.4, d: 2.8, fh: 2.0, cols: 2, podium: 2, roof: 'crown', plot: [3.0, 3.29], plotHeight: 5.6},
+    proj_24: {scale: 1.25, w: 5.6, d: 5.0, fh: 2.3, cols: 2, podium: 2, tower: {floors: 1, span: 0.6, side: 1, roof: 'garden'}, plot: [6.2, 5.77], plotHeight: 8.4},
+    proj_25: {scale: 1.25, w: 5.6, d: 4.2, fh: 2.3, cols: 3, podium: 1, terrace: 'none', tower: {floors: 1, span: 0.72, depth: 0.74, side: 0, roof: 'solar', deck: true}, plot: [5.0, 4.4], plotHeight: 5.6},
+    proj_05: {scale: 1.15, w: 3.4, d: 2.8, fh: 2.0, cols: 2, podium: 2, roof: 'crown', plot: [3.0, 3.29], plotHeight: 5.6},
     other: {w: 4.8, d: 4.6, cols: 3, podium: 2, roof: 'garden', plot: [4.4, 4.4]}
   };
   const smallBuildingSpec = kind => SMALL_BUILDINGS[kind] || SMALL_BUILDINGS.other;
+  // scale phóng cả lô (rộng, cao, sâu, mép trước) so với kích thước dựng hình, để tòa nhỏ to tương xứng với khuôn viên như ảnh mẫu.
   // {size: [rộng, cao | null, sâu], front}; cao = null thì dùng chiều cao của hạng công trình (grade); front = null thì lô nằm cân quanh vị trí topology
   const smallBuildingPlot = kind => {
     const K = smallBuildingSpec(kind);
-    return {size: [K.plot[0], K.plotHeight || null, K.plot[1]], front: K.front ?? null};
+    const k = K.scale || 1;
+    return {size: [K.plot[0] * k, K.plotHeight ? K.plotHeight * k : null, K.plot[1] * k], front: K.front != null ? K.front * k : null};
   };
 
   // Chồng các tầng của một khối: thân kem, băng kính bốn mặt, bệ cửa sổ chạy quanh. entry = 'door' | 'garage' cho mặt trước tầng trệt.

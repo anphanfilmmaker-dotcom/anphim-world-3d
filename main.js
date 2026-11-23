@@ -1,8 +1,8 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=122';
-import {createLandscapePolish} from './landscape-polish.js?rev=118';
+import {createCampusEditor} from './campus-editor.js?rev=124';
+import {createLandscapePolish} from './landscape-polish.js?rev=119';
 import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
 import {createPedestrianRouter} from './pedestrian-router.js?rev=20';
@@ -10,15 +10,15 @@ import {runSpatialLint} from './spatial-lint.js?rev=1';
 import {getStudioModelById} from './asset-pack-extractor.js?rev=146';
 import * as T from 'three';
 import {composeCapture} from './capture.js?rev=hq9';
-import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v8';
+import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v9';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {createCameraDirector} from './camera-director.js?rev=2';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
-import {createArchitecture} from './architecture.js?rev=v42';
+import {createArchitecture} from './architecture.js?rev=v43';
 import {createAdapter, nightWindowGlow} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq18';
+import {createTerrain} from './terrain.js?rev=hq20';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -93,7 +93,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v10'), fetchJSON('./campus-palette.json?rev=finalPaletteV6')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v11'), fetchJSON('./campus-palette.json?rev=finalPaletteV10')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
@@ -326,6 +326,13 @@ async function main() {
             diffuseColor.rgb *= mix(vec3(1.0), mix(cool, warm, smoothstep(-0.25, 0.45, lit)), 0.35 + 0.65 * side);
             float blotch = washNoise(vWashPos * vec3(0.42, 0.3, 0.42)) * 0.65 + washNoise(vWashPos * 1.15 + 17.0) * 0.35;
             diffuseColor.rgb *= 1.0 + ${f(WASH.blotch)} * (blotch - 0.5) * 2.0;
+            // Nét cọ: nhiễu kéo dài theo đường chéo trên mặt đứng, và mảng màu ngả ấm / ngả lạnh đổi chậm theo vị trí
+            vec2 sp = vec2(vWashPos.x + vWashPos.z, vWashPos.y);
+            float stroke = washNoise(vec3(sp.x * 0.3 + sp.y * 0.45, sp.y * 2.3 - sp.x * 0.85, (vWashPos.x - vWashPos.z) * 0.3));
+            float roofStroke = washNoise(vec3((vWashPos.x + vWashPos.z * 0.6) * 0.22, (vWashPos.z - vWashPos.x * 0.6) * 1.4, 3.0));
+            diffuseColor.rgb *= 1.0 + ${f(WASH.strokes || 0)} * (mix(roofStroke, stroke, side) - 0.5) * 2.0;
+            float hue = washNoise(vWashPos * vec3(0.23, 0.17, 0.23) + 41.0);
+            diffuseColor.rgb *= mix(vec3(1.0 - ${f((WASH.tint || 0) * 0.8)}, 1.0, 1.0 + ${f(WASH.tint || 0)}), vec3(1.0 + ${f(WASH.tint || 0)}, 1.0 + ${f((WASH.tint || 0) * 0.3)}, 1.0 - ${f(WASH.tint || 0)}), hue);
             ${glass ? `float streak = sin((vWashPos.x + vWashPos.z) * 0.55 + vWashPos.y * 1.15);
             diffuseColor.rgb += ${f(WASH.glassSheen)} * side * (smoothstep(0.72, 0.95, streak) + 0.5 * smoothstep(0.9, 0.99, sin((vWashPos.x + vWashPos.z) * 0.55 + vWashPos.y * 1.15 + 1.1)));` : ''}
           }`);

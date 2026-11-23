@@ -1,18 +1,19 @@
 import * as T from 'three';
 export async function createEcosystemDesign(scene,P,L,terrain,roads,registry,layers,report,A){
  const courts=[
-    ['HQ Forecourt',0,6.1,23,8.2,0.6],
-    ['Central Commons',0,-21,21,9,2],
-    ['Administration',-21.75,-18,9.5,9,1.5],
-    ['Finance',-25,15.85,13,4.1,0.65],
-    ['IT Technical Court',32.5,15,19,4,1.2],
-    ['IT Link',31.5,8.4,3.2,9.6,0.8],
-    ['Finance Plaza',-30.5,21.2,11.5,6.4,1.2],
-    ['Internal Upper',24,-20,9,3,1],
-    ['Internal Middle',36,-24,7,3,1],
-    ['Internal Lower',30,-11,21,5,1],
-    ['Internal Level 1',47,-18,7,3,1]
-  ];
+  ['HQ Forecourt',0,6.1,23,8.2,0.6],
+  ['Central Commons',0,-21,21,9,2],
+  ['Administration',-21.75,-19.75,9.5,12.5,1.5],
+  ['Documents Forecourt',-29.6,-12.3,9.4,3.4,1.2],
+  ['Finance',-26.75,16,18.5,4.2,0.65],
+  ['IT Technical Court',33.5,12,23,4.2,1.2],
+  ['IT Link',32,5.6,3.6,9,0.8],
+  ['Finance Plaza',-30.5,21.4,11.5,6.2,1.2],
+  ['Internal Upper',23,-20.9,11,3.8,1],
+  ['Internal Middle',35.5,-23.5,7,3,1],
+  ['Internal Lower',30,-11,21,5,1],
+  ['Internal Level 1',47,-18,7,3,1]
+];
  for(const [id,x,z,w,d,r]of courts)terrain.courts.push({id,x,z,w,d,r,useGroundTriangles:id==='Finance'});
   // (arrival-low-curb cu da go bo hoan toan de triet tieu 4 rau go da tho ra nga ba duong chinh)
  // Grounded stair assemblies with bottom and top landings. Adjacent paths remain ramps.

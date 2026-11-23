@@ -449,9 +449,13 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
   root.add(roofGardens);
 
   // Rooftop gardens on AI Team & Hermes terrace roofs
-  for (const [rx, ry, rz] of [[24, 5.2 + 6.3, -26], [36, 4.5 + 4.5, -28], [24, 5.2 + 4.8, -15.5]]) {
-    addBox(roofGardens, 2.8, 0.35, 1.6, rx, ry, rz, planterStoneMat);
-    addBox(roofGardens, 2.5, 0.4, 1.3, rx, ry, rz, bushMat1);
+  // Bồn cây đi theo vị trí và cỡ tòa trong physical-topology.json (độ lệch gốc đo trên tòa hạng B rộng 7m)
+  for (const [legacyId, dy, dz] of [['ai', 6.3, 0], ['hermes', 4.5, 0], ['proj_24', 4.8, -1]]) {
+    const b = L.buildings.find(q => q.legacyId === legacyId);
+    if (!b) continue;
+    const k = (L.grades[b.grade]?.[0] || 7) / 7, [rx, by, bz] = b.position, ry = by + dy * k, rz = bz + dz * k;
+    addBox(roofGardens, 2.8 * k, 0.35 * k, 1.6 * k, rx, ry, rz, planterStoneMat);
+    addBox(roofGardens, 2.5 * k, 0.4 * k, 1.3 * k, rx, ry, rz, bushMat1);
   }
 
     // 8. IT COURTYARD LANDSCAPE & PROMENADE (He San Trong Khu IT - Nen Da Am Dong Nhat)
@@ -498,7 +502,7 @@ export async function createLandscapePolish(scene, P, L, terrain, roads, registr
   addBox(courtyardGreens, 1.8, 0.16, 0.45, finX, finY + 0.16, finZ - 1.7, planterStoneMat);
   // Cây xanh đô thị thanh thoát tạo bóng mát phía sau khu Tài chính
   if (modelTree2) {
-    placeModel(modelTree2, -37.5, 12.0, 1.15, 0.6, courtyardGreens);
+    placeModel(modelTree2, -40, 21.5, 1.15, 0.6, courtyardGreens);
   }
 
 
