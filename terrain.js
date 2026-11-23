@@ -9,7 +9,7 @@ export function createTerrain(scene,P,L){
  const districtPads=districtGroundPads(L);
  // The detailed ground keeps the lattice it always had (cells of 380/506 by 340/453 m from the north-west corner) and
  // grows east and south in whole cells, so a vertex saved by the Studio is still the same point of land.
- // `grid.legacyKept` lists the ground this re-layout left as it was (within 1 cm): the campus and the land north of it,
+ // `grid.legacyKept` lists the ground this re-layout left as it was, in height (within 1 cm) and in colour: the campus,
  // Winterland, F35Story and the south-east corner. The rest of the land is new.
  const CELL=[380/506,340/453],nx=632,nz=557,GROUND=[-190,-170,-190+nx*CELL[0],-170+nz*CELL[1]],[GX0,GZ0,GX1,GZ1]=GROUND,GW=GX1-GX0,GD=GZ1-GZ0,world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
@@ -112,7 +112,7 @@ export function createTerrain(scene,P,L){
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
  geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));shade();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
  const wg=new T.PlaneGeometry(GW,1,320,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i)+(GX0+GX1)/2,s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],legacyKept:[[-46,-156,52,46],[-179,-167,-90,-105],[80,-161,182,-100],[127,107,189,141]]},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],legacyKept:[[-45.5,-66,51.5,46],[-183,-167,-89,-106.5],[83,-156,169.5,-112],[125.5,106.5,190,142]]},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
