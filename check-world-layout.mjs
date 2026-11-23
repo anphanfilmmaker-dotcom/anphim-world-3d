@@ -124,6 +124,49 @@ for (const f of frames) {
 }
 notes.push(`land: ${lotCount} lots on their pads (largest step ${worstStep.toFixed(2)} m), dry, nearest access road ${nearestRoad.toFixed(1)} m from a lot`);
 
+// Landmarks: every district in use has one, each stands on dry land clear of every lot and road, and the boats lie on the sea.
+const REACH = {'summit-lodge': 9, 'hill-sign': 1.5, lookout: 6, 'lagoon-club': 10, beach: 12, 'flower-hill': 14.5, 'rock-arch': 8};
+const lotGap = (x, z) => {
+  let best = Infinity;
+  for (const {slot, frame} of frames) {
+    const [u, v] = frame.toLocal(x, z);
+    for (const lot of slotLots(slot, tpl)) for (let i = 0; i < 4; i++) {
+      const a = lot.c[i], b = lot.c[(i + 1) % 4], du = b[0] - a[0], dv = b[1] - a[1], t = Math.min(1, Math.max(0, ((u - a[0]) * du + (v - a[1]) * dv) / (du * du + dv * dv)));
+      best = Math.min(best, Math.hypot(u - a[0] - t * du, v - a[1] - t * dv));
+    }
+  }
+  return best;
+};
+let markCount = 0, nearestLot = Infinity;
+for (const {slot, frame} of frames) {
+  const marks = slot.landmarks || [];
+  if (slot.clientId) check(marks.length > 0, `${slot.label} (${slot.clientId}) has no landmark`);
+  for (const mark of marks) {
+    markCount++;
+    if (mark.kind === 'park') { check(frame.road.joins, `${slot.label}: a park needs a road that comes back on itself`); continue; }
+    check(mark.kind in REACH, `${slot.label}: unknown landmark kind ${mark.kind}`);
+    const reach = REACH[mark.kind] || 0, spots = [...(mark.at ? [mark.at] : []), ...(mark.path || []), ...(mark.cable ? [mark.cable] : [])];
+    check(spots.length > 0, `${slot.label}: landmark ${mark.kind} has no place`);
+    for (const [x, z] of spots) {
+      const r = mark.at && x === mark.at[0] && z === mark.at[1] ? reach : 1.5, name = `${slot.label} ${mark.kind} at (${x}, ${z})`;
+      check(!wet(x, z), `${name} is in water`);
+      const lot = lotGap(x, z), own = frame.road.gapTo(...frame.toLocal(x, z));
+      nearestLot = Math.min(nearestLot, lot - r);
+      check(lot > r + 1, `${name} is ${lot.toFixed(1)} m from a lot`);
+      // A path to a landmark starts at the district's road; everything else keeps off it.
+      if (!(mark.at && mark.path?.some(p => p[0] === x && p[1] === z))) check(own > r + tpl.roadWidth / 2 + tpl.sidewalkWidth, `${name} is ${own.toFixed(1)} m from the district's road`);
+      check(roadGap(x, z) > r + 4, `${name} is ${roadGap(x, z).toFixed(1)} m from an access road`);
+      for (const f of frames) if (f.slot !== slot) check(f.frame.gap(x, z) > r, `${name} stands on ${f.slot.label}`);
+      if (ringBox) check(x < ringBox[0] - r || x > ringBox[2] + r || z < ringBox[1] - r || z > ringBox[3] + r, `${name} is on the campus`);
+    }
+  }
+}
+for (const [x, z] of plan.boats || []) {
+  check(terrain.world.isSea(x, z) && terrain.designHeight(x, z) < SEA_LEVEL - 0.9, `boat at (${x}, ${z}) is not on open water (bed ${terrain.designHeight(x, z).toFixed(1)} m)`);
+  check(roadGap(x, z) > 14, `boat at (${x}, ${z}) is ${roadGap(x, z).toFixed(1)} m from a bridge`);
+}
+notes.push(`landmarks: ${markCount} on ${frames.filter(f => (f.slot.landmarks || []).length).length} districts, dry, nearest ${nearestLot.toFixed(1)} m clear of a lot; ${(plan.boats || []).length} boats on open water`);
+
 let bridgeLength = 0;
 for (const road of roads) {
   const spans = new Set((road.bridges || []).map(([a]) => a));

@@ -13,6 +13,7 @@
 import * as T from 'three';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {districtPlan, slotFrame, slotLots, openLotCount, spineEnd} from './district-layout.js';
+import {createLandmarks, LANDMARK_REACH} from './district-landmarks.js';
 
 /** Landscape of the land, keyed by `landscape` on the topology slot. */
 const LAMP_HEAD = new T.BoxGeometry(0.34, 0.12, 0.5);
@@ -291,6 +292,11 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     }
   }
 
+  // Ground under a point of the world: the campus ground, and the far land past its edge.
+  const fine = new T.Box3().setFromBufferAttribute(new T.BufferAttribute(terrain.basePosArray, 3));
+  const ground = (x, z) => x >= fine.min.x && x <= fine.max.x && z >= fine.min.z && z <= fine.max.z ? terrain.height(x, z) : terrain.designHeight(x, z);
+  const landmarks = createLandmarks({batch, mat, M, signTexture, plantTrees, ground, lampHead: LAMP_HEAD});
+
   // ---- landscape dressing; every function works in the slot's own (u, v) ----
   const DRESS = {
     grassland(b, ctx) {
@@ -490,15 +496,18 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       const [pu, pv] = road.map(u, v), jitter = [(rand() - 0.5) * 0.9, (rand() - 0.5) * 0.9, rand(), s * (0.82 + rand() * 0.4)];
       if (road.clear(u, v)) spots.push({u: pu + jitter[0], v: pv + jitter[1], r: jitter[2], s: jitter[3]});
     };
-    // Inside a road that comes back on itself: a green with a few trees, the park of a later step.
-    if (road.joins) for (const [u, v] of road.inside(7)) spots.push({u: u + (rand() - 0.5) * 2, v: v + (rand() - 0.5) * 2, r: rand(), s: 0.9 + rand() * 0.4});
+    // Inside a road that comes back on itself: a park, with trees on both sides of its promenade.
+    const park = road.joins ? landmarks.park(road, b, flatB, {accent, rand}) : null;
+    if (park) for (const [u, v] of road.inside(3.5, 4.6)) if (park.keep(u, v)) spots.push({u: u + (rand() - 0.5) * 0.8, v: v + (rand() - 0.5) * 0.5, r: rand(), s: 0.85 + rand() * 0.3});
     for (let u = 3; u <= depth - 3; u += land.tree === 'pine' ? 4 : 6) for (const v of [-21.4, 21.4]) spot(u, v);
     if (!road.joins) for (const v of [-13, -7, 7, 13]) spot(depth - 1.6, v);
     if (land.tree === 'pine' || land.tree === 'snowpine') for (let u = 6; u <= depth - 4; u += 7) for (const v of [-23.4, 23.4]) spot(u + 3, v, 0.8);
     for (let u = roadEnd + 9; u < depth - 5; u += 6.5) for (const v of [-13.5, -4.5, 4.5, 13.5]) if (rand() < 0.55) spot(u, v);
     if (!road.joins) spot(roadEnd, 0, 0.9);
     for (const s of [-1, 1]) spot(6.2, s * 10, 0.85);
-    plantTrees(group, land.tree, land.canopy, spots);
+    // No tree of the district stands in front of its landmark.
+    const marked = (slot.landmarks || []).flatMap(m => (m.at ? [m.at] : m.path || []).map(p => [...frame.toLocal(p[0], p[1]), (LANDMARK_REACH[m.kind] || 0) + 2]));
+    plantTrees(group, land.tree, land.canopy, spots.filter(t => marked.every(([u, v, r]) => Math.hypot(t.u - u, t.v - v) > r)));
 
     DRESS[slot.landscape]?.(b, {rand, depth, half, roadEnd, accent});
 
@@ -510,8 +519,16 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       heads.name = 'district-lamp-heads';
       group.add(heads);
     }
+    if (park?.lamps.length) {
+      const heads = new T.InstancedMesh(LAMP_HEAD, M.lampHead, park.lamps.length), m = new T.Matrix4();
+      park.lamps.forEach(([u, y, v], i) => heads.setMatrixAt(i, m.makeTranslation(u, y, v)));
+      heads.name = 'district-lamp-heads';
+      group.add(heads);
+    }
+    // The district's landmarks stand in the world, on the ground as it is, beside the level land of the district.
+    const marks = landmarks.build(slot, client, land, accent);
     group.userData.districtInfo = {slotId: slot.id, clientId: client?.id || null, open};
-    return {group, open, roadEnd};
+    return {group, open, roadEnd, marks};
   }
 
   /** A slot nobody holds yet: level ground, corner pegs and a board at its future gate. */
@@ -694,13 +711,15 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         if (d) {
           root.remove(d.group);
           if (d.road) access.remove(d.road);
-          release(d.group, d.road);
+          if (d.marks) root.remove(d.marks);
+          release(d.group, d.road, d.marks);
         }
         const built = client ? buildDistrict(slot, client, used) : buildReserve(slot);
         d = {slot, client, key, road: client ? gateRoad(slot) : null, ...built};
         districts.set(slot.id, d);
         root.add(d.group);
         if (d.road) access.add(d.road);
+        if (d.marks) root.add(d.marks);
       }
       d.projects = projects.length;
       const land = LANDSCAPES[slot.landscape] || LANDSCAPES.meadow;
@@ -805,6 +824,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     green.receiveShadow = true;
     access.add(green);
   }
+  // Boats on the sea.
+  if (plan.boats?.length) root.add(landmarks.boats(plan.boats));
   // Sidewalks and a dashed centre line along the branch roads, left open where the ring or a gate road crosses.
   const branchDress = new T.Group();
   access.add(branchDress);
@@ -823,6 +844,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   function dressBranches() {
     release(branchDress);
     branchDress.clear();
+    const posts = batch(), heads = [];
     const gates = [...districts.values()].filter(d => d.road).map(d => [d.slot.ringXZ, d.slot.gateXZ]);
     const clearOf = (other, x, z, r) => other.points.every((p, i) => !i || segGap(x, z, other.points[i - 1], p) >= other.width / 2 + r);
     const base = ([x, z], r) => ringGap(x, z) >= ringHalf + r && gates.every(([a, b]) => segGap(x, z, a, b) >= tpl.roadWidth / 2 + r)
@@ -853,6 +875,23 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         const dash = [at(d, 0), at(d + 0.8, 0), at(d + 1.6, 0)];
         if (dash.every(p => free(p, 0.6))) branchDress.add(drapedRibbon(dash, 0.16, M.line, 0.1));
       }
+      // Street lamps, on alternate sides, behind the sidewalk; on a bridge they stand on its parapet.
+      for (let d = 9, k = 0; d < len - 6; d += 18, k++) {
+        const s = k % 2 ? 1 : -1, reach = road.width / 2 + tpl.sidewalkWidth + 0.25, p = at(d, s * reach), mid = at(d, 0);
+        if (!free(p, 0.6)) continue;
+        const onDeck = terrain.height(...mid) < roadHeight(...mid) - 0.3, foot = onDeck ? roadHeight(...mid) + 0.5 : terrain.height(...p) - 0.1;
+        const arm = at(d, s * (reach - 0.9)), turn = Math.atan2(-(arm[1] - p[1]), arm[0] - p[0]);
+        posts.box(M.pole, 0.14, 4.4, 0.14, p[0], foot, p[1]);
+        posts.box(M.pole, 1.1, 0.1, 0.1, (p[0] + arm[0]) / 2, foot + 4.3, (p[1] + arm[1]) / 2, turn);
+        heads.push([arm[0], foot + 4.26, arm[1], turn + Math.PI / 2]);
+      }
+    }
+    posts.build(branchDress);
+    if (heads.length) {
+      const mesh = new T.InstancedMesh(LAMP_HEAD, M.lampHead, heads.length), m = new T.Matrix4();
+      heads.forEach(([x, y, z, turn], i) => mesh.setMatrixAt(i, m.makeRotationY(turn).setPosition(x, y, z)));
+      mesh.name = 'district-lamp-heads';
+      branchDress.add(mesh);
     }
   }
   function gateRoad(slot) {
@@ -888,6 +927,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       }
       return false;
     });
+    // Round each landmark too, and along the path that leads to it.
+    for (const d of districts.values()) for (const mark of d.client && d.slot.landmarks || []) {
+      const pts = mark.at ? [mark.at] : mark.path || [], reach = LANDMARK_REACH[mark.kind] || 0;
+      if (pts.length) zones.push((x, z) => pts.some(p => Math.hypot(x - p[0], z - p[1]) <= reach));
+      if (mark.at && mark.path) lines.push([mark.path, 2.5]);
+    }
     const taken = (x, z) => zones.some(inside => inside(x, z)) || onRoad(x, z) || (terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
     const m = new T.Matrix4(), w = new T.Matrix4(), p = new T.Vector3(), gone = new T.Matrix4().makeScale(0, 0, 0);
     const mine = o => {
