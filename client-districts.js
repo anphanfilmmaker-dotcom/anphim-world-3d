@@ -841,6 +841,16 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - r;
     };
   })();
+  /** The top of a bridge's parapet rail at (x, z), which is where a lamp on the bridge stands; null off the bridges. */
+  function railTop(road, [x, z]) {
+    for (const [from, to] of road.bridges || []) {
+      const a = road.points[from], b = road.points[to], dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+      const along = ((x - a[0]) * dx + (z - a[1]) * dz) / len, off = Math.abs((x - a[0]) * dz - (z - a[1]) * dx) / len;
+      // The rail runs a little past each end of the bridge.
+      if (along > -0.6 && along < len + 0.6 && off < road.width / 2 + tpl.sidewalkWidth + 0.8) return a[2] + (b[2] - a[2]) * T.MathUtils.clamp(along / len, 0, 1) + 1.11;
+    }
+    return null;
+  }
   function dressBranches() {
     release(branchDress);
     branchDress.clear();
@@ -877,9 +887,9 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       }
       // Street lamps, on alternate sides, behind the sidewalk; on a bridge they stand on its parapet.
       for (let d = 9, k = 0; d < len - 6; d += 18, k++) {
-        const s = k % 2 ? 1 : -1, reach = road.width / 2 + tpl.sidewalkWidth + 0.25, p = at(d, s * reach), mid = at(d, 0);
+        const s = k % 2 ? 1 : -1, reach = road.width / 2 + tpl.sidewalkWidth + 0.25, p = at(d, s * reach);
         if (!free(p, 0.6)) continue;
-        const onDeck = terrain.height(...mid) < roadHeight(...mid) - 0.3, foot = onDeck ? roadHeight(...mid) + 1.1 : terrain.height(...p) - 0.1, tall = onDeck ? 3.6 : 4.4;
+        const rail = railTop(road, p), foot = rail ?? terrain.height(...p) - 0.1, tall = rail == null ? 4.4 : 3.6;
         const arm = at(d, s * (reach - 0.9)), turn = Math.atan2(-(arm[1] - p[1]), arm[0] - p[0]);
         posts.box(M.pole, 0.14, tall, 0.14, p[0], foot, p[1]);
         posts.box(M.pole, 1.1, 0.1, 0.1, (p[0] + arm[0]) / 2, foot + tall - 0.1, (p[1] + arm[1]) / 2, turn);
