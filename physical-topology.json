@@ -542,18 +542,14 @@
         {
           "id": "district:W1",
           "label": "W1",
-          "side": "W",
+          "side": "E",
           "gateXZ": [
-            -60,
-            15
+            140,
+            -13
           ],
           "depth": 120,
           "groundY": 2.2,
           "lots": 20,
-          "ringXZ": [
-            -52,
-            15
-          ],
           "openLots": 14,
           "landscape": "grassland",
           "clientId": "vistax"
@@ -561,18 +557,14 @@
         {
           "id": "district:W2",
           "label": "W2",
-          "side": "W",
+          "side": "E",
           "gateXZ": [
-            -60,
-            -50
+            140,
+            43
           ],
           "depth": 90,
           "groundY": 2.0,
           "lots": 14,
-          "ringXZ": [
-            -48.5,
-            -50
-          ],
           "landscape": "flower-hills",
           "clientId": "9kolor"
         },
@@ -593,6 +585,20 @@
         {
           "id": "district:N1",
           "label": "N1",
+          "side": "E",
+          "gateXZ": [
+            -30,
+            84
+          ],
+          "depth": 90,
+          "groundY": 7,
+          "lots": 14,
+          "landscape": "film-set",
+          "clientId": "film-studio"
+        },
+        {
+          "id": "district:N2",
+          "label": "N2",
           "side": "N",
           "gateXZ": [
             -24,
@@ -603,24 +609,6 @@
           "lots": 14,
           "ringXZ": [
             -24,
-            -56
-          ],
-          "landscape": "film-set",
-          "clientId": "film-studio"
-        },
-        {
-          "id": "district:N2",
-          "label": "N2",
-          "side": "N",
-          "gateXZ": [
-            30,
-            -64
-          ],
-          "depth": 90,
-          "groundY": 1.5,
-          "lots": 14,
-          "ringXZ": [
-            30,
             -56
           ],
           "landscape": "pine-forest",
@@ -643,17 +631,17 @@
         {
           "id": "district:E2",
           "label": "E2",
-          "side": "E",
+          "side": "N",
           "gateXZ": [
-            66,
-            -50
+            30,
+            -64
           ],
           "depth": 90,
-          "groundY": 2.3,
+          "groundY": 1.5,
           "lots": 14,
           "ringXZ": [
-            54.5,
-            -50
+            30,
+            -56
           ],
           "landscape": null,
           "clientId": null
@@ -661,17 +649,17 @@
         {
           "id": "district:E1",
           "label": "E1",
-          "side": "E",
+          "side": "W",
           "gateXZ": [
-            66,
-            15
+            -70,
+            -24
           ],
           "depth": 90,
           "groundY": 1.8,
           "lots": 14,
           "ringXZ": [
-            58,
-            15
+            -52,
+            -24
           ],
           "landscape": "tropical-beach",
           "clientId": "inverse"
@@ -679,13 +667,13 @@
         {
           "id": "district:S1",
           "label": "S1",
-          "side": "S",
+          "side": "W",
           "gateXZ": [
-            -60,
-            84
+            -86,
+            80
           ],
           "depth": 84,
-          "groundY": 0.7,
+          "groundY": 1.2,
           "lots": 12,
           "landscape": null,
           "clientId": null
@@ -695,11 +683,11 @@
           "label": "S2",
           "side": "S",
           "gateXZ": [
-            3,
-            84
+            -140,
+            158
           ],
           "depth": 84,
-          "groundY": 0.7,
+          "groundY": 1.2,
           "lots": 12,
           "landscape": null,
           "clientId": null
@@ -709,11 +697,11 @@
           "label": "S3",
           "side": "S",
           "gateXZ": [
-            66,
-            84
+            -78,
+            158
           ],
           "depth": 84,
-          "groundY": 0.7,
+          "groundY": 1.2,
           "lots": 12,
           "landscape": null,
           "clientId": null
@@ -862,9 +850,341 @@
               6
             ]
           ]
+        },
+        {
+          "id": "road:district-bridge-east",
+          "width": 6,
+          "points": [
+            [
+              58,
+              15
+            ],
+            [
+              72,
+              15
+            ],
+            [
+              82,
+              15,
+              2.6
+            ],
+            [
+              90,
+              15,
+              3.8
+            ],
+            [
+              122,
+              15,
+              3.8
+            ],
+            [
+              130,
+              15,
+              2.6
+            ]
+          ],
+          "bridges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "id": "road:district-island-north",
+          "width": 6,
+          "points": [
+            [
+              130,
+              15,
+              2.6
+            ],
+            [
+              131,
+              1,
+              2.4
+            ],
+            [
+              134,
+              -9,
+              2.2
+            ],
+            [
+              140,
+              -13,
+              2.2
+            ]
+          ]
+        },
+        {
+          "id": "road:district-island-south",
+          "width": 6,
+          "points": [
+            [
+              130,
+              15,
+              2.6
+            ],
+            [
+              131,
+              29,
+              2.3
+            ],
+            [
+              134,
+              39,
+              2.0
+            ],
+            [
+              140,
+              43,
+              2.0
+            ]
+          ]
+        },
+        {
+          "id": "road:district-film-hill",
+          "width": 6,
+          "points": [
+            [
+              -16,
+              36
+            ],
+            [
+              -25,
+              47
+            ],
+            [
+              -37,
+              60,
+              4.6
+            ],
+            [
+              -43,
+              72,
+              5.8
+            ],
+            [
+              -39,
+              81,
+              6.6
+            ],
+            [
+              -30,
+              84,
+              7
+            ]
+          ]
+        },
+        {
+          "id": "road:district-branch-southwest",
+          "width": 6,
+          "points": [
+            [
+              -52,
+              14
+            ],
+            [
+              -60,
+              22
+            ],
+            [
+              -66,
+              40
+            ],
+            [
+              -70,
+              56
+            ],
+            [
+              -74,
+              70,
+              1.6
+            ],
+            [
+              -79,
+              78,
+              1.3
+            ],
+            [
+              -86,
+              80,
+              1.2
+            ]
+          ]
+        },
+        {
+          "id": "road:district-river-south",
+          "width": 6,
+          "points": [
+            [
+              -74,
+              70,
+              1.6
+            ],
+            [
+              -72,
+              86,
+              1.7
+            ],
+            [
+              -71,
+              100,
+              2.0
+            ],
+            [
+              -71,
+              112,
+              2.6
+            ],
+            [
+              -71,
+              144,
+              2.6
+            ],
+            [
+              -72,
+              150,
+              1.6
+            ],
+            [
+              -78,
+              154,
+              1.3
+            ],
+            [
+              -78,
+              158,
+              1.2
+            ]
+          ],
+          "bridges": [
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        {
+          "id": "road:district-reserve-south",
+          "width": 6,
+          "points": [
+            [
+              -72,
+              150,
+              1.6
+            ],
+            [
+              -90,
+              149,
+              1.3
+            ],
+            [
+              -124,
+              149,
+              1.2
+            ],
+            [
+              -136,
+              152,
+              1.2
+            ],
+            [
+              -140,
+              158,
+              1.2
+            ]
+          ]
         }
       ],
-      "allocation": "one client per slot; a project takes the lowest free lot number of its client's slot and keeps it; a new client takes the first slot whose clientId is null; slots without ringXZ or an access road wait for a bridge"
+      "allocation": "one client per slot; a project takes the lowest free lot number of its client's slot and keeps it; a new client takes the first slot whose clientId is null; slots without ringXZ or an access road wait for a bridge",
+      "roundabouts": [
+        {
+          "id": "roundabout:island-arrival",
+          "center": [
+            130,
+            15
+          ],
+          "radius": 8,
+          "islandRadius": 3.2,
+          "y": 2.6
+        }
+      ],
+      "waters": [
+        {
+          "id": "water:inverse-lagoon",
+          "kind": "lagoon",
+          "center": [
+            -112,
+            24
+          ],
+          "radii": [
+            27,
+            13
+          ]
+        },
+        {
+          "id": "water:river-west-arm",
+          "kind": "stream",
+          "width": 7,
+          "taper": 0.6,
+          "points": [
+            [
+              -150,
+              129
+            ],
+            [
+              -153,
+              140
+            ],
+            [
+              -164,
+              146
+            ],
+            [
+              -177,
+              150
+            ],
+            [
+              -182,
+              162
+            ],
+            [
+              -176,
+              177
+            ],
+            [
+              -183,
+              191
+            ],
+            [
+              -177,
+              206
+            ],
+            [
+              -184,
+              220
+            ],
+            [
+              -179,
+              235
+            ]
+          ]
+        },
+        {
+          "id": "water:river-west-spring",
+          "kind": "lagoon",
+          "center": [
+            -178,
+            237
+          ],
+          "radii": [
+            6,
+            5
+          ]
+        }
+      ]
     },
     "allocation": "append stable parcel binding; never reshuffle old building IDs; reserve is not a new project"
   },

@@ -90,9 +90,17 @@ export function createCampusEditor({
   // Accelerate terrain geometry with BVH if possible
   const tMesh = terrain.terrain;
   const tGeo = tMesh.geometry;
-  const step = 0.75;
-  const nx = 506;
-  const nz = 453;
+  // The ground lattice as the terrain built it; saved brush work is keyed by vertex index on it.
+  const GRID = terrain.grid || {x0: -190, z0: -170, nx: 506, nz: 453, stepX: 380 / 506, stepZ: 340 / 453, legacy: [506, 453]};
+  const nx = GRID.nx;
+  const nz = GRID.nz;
+  // States saved before the ground grew used a narrower lattice from the same corner: same (i, j), new row length.
+  const gridIndex = (i, savedGrid) => {
+    const [onx, onz] = savedGrid || GRID.legacy;
+    if (onx === nx && onz === nz) return i;
+    const col = i % (onx + 1), row = Math.floor(i / (onx + 1));
+    return col <= nx && row <= nz && row <= onz ? row * (nx + 1) + col : -1;
+  };
   const baseCount = terrain.baseCount || ((nx + 1) * (nz + 1));
   const basePosArray = terrain.basePosArray;
   const originalHeights = terrain.origHeights || new Float32Array(baseCount);
@@ -109,7 +117,7 @@ export function createCampusEditor({
     let prevT = 0.5;
     for (let t = 1.0; t <= 480; t += 1.5) {
       ray.at(t, pt);
-      if (pt.x >= -190 && pt.x <= 190 && pt.z >= -170 && pt.z <= 170) {
+      if (pt.x >= GRID.x0 && pt.x <= GRID.x0 + nx * GRID.stepX && pt.z >= GRID.z0 && pt.z <= GRID.z0 + nz * GRID.stepZ) {
         const groundY = terrain.height(pt.x, pt.z);
         if (pt.y <= groundY) {
           let lo = prevT, hi = t;
@@ -836,18 +844,18 @@ export function createCampusEditor({
     if (mode === 'flatten' && targetY === null && flattenTargetY === null) flattenTargetY = yc;
     const effectiveTargetY = targetY !== null ? targetY : flattenTargetY;
 
-    const minI = Math.max(0, Math.floor((xc - radius + 190) / step));
-    const maxI = Math.min(nx, Math.ceil((xc + radius + 190) / step));
-    const minJ = Math.max(0, Math.floor((zc - radius + 170) / step));
-    const maxJ = Math.min(nz, Math.ceil((zc + radius + 170) / step));
+    const minI = Math.max(0, Math.floor((xc - radius - GRID.x0) / GRID.stepX));
+    const maxI = Math.min(nx, Math.ceil((xc + radius - GRID.x0) / GRID.stepX));
+    const minJ = Math.max(0, Math.floor((zc - radius - GRID.z0) / GRID.stepZ));
+    const maxJ = Math.min(nz, Math.ceil((zc + radius - GRID.z0) / GRID.stepZ));
 
     let modifiedCount = 0;
     const previousHeights = [];
 
     for (let j = minJ; j <= maxJ; j++) {
       for (let i = minI; i <= maxI; i++) {
-        const vx = -190 + i * step;
-        const vz = -170 + j * step;
+        const vx = GRID.x0 + i * GRID.stepX;
+        const vz = GRID.z0 + j * GRID.stepZ;
         const dist = Math.hypot(vx - xc, vz - zc);
         if (dist <= radius) {
           const k = j * (nx + 1) + i;
@@ -938,10 +946,10 @@ export function createCampusEditor({
 
     const xc = hitPoint.x;
     const zc = hitPoint.z;
-    const minI = Math.max(0, Math.floor((xc - radius + 190) / step));
-    const maxI = Math.min(nx, Math.ceil((xc + radius + 190) / step));
-    const minJ = Math.max(0, Math.floor((zc - radius + 170) / step));
-    const maxJ = Math.min(nz, Math.ceil((zc + radius + 170) / step));
+    const minI = Math.max(0, Math.floor((xc - radius - GRID.x0) / GRID.stepX));
+    const maxI = Math.min(nx, Math.ceil((xc + radius - GRID.x0) / GRID.stepX));
+    const minJ = Math.max(0, Math.floor((zc - radius - GRID.z0) / GRID.stepZ));
+    const maxJ = Math.min(nz, Math.ceil((zc + radius - GRID.z0) / GRID.stepZ));
 
     const target = targetColors[type] || targetColors.grass;
     let modifiedCount = 0;
@@ -949,8 +957,8 @@ export function createCampusEditor({
 
     for (let j = minJ; j <= maxJ; j++) {
       for (let i = minI; i <= maxI; i++) {
-        const vx = -190 + i * step;
-        const vz = -170 + j * step;
+        const vx = GRID.x0 + i * GRID.stepX;
+        const vz = GRID.z0 + j * GRID.stepZ;
         const dist = Math.hypot(vx - xc, vz - zc);
         if (dist <= radius) {
           const k = j * (nx + 1) + i;
@@ -3696,6 +3704,7 @@ export function createCampusEditor({
       version: '2.6',
       layoutRevision: LAYOUT_REVISION,
       timestamp: Date.now(),
+      grid: [nx, nz],
       heightDiffs,
       colorDiffs,
       roadsData,
@@ -3817,8 +3826,9 @@ export function createCampusEditor({
     // 1. Restore heights
     let needPosSync = false;
     if (savedState.heightDiffs) {
-      for (const [i, y] of savedState.heightDiffs) {
-        if (i < baseCount) {
+      for (const [saved, y] of savedState.heightDiffs) {
+        const i = gridIndex(saved, savedState.grid);
+        if (i >= 0 && i < baseCount) {
           basePosArray[i * 3 + 1] = y;
           modifiedHeightIndices.add(i);
           needPosSync = true;
@@ -3829,8 +3839,9 @@ export function createCampusEditor({
     // 2. Restore colors
     let needColSync = false;
     if (baseColorArray && savedState.colorDiffs) {
-      for (const [i, r, g, b] of savedState.colorDiffs) {
-        if (i < baseCount) {
+      for (const [saved, r, g, b] of savedState.colorDiffs) {
+        const i = gridIndex(saved, savedState.grid);
+        if (i >= 0 && i < baseCount) {
           baseColorArray[i * 3] = r;
           baseColorArray[i * 3 + 1] = g;
           baseColorArray[i * 3 + 2] = b;

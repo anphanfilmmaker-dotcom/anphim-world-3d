@@ -2,11 +2,14 @@ import * as T from 'three';
 import {applyCampusPaving} from './paving-pattern.js';
 export function createTerrain(scene,P,L){
  const smooth=t=>{t=T.MathUtils.clamp(t,0,1);return t*t*(3-2*t);};
- const riverZ=x=>67+5.2*Math.sin(x*.027)+1.5*Math.sin(x*.072),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
+ // The river runs below the film hill: along the south-west reserve land, down a long bend, then east to the sea.
+ const riverZ=x=>126+22*smooth((x+72)/52)+6*Math.sin(x*.041+.4)+2.6*Math.sin(x*.093+1.1)+1.1*Math.sin(x*.19),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
  const pads=L.buildings.map(b=>({id:b.id,x:b.position[0],z:b.position[2],y:b.position[1],hx:L.grades[b.grade][0]/2+.4,hz:L.grades[b.grade][2]/2+.4}));
  if(L.schedule) pads.push({id:L.schedule.id,x:17,z:31.5,y:3.8,hx:2.2,hz:.8,feather:1.0});
  const districtPads=districtGroundPads(L);
- const GROUND=[-190,-170,190,170],world=createWorldLandform(L,{riverZ,fine:GROUND});
+ // The detailed ground keeps the lattice it always had (cells of 380/506 by 340/453 m from the north-west corner) and
+ // grows east and south in whole cells, so a vertex saved by the Studio is still the same point of land.
+ const CELL=[380/506,340/453],nx=632,nz=557,GROUND=[-190,-170,-190+nx*CELL[0],-170+nz*CELL[1]],[GX0,GZ0,GX1,GZ1]=GROUND,GW=GX1-GX0,GD=GZ1-GZ0,world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
  const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-26,z:-21,hx:12.5,hz:11.5,y:4},{id:'finance',x:-28.5,z:14,hx:11.5,hz:13.5,y:4},{id:'it',x:33.5,z:11.5,hx:13.5,hz:11.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
@@ -24,7 +27,7 @@ export function createTerrain(scene,P,L){
  for(const p of pads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));const maxD=p.feather||3;if(d<maxD)y=T.MathUtils.lerp(y,p.y,1-smooth(d/maxD));}
  for(const s of stairDefs){const a=s.axis==='x'?x:z,c=s.axis==='x'?z:x;const dAcross=Math.abs(c-s.cross)-s.width/2,dAlong=Math.max(s.start-.5-a,a-s.end-.5),d=Math.max(dAcross,dAlong);if(d<1.5){const t=T.MathUtils.clamp((a-s.start)/(s.end-s.start),0,1);const stepIdx=Math.min(s.count-1,Math.floor(t*s.count));const treadTop=s.high-stepIdx*((s.high-s.low)/s.count);const target=Math.min(treadTop-.11,T.MathUtils.lerp(s.high,s.low,t)-.12);y=T.MathUtils.lerp(y,target,1-smooth(Math.max(0,d)/1.5));}}
  const dist=Math.abs(z-riverZ(x)),rr=riverR(x);if(dist<rr+5)y=Math.min(y,T.MathUtils.lerp(-.25,y,smooth((dist-rr)/5)));return y;}
- const step=.75,nx=506,nz=453,stepX=380/nx,stepZ=340/nz,geo=new T.PlaneGeometry(380,340,nx,nz);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position;
+ const stepX=CELL[0],stepZ=CELL[1],geo=new T.PlaneGeometry(GW,GD,nx,nz);geo.rotateX(-Math.PI/2);geo.translate((GX0+GX1)/2,0,(GZ0+GZ1)/2);const pos=geo.attributes.position;
  const baseCount=pos.count;
  const basePosArray=new Float32Array(baseCount*3);
  const origHeights=new Float32Array(baseCount);
@@ -59,7 +62,7 @@ export function createTerrain(scene,P,L){
  }
  geo.setAttribute('color',new T.Float32BufferAttribute(new Float32Array(baseColorArray),3));
  // Sample the actual triangle plane from basePosArray using exact PlaneGeometry stepX/stepZ so height(x,z) matches rendered triangles 100%.
- function height(x,z){const u=T.MathUtils.clamp((x+190)/stepX,0,nx-.00001),v=T.MathUtils.clamp((z+170)/stepZ,0,nz-.00001),i=Math.floor(u),j=Math.floor(v),a=u-i,b=v-j,k=j*(nx+1)+i;const h00=basePosArray[k*3+1],h10=basePosArray[(k+1)*3+1],h01=basePosArray[(k+nx+1)*3+1],h11=basePosArray[(k+nx+2)*3+1];return a+b<=1?h00+(h10-h00)*a+(h01-h00)*b:h11+(h01-h11)*(1-a)+(h10-h11)*(1-b);}
+ function height(x,z){const u=T.MathUtils.clamp((x-GX0)/stepX,0,nx-.00001),v=T.MathUtils.clamp((z-GZ0)/stepZ,0,nz-.00001),i=Math.floor(u),j=Math.floor(v),a=u-i,b=v-j,k=j*(nx+1)+i;const h00=basePosArray[k*3+1],h10=basePosArray[(k+1)*3+1],h01=basePosArray[(k+nx+1)*3+1],h11=basePosArray[(k+nx+2)*3+1];return a+b<=1?h00+(h10-h00)*a+(h01-h00)*b:h11+(h01-h11)*(1-a)+(h10-h11)*(1-b);}
  const materials = [
     '#6fa659',  // 0: Nền cỏ xanh tươi sáng theo ảnh tham chiếu (Campus Builder)
     '#4f6078',  // 1: Đường chính màu xám xanh slate
@@ -95,7 +98,7 @@ export function createTerrain(scene,P,L){
  function midpoint(a,b){const k=Math.min(a,b)+':'+Math.max(a,b);if(midCache.has(k))return midCache.get(k);const n=vertices.length/3;vertices.push((vertices[a*3]+vertices[b*3])/2,(vertices[a*3+1]+vertices[b*3+1])/2,(vertices[a*3+2]+vertices[b*3+2])/2);vColors.push((vColors[a*3]+vColors[b*3])/2,(vColors[a*3+1]+vColors[b*3+1])/2,(vColors[a*3+2]+vColors[b*3+2])/2);midCache.set(k,n);midpointList.push([n,a,b]);return n;}
  function triangle(a,b,c,depth){const ax=vertices[a*3],az=vertices[a*3+2],bx=vertices[b*3],bz=vertices[b*3+2],cx=vertices[c*3],cz=vertices[c*3+2],kind=type((ax+bx+cx)/3,(az+bz+cz)/3);
  if(depth>0&&(type(ax,az)!==kind||type(bx,bz)!==kind||type(cx,cz)!==kind)){const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);triangle(a,ab,ca,depth-1);triangle(ab,b,bc,depth-1);triangle(ca,bc,c,depth-1);triangle(ab,bc,ca,depth-1);}else index[kind].push(a,b,c);}
- for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1,x=-190+i*stepX,z=-170+j*stepZ;if(Math.abs(x)>70||z<-65||z>45){index[0].push(a,c,b,b,c,d);}else{triangle(a,c,b,2);triangle(b,c,d,2);}}
+ for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1,x=GX0+i*stepX,z=GZ0+j*stepZ;if(Math.abs(x)>70||z<-65||z>45){index[0].push(a,c,b,b,c,d);}else{triangle(a,c,b,2);triangle(b,c,d,2);}}
  geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
  geo.setAttribute('color', new T.Float32BufferAttribute(vColors, 3));
  const uvs = new Float32Array((vertices.length / 3) * 2);
@@ -106,8 +109,8 @@ export function createTerrain(scene,P,L){
  }
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
  geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));shade();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
- const wg=new T.PlaneGeometry(380,1,256,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i),s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {world,seam,designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ const wg=new T.PlaneGeometry(GW,1,320,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i)+(GX0+GX1)/2,s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
+ return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453]},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';

@@ -1,7 +1,7 @@
 import {createModularRoadSystem} from './modular-roads.js?rev=14';
 import {createHQGardens} from './hq-gardens.js?rev=63';
 import {createGamePostProcessing} from './game-postprocessing.js?rev=1';
-import {createCampusEditor} from './campus-editor.js?rev=124';
+import {createCampusEditor} from './campus-editor.js?rev=125';
 import {createLandscapePolish} from './landscape-polish.js?rev=119';
 import {createCampusGreenery} from './campus-greenery.js?rev=12';
 import {createGroundDebug} from './ground-debug.js?rev=20';
@@ -13,12 +13,12 @@ import {composeCapture} from './capture.js?rev=hq9';
 import {createEcosystemDesign} from './ecosystem-design.js?rev=sep_master_plan_v9';
 import {createNetwork} from './network.js?rev=21';
 import {OrbitControls} from './vendor/OrbitControls.js';
-import {createCameraDirector} from './camera-director.js?rev=2';
+import {createCameraDirector} from './camera-director.js?rev=3';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {createArchitecture} from './architecture.js?rev=v43';
 import {createAdapter, nightWindowGlow} from './materials.js?rev=10';
 import {createAssetRegistry} from './asset-registry.js?rev=8';
-import {createTerrain} from './terrain.js?rev=hq20';
+import {createTerrain} from './terrain.js?rev=hq21';
 import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
@@ -31,7 +31,7 @@ import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
 import {createWorldBackdrop} from './world-landscape.js';
-import {districtPlan} from './district-layout.js';
+import {districtPlan, districtGroundPads} from './district-layout.js';
 
 window.THREE = T;
 
@@ -93,7 +93,7 @@ async function main() {
     } catch (_) {}
   }));
 
-  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v11'), fetchJSON('./campus-palette.json?rev=finalPaletteV10')]);
+  const [L, P] = await Promise.all([fetchJSON('./physical-topology.json?rev=sep_master_plan_v12'), fetchJSON('./campus-palette.json?rev=finalPaletteV10')]);
   console.log('[STEP 2] topology loaded');
   report.lightRig = P.lighting;
   report.paletteVersion = P.schemaVersion;
@@ -142,9 +142,21 @@ async function main() {
   sun.position.set(...LR.sunPosition);
   sun.castShadow = true;
   sun.shadow.mapSize.set(LR.shadowMapSize, LR.shadowMapSize);
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -130;
-  sun.shadow.camera.right = sun.shadow.camera.top = 130;
-  sun.shadow.camera.far = 380;
+  // The shadow box covers the campus and, seen from the sun, every district that has a client.
+  {
+    const box = [-130, 130, -130, 130, 380], view = new T.Matrix4().lookAt(sun.position, sun.target.position, sun.up).setPosition(sun.position).invert(), p = new T.Vector3();
+    const tenants = new Set((districtPlan(L)?.slots || []).filter(s => s.clientId).map(s => s.id));
+    for (const pad of districtGroundPads(L, 8)) {
+      if (!tenants.has(pad.id)) continue;
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (const y of [pad.y, pad.y + 24]) {
+        p.set(pad.x + sx * pad.hx, y, pad.z + sz * pad.hz).applyMatrix4(view);
+        box[0] = Math.min(box[0], p.x); box[1] = Math.max(box[1], p.x);
+        box[2] = Math.min(box[2], p.y); box[3] = Math.max(box[3], p.y);
+        box[4] = Math.max(box[4], 12 - p.z);
+      }
+    }
+    [sun.shadow.camera.left, sun.shadow.camera.right, sun.shadow.camera.bottom, sun.shadow.camera.top, sun.shadow.camera.far] = box;
+  }
   sun.shadow.normalBias = 0.035;
   sun.shadow.bias = -0.0001;
   sun.shadow.radius = LR.shadowRadius;
@@ -209,7 +221,7 @@ async function main() {
     overview: {pos: [92, 121, 153], target: [8, 5, 0], span: 79},
     top: {pos: [-10, 190, -6], target: [-10, 0, -7], span: 118},
     arrival: {pos: [30, 42, 62], target: [0, 9, 12], span: 58},
-    vistax: {pos: [-50, 38, 38], target: [-78, 4, 15], span: 40},
+    vistax: {pos: [196, 38, 10], target: [168, 4, -13], span: 40},
     uturn_top: {pos: [0, 52, 25.5], target: [0, 4.5, 25.0], span: 26},
     hqref: {pos: [0, 80, 94], target: [0, 9, 9], span: 60},
     commons: {pos: [25, 40, -55], target: [0, 5, -21], span: 36},
@@ -1137,7 +1149,7 @@ async function main() {
     };
     const districtDef = (id, pts, halfW) => ({
       id, districtGate: true, markings: false, halfW, signature: JSON.stringify(pts), curve: polyline(pts),
-      yAt: (x, z) => terrain.height(x, z) + 0.15
+      yAt: (x, z) => Math.max(terrain.height(x, z), terrain.world?.deck?.(x, z) ?? -Infinity) + 0.15
     });
     roads.extraRoadDefs = (roads.extraRoadDefs || []).filter(d => !d.districtGate).concat(
       gates.map(s => districtDef('road:district-gate:' + s.id, [s.ringXZ, s.gateXZ], half)),
