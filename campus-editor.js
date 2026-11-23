@@ -967,7 +967,8 @@ export function createCampusEditor({
 
   function resetGroundPaint() {
     if (!baseColorArray) return;
-    baseColorArray.fill(1.0);
+    if (terrain.designColorArray) baseColorArray.set(terrain.designColorArray);
+    else baseColorArray.fill(1.0);
     modifiedColorIndices.clear();
     if (terrain.syncLiveBuffers) terrain.syncLiveBuffers(false, true);
     saveStudioState();

@@ -6,11 +6,15 @@ export function createTerrain(scene,P,L){
  const pads=L.buildings.map(b=>({id:b.id,x:b.position[0],z:b.position[2],y:b.position[1],hx:L.grades[b.grade][0]/2+.4,hz:L.grades[b.grade][2]/2+.4}));
  if(L.schedule) pads.push({id:L.schedule.id,x:17,z:31.5,y:3.8,hx:2.2,hz:.8,feather:1.0});
  const districtPads=districtGroundPads(L);
+ const GROUND=[-190,-170,190,170],world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
  const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-24,z:-19,hx:9,hz:10,y:4},{id:'finance',x:-27,z:14,hx:8.5,hz:9,y:4},{id:'it',x:32.5,z:14,hx:10.5,hz:9.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
- for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10)y=T.MathUtils.lerp(y,p.y,1-smooth(d/10));}
+ // District pads: the nearest one sets the level, so two pads close together do not pull each other's ground.
+ {let m=0,lv=0,sh=0;for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10){const k=1-smooth(d/10),w=k/(d*d+1e-4);m=Math.max(m,k);lv+=w*p.y;sh+=w;}}if(sh)y=T.MathUtils.lerp(y,lv/sh,m);}
+ // Landscapes around the client districts and on to the far mountains and the sea.
+ y=world.shape(x,z,y);
  // Four continuous working terraces, stitched to existing fixed building platforms.
  if(x>15&&x<57&&z>-35&&z<-11){let ty=5.2-.7*smooth((x-29)/3)-.7*smooth((x-40)/3)-.7*smooth((x-50)/3);const w=(1-smooth(Math.max(0,Math.abs(z+24)-7)/6))*(1-smooth(Math.max(0,Math.abs(x-36)-17)/5)); y=T.MathUtils.lerp(y,ty,w);}
  // A broad longitudinal grading corridor, not a raised road extrusion.
@@ -19,15 +23,17 @@ export function createTerrain(scene,P,L){
  // Exact foundation contact wins at the building footprint, feathered outside.
  for(const p of pads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));const maxD=p.feather||3;if(d<maxD)y=T.MathUtils.lerp(y,p.y,1-smooth(d/maxD));}
  for(const s of stairDefs){const a=s.axis==='x'?x:z,c=s.axis==='x'?z:x;const dAcross=Math.abs(c-s.cross)-s.width/2,dAlong=Math.max(s.start-.5-a,a-s.end-.5),d=Math.max(dAcross,dAlong);if(d<1.5){const t=T.MathUtils.clamp((a-s.start)/(s.end-s.start),0,1);const stepIdx=Math.min(s.count-1,Math.floor(t*s.count));const treadTop=s.high-stepIdx*((s.high-s.low)/s.count);const target=Math.min(treadTop-.11,T.MathUtils.lerp(s.high,s.low,t)-.12);y=T.MathUtils.lerp(y,target,1-smooth(Math.max(0,d)/1.5));}}
- const dist=Math.abs(z-riverZ(x)),rr=riverR(x);if(dist<rr+5)y=T.MathUtils.lerp(-.25,y,smooth((dist-rr)/5));return y;}
+ const dist=Math.abs(z-riverZ(x)),rr=riverR(x);if(dist<rr+5)y=Math.min(y,T.MathUtils.lerp(-.25,y,smooth((dist-rr)/5)));return y;}
  const step=.75,nx=506,nz=453,stepX=380/nx,stepZ=340/nz,geo=new T.PlaneGeometry(380,340,nx,nz);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position;
  const baseCount=pos.count;
  const basePosArray=new Float32Array(baseCount*3);
  const origHeights=new Float32Array(baseCount);
  const baseColorArray=new Float32Array(baseCount*3);
+ // Near its border the ground takes its height and shading from the lattice it shares with the far land.
+ const seam=createSeam(designHeight,GROUND),shade=()=>{geo.computeVertexNormals();seam.shade(geo.attributes.position,geo.attributes.normal);};
  const AO_REACH=3.2,AO_STRENGTH=.5;
  for(let i=0;i<baseCount;i++){
-  const x=pos.getX(i),z=pos.getZ(i),y=designHeight(x,z);
+  const x=pos.getX(i),z=pos.getZ(i),y=seam.height(x,z);
   pos.setY(i,y);
   origHeights[i]=y;
   basePosArray[i*3]=x;
@@ -61,8 +67,11 @@ export function createTerrain(scene,P,L){
     '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
+ world.paint(basePosArray,baseColorArray,nx+1,materials[0].color);
+ // The ground colours as designed, for the Studio to go back to when it clears its paint.
+ const designColorArray=new Float32Array(baseColorArray);
  applyCampusPaving(P,materials[3],materials[2]);
- geo.computeVertexNormals();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);
+ shade();const terrain=new T.Mesh(geo,materials);terrain.name='continuous-ground';terrain.receiveShadow=true;scene.add(terrain);
  const stairs=[],surfaceHeight=(x,z)=>{for(const s of stairs){const along=s.axis==='x'?x:z,across=s.axis==='x'?z:x;if(Math.abs(across-s.cross)<=s.width/2&&along>=s.start-1.2&&along<=s.end+1.2){const t=T.MathUtils.clamp((along-s.start)/(s.end-s.start),0,1);return s.high-Math.min(s.count,Math.floor(t*s.count))*s.rise;}}return height(x,z);};
  const courts=[],surfaces=[],bins=new Map(),midpointList=[];let pathList=[];
  const key=(x,z)=>Math.floor(x/5)+','+Math.floor(z/5);
@@ -72,7 +81,7 @@ export function createTerrain(scene,P,L){
    for(let i=0;i<baseCount;i++)pAttr.setY(i,basePosArray[i*3+1]);
    for(let m=0;m<midpointList.length;m++){const [n,a,b]=midpointList[m];pAttr.setY(n,(pAttr.getY(a)+pAttr.getY(b))*.5);}
    pAttr.needsUpdate=true;
-   geo.computeVertexNormals();
+   shade();
   }
   if(updateCol&&cAttr){
    for(let i=0;i<baseCount;i++)cAttr.setXYZ(i,baseColorArray[i*3],baseColorArray[i*3+1],baseColorArray[i*3+2]);
@@ -96,9 +105,10 @@ export function createTerrain(scene,P,L){
    uvs[vi * 2 + 1] = vertices[vi * 3 + 2] * uvScale;
  }
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
- geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));geo.computeVertexNormals();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
+ geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));shade();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
  const wg=new T.PlaneGeometry(380,1,256,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i),s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ return {world,seam,designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
+import {createWorldLandform,createSeam} from './world-landscape.js';

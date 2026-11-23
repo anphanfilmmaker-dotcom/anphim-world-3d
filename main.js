@@ -30,6 +30,7 @@ import {createDayNight} from './day-night.js';
 import {BuildingPanels} from './building-panels.js';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
+import {createWorldBackdrop} from './world-landscape.js';
 import {districtPlan} from './district-layout.js';
 
 window.THREE = T;
@@ -1107,6 +1108,7 @@ async function main() {
   // Cockpit Command Engine (Spec Kit Integration)
   await dataConnector.load();
   // Client districts around the ring road: land from the topology, clients and projects from the data.
+  createWorldBackdrop({scene, terrain, camera, controls});
   const clientDistricts = createClientDistricts({scene, terrain, L, dataConnector, buildingObjects, clickable});
   window.__clientDistricts = clientDistricts;
   // Where a district's gate road or a branch road leaves the ring, the ring opens its curb and sidewalk and gets
