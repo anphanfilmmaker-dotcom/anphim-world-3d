@@ -82,24 +82,37 @@ export async function loadStudioCatalog() {
   return catalogPromise;
 }
 
+function isGlb(data) {
+  return data.byteLength >= 4 && new DataView(data).getUint32(0, true) === 0x46546c67; // 'glTF'
+}
+
 export async function loadPackByKey(packKey) {
   const url = PACK_URLS[packKey];
   if (!url) return null;
   if (packCache.has(packKey)) return packCache.get(packKey);
   if (packLoadingPromises.has(packKey)) return packLoadingPromises.get(packKey);
 
-  const p = new Promise((resolve) => {
-    loader.load(url, (gltf) => {
+  const p = (async () => {
+    try {
+      const res = await fetch(url);
+      const data = res.ok ? await res.arrayBuffer() : null;
+      // models/packs/ is not in the repository: a checkout without it gets a 404 or the dev server's HTML page.
+      // That is an expected state, so the models from that pack are skipped without a warning.
+      if (!data || !isGlb(data)) {
+        console.debug(`[StudioCatalog] Pack ${packKey} (${url}) is not on this machine; its models are skipped.`);
+        return null;
+      }
+      const gltf = await loader.parseAsync(data, url.slice(0, url.lastIndexOf('/') + 1));
       if (gltf && gltf.scene) {
         gltf.scene.updateMatrixWorld(true);
       }
       packCache.set(packKey, gltf);
-      resolve(gltf);
-    }, undefined, (err) => {
+      return gltf;
+    } catch (err) {
       console.warn(`Failed loading pack ${packKey} (${url}):`, err);
-      resolve(null);
-    });
-  });
+      return null;
+    }
+  })();
   packLoadingPromises.set(packKey, p);
   return p;
 }

@@ -187,6 +187,8 @@ export function createUrbanPlanningEngine(L, terrain) {
       scene.traverse(o => {
         // The room of an inspected building stands on the building's own spot and is never scenery to clear
         if (o.userData.interior) return;
+        // Already cleared by an earlier pass; its parent still sits in the zone, so it would be counted again
+        if (o.userData.clearedFromArrivalZone) return;
         // 1. Quét InstancedMesh (cây cối, đá, bụi cây Kenney/Nature Kit)
         if (o.parent?.name === "hq-smooth-road-and-curbs" ||
             (o.parent?.name === "u-turn-central-island" && o.userData.arrivalMedianPlant)) return;
@@ -234,6 +236,7 @@ export function createUrbanPlanningEngine(L, terrain) {
               o.visible = false;
               o.scale.set(0, 0, 0);
               o.position.set(0, -9999, 0);
+              o.userData.clearedFromArrivalZone = true;
               purgedCount++;
               return;
             }
@@ -244,6 +247,7 @@ export function createUrbanPlanningEngine(L, terrain) {
               o.visible = false;
               o.scale.set(0, 0, 0);
               o.position.set(0, -9999, 0);
+              o.userData.clearedFromArrivalZone = true;
               purgedCount++;
               return;
             }
@@ -251,7 +255,7 @@ export function createUrbanPlanningEngine(L, terrain) {
         }
       });
 
-      console.log(`[Urban Planning Engine] AAA Spatial Enforcement complete. Purged ${purgedCount} illegal elements.`);
+      if (purgedCount > 0) console.log(`[Urban Planning Engine] AAA Spatial Enforcement complete. Purged ${purgedCount} illegal elements.`);
       return purgedCount;
     }
   };
