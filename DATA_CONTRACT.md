@@ -256,7 +256,7 @@ Hạ tầng (Supabase, Oracle, Telegram, Google): trạng thái trên tòa hạ 
 
 ### 14. `scheduleToday`
 
-Lịch hôm nay, dùng khi không có schedule.
+Lịch của ngày xuất dữ liệu (ngày của updatedAt), dùng khi không có schedule.
 
 | Trường | Kiểu | Bắt buộc | Ghi chú |
 |---|---|---|---|

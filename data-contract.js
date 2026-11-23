@@ -87,7 +87,7 @@ export const NOTES = {
   aiWorkforce: 'Đội AI: người đi lại trong tòa và bảng AI Workforce.',
   'aiWorkforce[].buildingIds': 'Các tòa agent có mặt; thiếu thì dùng buildingId.',
   systems: 'Hạ tầng (Supabase, Oracle, Telegram, Google): trạng thái trên tòa hạ tầng.',
-  scheduleToday: 'Lịch hôm nay, dùng khi không có schedule.',
+  scheduleToday: 'Lịch của ngày xuất dữ liệu (ngày của updatedAt), dùng khi không có schedule.',
   marketing: 'Bài fanpage. Thiếu thì tòa Marketing hiện "chưa kết nối".',
   workspace: 'Link sang AN PHIM Workspace.',
   'workspace.baseUrl': 'Địa chỉ Workspace. Để "" thì mọi nút "Mở dashboard" bị mờ (có cảnh báo).',

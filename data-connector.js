@@ -73,6 +73,7 @@ const PAPERS = [
   {key: 'handover', short: 'BBTL', label: 'BBTL'}
 ];
 
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 /** "dd/mm/yyyy" -> local-midnight timestamp (NaN when unreadable). */
 const dateKey = text => {
   const m = String(text || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -302,9 +303,13 @@ export class DataConnector {
    * as old instead of moving "today" back; the sample data (sample: true) is a frozen day and keeps its own.
    */
   getToday() {
-    const d = this.cache?.sample === true && this.cache.updatedAt ? new Date(this.cache.updatedAt) : new Date();
-    const day = isNaN(d) ? new Date() : d;
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return this.cache?.sample === true ? this._exportDay() : midnight(new Date());
+  }
+
+  /** The day the data was exported (updatedAt) at local midnight; today when it has none. */
+  _exportDay() {
+    const d = new Date(this.cache?.updatedAt ?? NaN);
+    return midnight(isNaN(d) ? new Date() : d);
   }
 
   /**
@@ -388,11 +393,11 @@ export class DataConnector {
     };
   }
 
-  /** Every calendar event: the month schedule when the data has one, else today's list. */
+  /** Every calendar event: the month schedule when the data has one, else the list of the day the data was exported. */
   getScheduleEvents() {
-    const today = this.getToday();
-    const fallback = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    const raw = this.cache?.schedule || this.getScheduleToday().map(e => ({...e, date: fallback(today)}));
+    const d = this._exportDay();
+    const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const raw = this.cache?.schedule || this.getScheduleToday().map(e => ({...e, date}));
     return raw.map(e => ({...e, project: this.getProject(e.projectId)}));
   }
 
