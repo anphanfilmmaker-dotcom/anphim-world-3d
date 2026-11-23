@@ -91,7 +91,8 @@ export function createSeam(height, rect, band = 14) {
 /**
  * Landscapes by the `landscape` id of a topology slot. `pad` is the ground inside the district,
  * `wild` the land around it, `rise(x, z)` its height above the plain, `rim` a ridge closing the
- * district in on the sides away from its gate (`closed`: on every side, the road comes in over a pass),
+ * district in on the sides away from its gate (`closed`: on every side, the road comes in over a pass;
+ * `back`: one hill behind its far end only),
  * `trees` what grows there.
  */
 const LAND = {
@@ -100,7 +101,7 @@ const LAND = {
   grassland: {pad: 0x9ccb6b, wild: 0x93c665, rise: (x, z) => 1 + 6 * fbm(x / 85, z / 85), trees: ['round', 0.07, [0x5aa64a, 0x77b955]]},
   'flower-hills': {pad: 0xc9dd9c, wild: 0xb4d28a, rise: (x, z) => 1.5 + 11 * Math.pow(fbm(x / 34, z / 34, 2), 1.4), trees: ['round', 0.14, [0xf3a6c4, 0xf7c1d6, 0xe98bb2]]},
   'snow-mountain': {pad: 0xeef4f9, wild: 0xeef4f9, rim: 15, closed: true, rise: (x, z) => 9 + 58 * Math.pow(ridged(x / 62, z / 62), 1.25), trees: ['conifer', 0.3, [0x2f5d4a, 0x3b6b58, 0xdfeaf0]]},
-  'film-set': {pad: 0xb9b2a6, wild: 0xc7bd7c, rise: (x, z) => 3 + 11 * fbm(x / 52, z / 52), trees: ['round', 0.1, [0x7f9a4a, 0x93a655]]},
+  'film-set': {pad: 0xb9b2a6, wild: 0x9c9a55, rim: 17, back: true, rise: (x, z) => 3 + 11 * fbm(x / 52, z / 52), trees: ['round', 0.1, [0x7f9a4a, 0x93a655]]},
   'pine-forest': {pad: 0x5f8f57, wild: 0x4f7f4b, rise: (x, z) => 4 + 15 * fbm(x / 55, z / 55), trees: ['conifer', 0.85, [0x2e6140, 0x3a7049, 0x285538]]},
   'red-canyon': {pad: 0xdfa46e, wild: 0xd98050, rim: 9, rise: (x, z) => {
     const t = (5 + 30 * fbm(x / 68, z / 68)) / 7, f = Math.floor(t);
@@ -140,7 +141,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     // A closed valley takes the mountains around it into its own landscape.
     const land = LAND[slot.landscape] ? slot.landscape : 'meadow', out = LAND[land].closed ? 24 : 0;
     // `core` is how far a point lies outside the district's land (the strip along its road), `pad` the same for its level ground.
-    return {land, named: !!LAND[slot.landscape], core: f.gap, gap: (x, z) => Math.max(0, f.gap(x, z) - out), pad: (x, z) => Math.max(0, f.gap(x, z) - 4), box: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, u: (x, z) => (x - gx) * cos - (z - gz) * sin};
+    return {land, named: !!LAND[slot.landscape], core: f.gap, gap: (x, z) => Math.max(0, f.gap(x, z) - out), pad: (x, z) => Math.max(0, f.gap(x, z) - 4), box: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, len: f.road.len, half: f.half, u: (x, z) => (x - gx) * cos - (z - gz) * sin, v: (x, z) => (x - gx) * sin + (z - gz) * cos};
   });
   const anchors = [{land: 'plain', rect: CAMPUS}, ...slots, ...FAR.map(([land, ...rect]) => ({land, rect}))];
   // How far a point is from open sea: inside the island's rectangle the sea is as far as the nearest side.
@@ -195,6 +196,9 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   // The level ground of a district runs a little past its plot, by a different amount all round, so no valley is a rectangle.
   const edge = (x, z) => 11 * fbm(x / 21 + 5, z / 21 + 9, 2);
 
+  /** Share (0..1) of the hill behind a district's far end at a point: one ridge across the end of its road. */
+  const backHill = (s, x, z) => Math.exp(-(((s.u(x, z) - s.len - 24) / 11) ** 2)) * (1 - smooth((Math.abs(s.v(x, z)) - s.half) / 26));
+
   /** Height of the land once the landscapes are added to the ground `y` the terrain already has. */
   function shape(x, z, y) {
     const open = smooth((rectGap(x, z, CAMPUS) - 6) / 45);
@@ -233,6 +237,11 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         let clear = 1;
         for (let j = 0; j < slots.length; j++) if (j !== i) clear *= near[j];
         if (clear <= 0) continue;
+        // A hill behind the far end of a district is one even ridge, a backdrop to look at from the gate.
+        if (land.back) {
+          y += open * clear * land.rim * backHill(s, x, z) * (0.9 + 0.2 * fbm(x / 30, z / 30, 2));
+          continue;
+        }
         // A closed valley is walled highest at the back; the sides towards the campus stay low enough to look in over.
         const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.box[3] + 10) / 20), smooth((x - s.box[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
         y += open * clear * land.rim * Math.exp(-(((d - 14 - e * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
@@ -356,6 +365,14 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         if (ring <= 0) continue;
         c.lerp(t.copy(colour[s.land].wild).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), ring);
         cover = Math.max(cover, ring);
+      }
+      // The hill behind a district is that district's land, whatever landscape lies next to it.
+      for (const s of slots) {
+        if (!LAND[s.land].back) continue;
+        const hill = smooth(backHill(s, x, z) / 0.3);
+        if (hill <= 0) continue;
+        c.lerp(colour[s.land].wild, hill);
+        cover = Math.max(cover, hill);
       }
       // The shore: sand at the water's edge, sea bed below it. The river keeps its own banks.
       const still = waters.reduce((m, w) => Math.max(m, 1 - smooth((basin(x, z, w) - 1.3) / 0.35)), 0);

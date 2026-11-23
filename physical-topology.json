@@ -582,19 +582,6 @@
         {
           "id": "district:N1",
           "label": "N1",
-          "side": "E",
-          "gateXZ": [
-            -30,
-            84
-          ],
-          "depth": 90,
-          "groundY": 7,
-          "lots": 14,
-          "landscape": "film-set",
-          "clientId": "film-studio", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [50,8], [68,9], [84,5], [98,-2]]}, "landmarks": [{"kind": "hill-sign", "path": [[-2, 60], [25, 65.5], [52, 60]], "faces": [0, -1]}, {"kind": "lookout", "at": [83, 95]}]},
-        {
-          "id": "district:N2",
-          "label": "N2",
           "side": "N",
           "gateXZ": [
             -24,
@@ -607,6 +594,19 @@
             -24,
             -56
           ],
+          "landscape": "film-set",
+          "clientId": "film-studio", "road": {"points": [[0,0], [8,0], [16,0], [30,2], [46,5], [62,5], [78,1], [92,-3], [103,-4]]}, "landmarks": [{"kind": "hill-sign", "path": [[-53, -186.5], [-27, -188], [-1, -186.5]], "faces": [0, 1]}, {"kind": "lookout", "at": [14, -190]}]},
+        {
+          "id": "district:N2",
+          "label": "N2",
+          "side": "W",
+          "gateXZ": [
+            -86,
+            80
+          ],
+          "depth": 90,
+          "groundY": 1.2,
+          "lots": 14,
           "landscape": "pine-forest",
           "clientId": "clevergroup", "road": {"points": [[0,0], [4,0], [8,0], [12.5,1], [18,4.5], [25,8.5], [34,9], [58,9], [68,8], [75,3.5], [77,-1], [74,-6], [67,-8.8], [58,-9], [34,-9], [26,-8.5], [19,-5.5], [15.5,-2], [12.8,1.15]], "joins":  true, "lotSide":  1}, "landmarks": [{"kind": "park"}]},
         {
@@ -660,13 +660,13 @@
         {
           "id": "district:S1",
           "label": "S1",
-          "side": "W",
+          "side": "E",
           "gateXZ": [
-            -86,
-            80
+            -30,
+            84
           ],
           "depth": 84,
-          "groundY": 1.2,
+          "groundY": 7,
           "lots": 12,
           "landscape": null,
           "clientId": null

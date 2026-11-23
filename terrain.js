@@ -2,7 +2,7 @@ import * as T from 'three';
 import {applyCampusPaving} from './paving-pattern.js';
 export function createTerrain(scene,P,L){
  const smooth=t=>{t=T.MathUtils.clamp(t,0,1);return t*t*(3-2*t);};
- // The river runs below the film hill: along the south-west reserve land, down a long bend, then east to the sea.
+ // The river runs below the hill south of the campus: along the south-west reserve land, down a long bend, then east to the sea.
  const riverZ=x=>126+22*smooth((x+72)/52)+6*Math.sin(x*.041+.4)+2.6*Math.sin(x*.093+1.1)+1.1*Math.sin(x*.19),riverR=x=>3.2+.55*Math.sin(x*.035)+.35*Math.cos(x*.083);
  const pads=L.buildings.map(b=>({id:b.id,x:b.position[0],z:b.position[2],y:b.position[1],hx:L.grades[b.grade][0]/2+.4,hz:L.grades[b.grade][2]/2+.4}));
  if(L.schedule) pads.push({id:L.schedule.id,x:17,z:31.5,y:3.8,hx:2.2,hz:.8,feather:1.0});
@@ -10,7 +10,7 @@ export function createTerrain(scene,P,L){
  // The detailed ground keeps the lattice it always had (cells of 380/506 by 340/453 m from the north-west corner) and
  // grows east and south in whole cells, so a vertex saved by the Studio is still the same point of land.
  // `grid.land` counts the re-layouts of the land: 0 before the ground grew, 1 with the districts moved, 2 with each
- // district's land along its curved road. `grid.kept(r,x,z)` tells whether the ground at (x,z) is still as it was at
+ // district's land along its curved road, 3 with Film studio behind the campus and Clevergroup in the south-west. `grid.kept(r,x,z)` tells whether the ground at (x,z) is still as it was at
  // revision r (land-kept.js); the rest of the land is new since then.
  const CELL=[380/506,340/453],nx=632,nz=557,GROUND=[-190,-170,-190+nx*CELL[0],-170+nz*CELL[1]],[GX0,GZ0,GX1,GZ1]=GROUND,GW=GX1-GX0,GD=GZ1-GZ0,world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
@@ -113,7 +113,7 @@ export function createTerrain(scene,P,L){
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
  geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));shade();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
  const wg=new T.PlaneGeometry(GW,1,320,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i)+(GX0+GX1)/2,s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],land:2,kept:(rev,x,z)=>landKept(rev,Math.round((x-GX0)/stepX),Math.round((z-GZ0)/stepZ))},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],land:3,kept:(rev,x,z)=>landKept(rev,Math.round((x-GX0)/stepX),Math.round((z-GZ0)/stepZ))},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
