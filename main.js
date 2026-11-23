@@ -23,11 +23,11 @@ import {createRoads} from './roads.js?rev=8';
 import {createLandscape} from './landscape.js?rev=up4';
 import {createUrbanPlanningEngine} from './urban-planning-engine.js?rev=median2';
 import {dataConnector} from './data-connector.js';
-import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v4';
+import {CutawayAnimator} from './cutaway-animator.js?rev=cutaway_v5';
 import {CockpitHUD} from './cockpit-hud.js';
 import {CockpitFrame} from './cockpit-frame.js';
 import {createDayNight} from './day-night.js';
-import {BuildingPanels} from './building-panels.js';
+import {BuildingPanels} from './building-panels.js?rev=panels_v2';
 import {createStateVisuals} from './state-visuals.js';
 import {createClientDistricts} from './client-districts.js';
 import {createWorldBackdrop} from './world-landscape.js';
@@ -1226,6 +1226,8 @@ async function main() {
   window.__cockpitFrame = cockpitFrame;
   if (cutawayAnimator) cutawayAnimator.dayNight = dayNight;
   buildingPanels = new BuildingPanels({dataConnector, frame: cockpitFrame});
+  buildingPanels.onStorey = n => cutawayAnimator.setFloor(n);
+  cutawayAnimator.onFloors = (count, current) => buildingPanels.setStoreys(count, current);
   window.__buildingPanels = buildingPanels;
 
   // Project state drawn on the building exteriors (scaffolding, crane, built height, DELAY sign)
