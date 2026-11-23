@@ -530,7 +530,10 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   for (let j = 0; j < zs.length - 1; j++) for (let i = 0; i < row - 1; i++) {
     if (within((xs[i] + xs[i + 1]) / 2, (zs[j] + zs[j + 1]) / 2, 4.5)) continue;
     const a = j * row + i, b = a + 1, c = a + row, d = c + 1;
-    if (hash(i + 31, j + 47) < 0.5) idx.push(a, c, b, b, c, d); else idx.push(a, c, d, a, d, b);
+    // Either diagonal, except where the shifted corners leave the cell with a dent: there only one of the two keeps both triangles facing up.
+    const up = (p, q, r) => (pos[q * 3 + 2] - pos[p * 3 + 2]) * (pos[r * 3] - pos[p * 3]) - (pos[q * 3] - pos[p * 3]) * (pos[r * 3 + 2] - pos[p * 3 + 2]) > 1e-3;
+    const first = up(a, c, b) && up(b, c, d), second = up(a, c, d) && up(a, d, b);
+    if (first && (!second || hash(i + 31, j + 47) < 0.5)) idx.push(a, c, b, b, c, d); else idx.push(a, c, d, a, d, b);
   }
   // The far land is low-poly outright: every triangle has corners of its own, one normal and one colour.
   // Next to the campus ground it keeps the vertex's own colour and shading, so the two still meet without a line.
