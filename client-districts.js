@@ -540,10 +540,14 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     const {depth, half} = frame, peg = mat(0xf28c28);
     for (let u = 0; u <= depth; u += 10) for (const v of [-half, half]) b.box(peg, 0.22, 1.0, 0.22, u, 0, v);
     for (let v = -half + 8; v < half; v += 8) for (const u of [0, depth]) b.box(peg, 0.22, 1.0, 0.22, u, 0, v);
-    for (const v of [-2.6, 2.6]) b.box(M.pole, 0.2, 3.2, 0.2, 1, 0, v);
+    for (const v of [-3.3, 3.3]) b.box(M.pole, 0.24, 4.6, 0.24, 1, 0, v);
+    // A red and white barrier across the road in, on two trestles.
+    const red = mat(0xd9413a), pale = mat(0xf6f1e7);
+    for (let k = 0; k < 8; k++) b.box(k % 2 ? pale : red, 0.22, 0.34, 0.8, 4, 0.78, -2.8 + k * 0.8);
+    for (const v of [-2.6, 2.6]) for (const u of [3.7, 4.3]) b.box(M.pole, 0.1, 0.8, 0.1, u, 0, v);
     b.build(group);
     for (const s of [-1, 1]) {
-      const sign = board('reserve:' + slot.label, 5.6, 1.7, 64, (ctx, w, h) => {
+      const sign = board('reserve:' + slot.label, 7.4, 2.25, 64, (ctx, w, h) => {
         ctx.fillStyle = '#f6f1e7';
         ctx.fillRect(0, 0, w, h);
         ctx.strokeStyle = '#f28c28';
@@ -557,7 +561,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         ctx.font = '600 24px "Be Vietnam Pro", Arial, sans-serif';
         ctx.fillText('Dành cho khách hàng mới', w / 2, h * 0.72);
       });
-      sign.position.set(1 + s * 0.12, 2.5, 0);
+      sign.position.set(1 + s * 0.14, 3.45, 0);
       sign.rotation.y = s * Math.PI / 2;
       group.add(sign);
     }
@@ -937,15 +941,25 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       }
       return false;
     });
+    // In front of and behind the sign of each empty slot, so that it reads from both sides. Only scenery goes from
+    // here: what was placed there in Studio stays.
+    const signs = [...districts.values()].filter(d => !d.client).map(d => {
+      const f = slotFrame(d.slot, tpl);
+      return (x, z) => { const [u, v] = f.toLocal(x, z); return u >= -4 && u <= 26 && Math.abs(v) <= 7; };
+    });
     // Round each landmark too, and along the path that leads to it.
     for (const d of districts.values()) for (const mark of d.client && d.slot.landmarks || []) {
       const rings = landmarkClearings(mark);
       zones.push((x, z) => rings.some(([px, pz, r]) => Math.hypot(x - px, z - pz) <= r));
     }
-    const taken = (x, z) => zones.some(inside => inside(x, z)) || onRoad(x, z) || (terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
+    const taken = (x, z, wet = false, placed = false) => zones.some(inside => inside(x, z)) || (!placed && signs.some(inside => inside(x, z))) || onRoad(x, z) || (!wet && terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
     const m = new T.Matrix4(), w = new T.Matrix4(), p = new T.Vector3(), gone = new T.Matrix4().makeScale(0, 0, 0);
     const mine = o => {
       for (let q = o; q; q = q.parent) if (q === root || q.name === 'state-visuals' || q.userData.binding) return true;
+      return false;
+    };
+    const placed = o => {
+      for (let q = o; q; q = q.parent) if (q.userData.isCustomAsset) return true;
       return false;
     };
     scene.updateMatrixWorld(true);
@@ -956,7 +970,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
         for (let i = 0; i < o.count; i++) {
           o.getMatrixAt(i, m);
           w.multiplyMatrices(o.matrixWorld, m);
-          if (!taken(w.elements[12], w.elements[14])) continue;
+          if (!taken(w.elements[12], w.elements[14], o.userData.shoreline)) continue;
           o.setMatrixAt(i, gone);
           changed = true;
         }
@@ -967,7 +981,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
       if (o.geometry.boundingSphere.radius * o.getWorldScale(p).x > 12) return;
       o.getWorldPosition(p);
-      if (taken(p.x, p.z)) o.visible = false;
+      if (taken(p.x, p.z, false, placed(o))) o.visible = false;
     });
   }
 

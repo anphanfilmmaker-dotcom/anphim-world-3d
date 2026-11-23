@@ -173,7 +173,7 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
       const text = String(mark.text || client?.name || '').toUpperCase().trim(), chars = [...text];
       if (!chars.length || !mark.path) return null;
       const g = new T.Group(), b = batch(), curve = new T.CatmullRomCurve3(mark.path.map(p => new T.Vector3(p[0], 0, p[1])), false, 'catmullrom', 0.5);
-      const len = curve.getLength(), pitch = Math.min(len / chars.length, 5.4), wide = pitch * 0.8, tall = Math.min(pitch * 1.3, 6.6);
+      const len = curve.getLength(), pitch = Math.min(len / chars.length, 5.4), wide = pitch * 0.84, tall = Math.min(pitch * 1.55, 7.6), deep = 0.3, lamps = [];
       const faces = mark.faces || [0, -1], rand = seeded(text);
       const made = new Map();
       const glyph = letter => {
@@ -191,6 +191,8 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
           ctx.fillText(letter, (m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / 2, -m.actualBoundingBoxDescent - 2 / ((h - 4) / th));
         });
         const material = new T.MeshStandardMaterial({map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.7, alphaTest: 0.5, roughness: 0.8});
+        // The same letter in grey, for the thickness between its two faces.
+        material.userData.side = new T.MeshStandardMaterial({map: tex, color: 0xaeb6c2, alphaTest: 0.5, roughness: 0.9});
         made.set(letter, material);
         return material;
       };
@@ -205,9 +207,16 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
         [[chars[order], 1], [chars[chars.length - 1 - order], -1]].forEach(([letter, side]) => {
           if (letter === ' ') return;
           const face = new T.Mesh(new T.PlaneGeometry(wide, tall), glyph(letter));
-          face.position.set(p.x + nx * 0.04 * side, base + tall / 2, p.z + nz * 0.04 * side);
+          face.position.set(p.x + nx * deep * side, base + tall / 2, p.z + nz * deep * side);
           face.rotation.y = Math.atan2(nx * side, nz * side);
           g.add(face);
+          // Slices between the faces make the letter a solid block when seen from the side.
+          for (const o of [0.2, 0.6]) {
+            const slice = new T.Mesh(face.geometry, glyph(letter).userData.side);
+            slice.position.set(p.x + nx * deep * side * o, base + tall / 2, p.z + nz * deep * side * o);
+            slice.rotation.y = face.rotation.y;
+            g.add(slice);
+          }
         });
         if (chars[order] === ' ' && chars[chars.length - 1 - order] === ' ') return;
         // Each letter stands on two short legs.
@@ -215,14 +224,26 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
           const x = p.x + t.x * o * wide, z = p.z + t.z * o * wide, y = ground(x, z) - 0.3;
           b.box(M.pole, 0.2, base + 0.1 - y, 0.2, x, y, z);
         }
+        // A low lamp at the foot of each letter, on the side the sign is read from.
+        const lx = p.x + nx * 2.4, lz = p.z + nz * 2.4, ly = ground(lx, lz);
+        b.box(M.pole, 0.14, 0.7, 0.14, lx, ly - 0.1, lz);
+        lamps.push([lx, ly + 0.66, lz]);
       });
       b.build(g);
+      if (lamps.length) {
+        const heads = new T.InstancedMesh(lampHead, M.lampHead, lamps.length), m = new T.Matrix4();
+        lamps.forEach(([lx, ly, lz], i) => heads.setMatrixAt(i, m.makeTranslation(lx, ly, lz)));
+        heads.name = 'district-lamp-heads';
+        g.add(heads);
+      }
       return g;
     },
 
     /** A round tower with a railed deck and a glass room under a pointed roof. */
     lookout(mark, {accent}) {
       const s = site(mark), {b} = s;
+      // It stands on a knoll of bare rock.
+      b.solid(M.rock, new T.CylinderGeometry(6.4, 9.2, 6, 7), 0, -3, 0);
       b.solid(M.plaza, new T.CylinderGeometry(5.6, 5.6, 0.16, 28), 0, 0.08, 0);
       b.solid(white, new T.CylinderGeometry(1.15, 1.6, 10, 12), 0, 5, 0);
       b.solid(M.curb, new T.CylinderGeometry(3.7, 3.1, 0.5, 20), 0, 10.25, 0);

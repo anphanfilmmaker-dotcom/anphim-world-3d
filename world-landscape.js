@@ -88,6 +88,63 @@ export function createSeam(height, rect, band = 14) {
   return {height: heightAt, shade, xs: line(x0, sx, nx), zs: line(z0, sz, nz)};
 }
 
+/** The direction the sun shines from (campus-palette.json, lighting.sunPosition), for the tone of each facet. */
+const SUN = [-0.476, 0.774, 0.417];
+
+/**
+ * The land is drawn low-poly: a lattice of triangles about `size` metres wide over `rect`, its corners shifted at
+ * random, lies over the fine ground mesh, and every vertex takes the shading and colour of the triangle it is in.
+ * Heights are not touched. `find(x, z)` gives the index of that triangle; `update()` reads the heights again and
+ * sets, per triangle, `normal` (x y z), `centre` (x y z), `lit` (how far it faces the sun) and `tone` (a shade of its own).
+ */
+export function createFacets(height, rect, size = 9) {
+  const [x0, z0, x1, z1] = rect, ni = Math.ceil((x1 - x0) / size) + 3, nj = Math.ceil((z1 - z0) / size) + 3, count = (ni - 1) * (nj - 1) * 2;
+  const px = new Float32Array(ni * nj), pz = new Float32Array(ni * nj), py = new Float32Array(ni * nj);
+  for (let j = 0; j < nj; j++) for (let i = 0; i < ni; i++) {
+    px[j * ni + i] = x0 + (i - 1 + (hash(i + 11, j + 5) - 0.5) * 0.7) * size;
+    pz[j * ni + i] = z0 + (j - 1 + (hash(i + 3, j + 17) - 0.5) * 0.7) * size;
+  }
+  // Each cell is cut along one of its two diagonals.
+  const corners = new Int32Array(count * 3);
+  for (let j = 0; j < nj - 1; j++) for (let i = 0; i < ni - 1; i++) {
+    const a = j * ni + i, b = a + 1, c = a + ni, d = c + 1, t = (j * (ni - 1) + i) * 6;
+    corners.set(hash(i + 29, j + 43) < 0.5 ? [a, c, b, b, c, d] : [a, c, d, a, d, b], t);
+  }
+  const normal = new Float32Array(count * 3), centre = new Float32Array(count * 3), lit = new Float32Array(count), tone = new Float32Array(count);
+  for (let t = 0; t < count; t++) tone[t] = hash(t % 9973, Math.floor(t / 9973) + 7);
+  const holds = (t, x, z) => {
+    const a = corners[t * 3], b = corners[t * 3 + 1], c = corners[t * 3 + 2];
+    const d1 = (x - px[b]) * (pz[a] - pz[b]) - (px[a] - px[b]) * (z - pz[b]), d2 = (x - px[c]) * (pz[b] - pz[c]) - (px[b] - px[c]) * (z - pz[c]), d3 = (x - px[a]) * (pz[c] - pz[a]) - (px[c] - px[a]) * (z - pz[a]);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  };
+  function find(x, z) {
+    const ci = Math.min(ni - 2, Math.max(0, Math.floor((x - x0) / size) + 1)), cj = Math.min(nj - 2, Math.max(0, Math.floor((z - z0) / size) + 1));
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const i = ci + di, j = cj + dj;
+      if (i < 0 || j < 0 || i > ni - 2 || j > nj - 2) continue;
+      const t = (j * (ni - 1) + i) * 2;
+      if (holds(t, x, z)) return t;
+      if (holds(t + 1, x, z)) return t + 1;
+    }
+    return (cj * (ni - 1) + ci) * 2;
+  }
+  function update() {
+    for (let n = 0; n < px.length; n++) py[n] = height(Math.min(x1, Math.max(x0, px[n])), Math.min(z1, Math.max(z0, pz[n])));
+    for (let t = 0; t < count; t++) {
+      const a = corners[t * 3], b = corners[t * 3 + 1], c = corners[t * 3 + 2];
+      const ux = px[b] - px[a], uy = py[b] - py[a], uz = pz[b] - pz[a], vx = px[c] - px[a], vy = py[c] - py[a], vz = pz[c] - pz[a];
+      let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      const l = (ny < 0 ? -1 : 1) * (Math.hypot(nx, ny, nz) || 1);
+      nx /= l; ny /= l; nz /= l;
+      normal[t * 3] = nx; normal[t * 3 + 1] = ny; normal[t * 3 + 2] = nz;
+      centre[t * 3] = (px[a] + px[b] + px[c]) / 3; centre[t * 3 + 1] = (py[a] + py[b] + py[c]) / 3; centre[t * 3 + 2] = (pz[a] + pz[b] + pz[c]) / 3;
+      lit[t] = nx * SUN[0] + ny * SUN[1] + nz * SUN[2];
+    }
+  }
+  update();
+  return {find, update, normal, centre, lit, tone};
+}
+
 /**
  * Landscapes by the `landscape` id of a topology slot. `pad` is the ground inside the district,
  * `wild` the land around it, `rise(x, z)` its height above the plain, `rim` a ridge closing the
@@ -97,19 +154,19 @@ export function createSeam(height, rect, band = 14) {
  */
 const LAND = {
   plain: {rise: () => 0},
-  meadow: {rise: (x, z) => 1 + 4 * fbm(x / 70, z / 70), trees: ['round', 0.1, [0x4f9c46, 0x6bb04f]]},
-  grassland: {pad: 0x9ccb6b, wild: 0x93c665, rise: (x, z) => 1 + 6 * fbm(x / 85, z / 85), trees: ['round', 0.07, [0x5aa64a, 0x77b955]]},
+  meadow: {rise: (x, z) => 1 + 4 * fbm(x / 70, z / 70), trees: ['conifer', 0.3, [0x2f7045, 0x3d8350, 0x347a4a]], blossom: 0.14},
+  grassland: {pad: 0x9ccb6b, wild: 0x8fcc5f, rise: (x, z) => 1 + 6 * fbm(x / 85, z / 85), trees: ['round', 0.13, [0x5aa64a, 0x77b955]], blossom: 0.2},
   'flower-hills': {pad: 0xc9dd9c, wild: 0xb4d28a, rise: (x, z) => 1.5 + 11 * Math.pow(fbm(x / 34, z / 34, 2), 1.4), trees: ['round', 0.14, [0xf3a6c4, 0xf7c1d6, 0xe98bb2]]},
   'snow-mountain': {pad: 0xeef4f9, wild: 0xeef4f9, rim: 15, closed: true, rise: (x, z) => 9 + 58 * Math.pow(ridged(x / 62, z / 62), 1.25), trees: ['conifer', 0.3, [0x2f5d4a, 0x3b6b58, 0xdfeaf0]]},
-  'film-set': {pad: 0xb9b2a6, wild: 0x9c9a55, rim: 17, back: true, rise: (x, z) => 3 + 11 * fbm(x / 52, z / 52), trees: ['round', 0.1, [0x7f9a4a, 0x93a655]]},
-  'pine-forest': {pad: 0x5f8f57, wild: 0x4f7f4b, rise: (x, z) => 4 + 15 * fbm(x / 55, z / 55), trees: ['conifer', 0.85, [0x2e6140, 0x3a7049, 0x285538]]},
+  'film-set': {pad: 0xc4bfae, wild: 0x7fbf58, rim: 17, back: true, rise: (x, z) => 3 + 11 * fbm(x / 52, z / 52), trees: ['conifer', 0.3, [0x2f7045, 0x3d8350]], blossom: 0.1},
+  'pine-forest': {pad: 0x6a9f58, wild: 0x528a4c, rise: (x, z) => 4 + 15 * fbm(x / 55, z / 55), trees: ['conifer', 0.85, [0x2e6140, 0x3a7049, 0x285538]], blossom: 0.04},
   'red-canyon': {pad: 0xdfa46e, wild: 0xd98050, rim: 9, rise: (x, z) => {
     const t = (5 + 30 * fbm(x / 68, z / 68)) / 7, f = Math.floor(t);
     return 7 * (f + smooth((t - f - 0.55) / 0.45));
   }, trees: ['round', 0.03, [0x8a9a4c]]},
-  'tropical-beach': {pad: 0xf0deb0, wild: 0xead9a6, rise: (x, z) => 0.4 + 1.2 * fbm(x / 30, z / 30), trees: ['round', 0.1, [0x3fa05a, 0x4fb267]]},
+  'tropical-beach': {pad: 0xf0deb0, wild: 0x8ccb62, rise: (x, z) => 0.4 + 1.2 * fbm(x / 30, z / 30), trees: ['round', 0.16, [0x3fa05a, 0x4fb267]], blossom: 0.18},
   // Rolling ground near the districts, growing into mountains towards the horizon.
-  highland: {wild: 0x5f9a56, rise: (x, z) => 4 + (22 * fbm(x / 120, z / 120) + 20 * ridged(x / 190, z / 190, 3)) * smooth((Math.hypot(x, z) - 170) / 260), trees: ['conifer', 0.5, [0x356b45, 0x437a4f]]},
+  highland: {wild: 0x5aa052, rise: (x, z) => 4 + (22 * fbm(x / 120, z / 120) + 20 * ridged(x / 190, z / 190, 3)) * smooth((Math.hypot(x, z) - 170) / 260), trees: ['conifer', 0.55, [0x2f6b45, 0x3d7c4f]], blossom: 0.05},
   sea: {rise: () => -7}
 };
 // Beyond the campus ground: [landscape, x0, z0, x1, z1].
@@ -129,6 +186,8 @@ const STRAIT = {half: 8, points: [[112, 122], [106, 90], [104, 56], [106, 24], [
 const CAMPUS = [-66, -66, 66, 52];
 const STRATA = [0xb5482a, 0xc9603a, 0xd98050, 0xa63f26];
 const FLOWERS = [0xf3a6c4, 0xffe08a, 0xc9b8f5];
+const BLOSSOM = [0xf7a9c9, 0xf48fb9, 0xfbc4da];
+const STONE = [0x9aa1ab, 0x868e9b, 0xb1b5bb, 0xa39d96];
 const lin = hex => new T.Color(hex);
 
 /** `fine` is the rectangle [x0, z0, x1, z1] whose ground mesh is fine enough to carry small patterns. */
@@ -306,19 +365,32 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   /**
    * Colour the ground: `pos` and `col` are vertex arrays laid out in rows of `row` vertices,
    * `col` holds multipliers of the grass colour `base` and is updated in place.
+   * `facet(i, F)` tells of the low-poly facet vertex i lies in: F.k how far the vertex takes the facet's colour
+   * (0 not at all), F.x F.y F.z its centre, F.slope, F.lit (createFacets) and F.tone; without `row` it also gives F.vslope, the vertex's own slope.
    */
-  function paint(pos, col, row, base) {
-    const n = pos.length / 3, c = new T.Color(), t = new T.Color(), s1 = new T.Color(), b = lin(base);
+  function paint(pos, col, row, base, facet = null) {
+    const n = pos.length / 3, c = new T.Color(), t = new T.Color(), s1 = new T.Color(), b = lin(base), F = {k: 0, x: 0, y: 0, z: 0, slope: 0, vslope: 0, lit: SUN[1], tone: 0.5};
     const colour = Object.fromEntries(Object.entries(LAND).map(([k, v]) => [k, {pad: v.pad != null ? lin(v.pad) : null, wild: v.wild != null ? lin(v.wild) : null}]));
-    const rock = lin(0x8b97a6), snow = lin(0xf4f8fb), sand = lin(0xf0deb0), seabed = lin(0xcbbd8a), cliff = lin(0x8a8f86), strata = STRATA.map(lin), flowers = FLOWERS.map(lin), gold = lin(0xd8d27a), mesaTop = lin(0xe6b584);
+    const rock = lin(0x8d9ab5), snow = lin(0xf6f9fc), ice = lin(0xb4c4e6), sand = lin(0xf3e2b4), seabed = lin(0xd9cf9c), abyss = lin(0x14508f), cliff = lin(0x8a8f86), strata = STRATA.map(lin), flowers = FLOWERS.map(lin), gold = lin(0xd8d27a), mesaTop = lin(0xe6b584);
     for (let i = 0; i < n; i++) {
       const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
       const open = smooth(rectGap(x, z, CAMPUS) / 22);
       if (open <= 0) continue;
-      // Slope across both neighbours on each axis, so a cliff reads the same from either side.
-      const l = i % row ? i - 1 : i, r = (i + 1) % row ? i + 1 : i, u = i >= row ? i - row : i, v = i + row < n ? i + row : i;
-      const sx = (pos[r * 3 + 1] - pos[l * 3 + 1]) / (pos[r * 3] - pos[l * 3] || 1), sz = (pos[v * 3 + 1] - pos[u * 3 + 1]) / (pos[v * 3 + 2] - pos[u * 3 + 2] || 1), slope = Math.hypot(sx, sz);
-      blend(x, z);
+      F.k = 0;
+      if (facet) facet(i, F);
+      let slope = F.vslope;
+      if (row) {
+        // Slope across both neighbours on each axis, so a cliff reads the same from either side.
+        const l = i % row ? i - 1 : i, r = (i + 1) % row ? i + 1 : i, u = i >= row ? i - row : i, v = i + row < n ? i + row : i;
+        const sx = (pos[r * 3 + 1] - pos[l * 3 + 1]) / (pos[r * 3] - pos[l * 3] || 1), sz = (pos[v * 3 + 1] - pos[u * 3 + 1]) / (pos[v * 3 + 2] - pos[u * 3 + 2] || 1);
+        slope = Math.hypot(sx, sz);
+      }
+      // A facet is one landscape, one height band and one slope all over: the borders between colours follow its edges.
+      const fk = F.k, bx = x + (F.x - x) * fk, bz = z + (F.z - z) * fk, ys = y + (F.y - y) * fk;
+      slope += (F.slope - slope) * fk;
+      // Snow in the shade of the sun is blue.
+      const frost = fk * smooth((0.74 - F.lit) / 0.45) * 0.8, snowAt = into => into.copy(snow).lerp(ice, frost).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8);
+      blend(bx, bz);
       c.setRGB(0, 0, 0);
       let cover = 0;
       for (let k = 0; k < anchors.length; k++) {
@@ -328,22 +400,22 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         const inside = a.pad && a.named ? 1 - smooth(a.core(x, z) / 9) : 0;
         if (!set.wild && !(set.pad && inside)) continue;
         t.copy(set.wild || set.pad);
-        if (name === 'snow-mountain') t.lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8);
+        if (name === 'snow-mountain') snowAt(t);
         else if (name === 'red-canyon') {
           // Rock layers on the cliffs: bands that follow the height, each passing softly into the next.
           const band = y / 2.6 + 1.2 * fbm(x / 40, z / 40, 2), f = Math.floor(band), mix = smooth((band - f - 0.6) / 0.4);
-          t.lerp(mesaTop, smooth((y - 10) / 4));
+          t.lerp(mesaTop, smooth((ys - 10) / 4));
           // On the steepest faces the ground mesh is too coarse to carry the layers: one rock colour there.
           t.lerp(s1.copy(strata[((f % 4) + 4) % 4]).lerp(strata[(((f + 1) % 4) + 4) % 4], mix).lerp(strata[1], smooth((slope - 1.1) / 0.9)), smooth((slope - 0.3) / 0.5));
         } else if (name === 'flower-hills') {
           // Flower fields: rows of one colour each, in patches across the hills.
           const field = fbm(x / 26 + 40, z / 26, 2), turn = Math.floor(fbm(x / 60, z / 60 + 20, 2) * 6), row = (turn % 2 ? x * 0.8 + z * 0.6 : x * 0.6 - z * 0.8) / 3.2;
           if (field > 0.5 && row - Math.floor(row) < 0.72) t.lerp(flowers[((Math.floor(row) + turn) % 3 + 3) % 3], smooth((field - 0.5) / 0.05) * 0.9 * detail(x, z) * (1 - smooth((slope - 0.2) / 0.3)));
-        } else if (name === 'grassland') t.lerp(gold, smooth((fbm(x / 28, z / 28 + 60, 2) - 0.55) / 0.15) * 0.55);
-        else if (name === 'pine-forest') t.multiplyScalar(0.86 + 0.28 * fbm(x / 20, z / 20, 2));
+        } else if (name === 'grassland') t.lerp(gold, smooth((fbm(bx / 28, bz / 28 + 60, 2) - 0.55) / 0.15) * 0.55);
+        else if (name === 'pine-forest') t.multiplyScalar(0.86 + 0.28 * fbm(bx / 20, bz / 20, 2));
         else if (name === 'highland') {
           if (slope > 0.95) t.lerp(cliff, smooth((slope - 0.95) / 0.4));
-          if (y > 104) t.lerp(snow, smooth((y - 104) / 14));
+          if (ys > 104) t.lerp(snow, smooth((ys - 104) / 14));
         }
         if (set.pad && inside) t.lerp(set.pad, inside);
         c.r += w * t.r; c.g += w * t.g; c.b += w * t.b;
@@ -353,9 +425,9 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       // The snow line: high ground beside the snow mountains is snow too, whatever grows lower down.
       let snowy = 0;
       for (let k = 0; k < anchors.length; k++) if (anchors[k].land === 'snow-mountain') snowy += weights[k];
-      const white = smooth((y - 9) / 9) * smooth(snowy / 0.2);
+      const white = smooth((ys - 9) / 9) * smooth(snowy / 0.2);
       if (white > 0) {
-        c.lerp(t.copy(snow).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), white);
+        c.lerp(snowAt(t), white);
         cover = Math.max(cover, white);
       }
       // The ridge around a closed valley belongs to the valley: snow and rock down to its foot.
@@ -363,7 +435,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         if (!LAND[s.land].closed) continue;
         const ring = 1 - smooth((s.pad(x, z) - 16) / 14);
         if (ring <= 0) continue;
-        c.lerp(t.copy(colour[s.land].wild).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), ring);
+        c.lerp(snowAt(t), ring);
         cover = Math.max(cover, ring);
       }
       // The hill behind a district is that district's land, whatever landscape lies next to it.
@@ -379,14 +451,23 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       if (y < 1.5 && (weights[seaAnchor] > 0.02 || still > 0)) {
         const shore = (1 - smooth((y - 0.5) / 1.0)) * Math.max(smooth(weights[seaAnchor] / 0.2), still);
         if (!cover) c.copy(b);
-        c.lerp(s1.copy(sand).lerp(seabed, smooth((-0.2 - y) / 1.6)), shore);
+        // Under water the bed is pale in the shallows and dark in the deep, and the water takes its blue from it.
+        c.lerp(s1.copy(sand).lerp(seabed, smooth((-0.2 - y) / 1.2)).lerp(abyss, smooth((-1.1 - y) / 3.2)), shore);
         cover = Math.max(cover, shore);
       }
-      const k = open * Math.min(1, cover * 1.25);
-      if (k <= 0) continue;
-      col[i * 3] *= 1 + (c.r / b.r - 1) * k;
-      col[i * 3 + 1] *= 1 + (c.g / b.g - 1) * k;
-      col[i * 3 + 2] *= 1 + (c.b / b.b - 1) * k;
+      // The river bed is pale too, so the river runs light blue between its banks.
+      if (y < 0.7 && Math.abs(z - riverZ(x)) < 14) {
+        const bed = (1 - smooth((y - 0.15) / 0.5)) * smooth((y + 0.9) / 0.5);
+        if (!cover) c.copy(b);
+        c.lerp(s1.copy(sand).lerp(seabed, 0.5), bed);
+        cover = Math.max(cover, bed);
+      }
+      // Every facet has a shade of its own, lighter towards the sun.
+      const k = open * Math.min(1, cover * 1.25), shade = 1 + open * fk * ((F.tone - 0.5) * 0.1 + (F.lit - SUN[1]) * 0.3) * (y < 0.3 ? 0 : 1);
+      if (k <= 0) c.copy(b);
+      col[i * 3] *= (1 + (c.r / b.r - 1) * k) * shade;
+      col[i * 3 + 1] *= (1 + (c.g / b.g - 1) * k) * shade;
+      col[i * 3 + 2] *= (1 + (c.b / b.b - 1) * k) * shade;
     }
   }
 
@@ -395,14 +476,20 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     // The ridge around a closed valley grows what the valley grows.
     const ring = slots.find(s => LAND[s.land].closed && s.pad(x, z) < 26);
     const land = LAND[ring ? ring.land : anchors[blend(x, z)].land];
-    return land.trees ? {kind: land.trees[0], density: land.trees[1], colors: land.trees[2]} : null;
+    return land.trees ? {kind: land.trees[0], density: land.trees[1], colors: land.trees[2], blossom: land.blossom || 0, rocky: !!land.rim || land === LAND.highland} : null;
   }
+  /** How far (0..1) the ground at a point is drawn as low-poly facets: not on the campus, nor on the level land of a district. */
+  const faceted = (x, z) => {
+    let k = smooth((rectGap(x, z, CAMPUS) - 5) / 18) * (fine ? smooth((Math.min(x - fine[0], fine[2] - x, z - fine[1], fine[3] - z) - 2) / 12) : 1);
+    for (let i = 0; k > 0 && i < slots.length; i++) k *= smooth((slots[i].core(x, z) - 1) / 6);
+    return k;
+  };
   const onPad = (x, z, margin = 0) => slots.some(s => s.pad(x, z) <= margin);
   const onRoad = (x, z, margin = 0) => lanes.some(g => {
     const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = T.MathUtils.clamp(((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), 0, 1);
     return Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz) < g.half + margin;
   });
-  return {shape, paint, growth, isSea, deck, onPad, onRoad, campus: CAMPUS};
+  return {shape, paint, faceted, growth, isSea, deck, onPad, onRoad, campus: CAMPUS};
 }
 
 /** The land past the campus ground, the sea, the river's upper course and the forests. */
@@ -425,9 +512,16 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   zs.forEach((z, j) => xs.forEach((x, i) => {
     // The same soft light and dark patches the campus ground has (terrain.js), so the two meet without a line.
     const k = (j * row + i) * 3, shade = 1 + 0.04 * Math.sin(x * 0.08) * Math.cos(z * 0.06) + 0.035 * (Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5) + 0.045 * (Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.053 - 0.7) + 0.6 * Math.sin((x + z) * 0.021 + 2.1));
-    pos[k] = x;
-    pos[k + 1] = terrain.designHeight(x, z) - (within(x, z, 1) ? 2 : 0);
-    pos[k + 2] = z;
+    // Away from the campus ground the grid lines are broken up, so the far land is triangles of every shape.
+    const loose = 0.62 * smooth((Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)) - 1) / 13);
+    let px = x, pz = z;
+    if (loose > 0 && i > 0 && j > 0 && i < row - 1 && j < zs.length - 1) {
+      px += (hash(i + 5, j + 9) - 0.5) * loose * Math.min(xs[i + 1] - x, x - xs[i - 1]);
+      pz += (hash(i + 23, j + 2) - 0.5) * loose * Math.min(zs[j + 1] - z, z - zs[j - 1]);
+    }
+    pos[k] = px;
+    pos[k + 1] = terrain.designHeight(px, pz) - (within(px, pz, 1) ? 2 : 0);
+    pos[k + 2] = pz;
     const tone = f => T.MathUtils.clamp(1 + (shade - 1) * f, 0.86, 1.12);
     col[k] = tone(0.85);
     col[k + 1] = tone(1.05);
@@ -436,14 +530,41 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   for (let j = 0; j < zs.length - 1; j++) for (let i = 0; i < row - 1; i++) {
     if (within((xs[i] + xs[i + 1]) / 2, (zs[j] + zs[j + 1]) / 2, 4.5)) continue;
     const a = j * row + i, b = a + 1, c = a + row, d = c + 1;
-    idx.push(a, c, b, b, c, d);
+    // Either diagonal, except where the shifted corners leave the cell with a dent: there only one of the two keeps both triangles facing up.
+    const up = (p, q, r) => (pos[q * 3 + 2] - pos[p * 3 + 2]) * (pos[r * 3] - pos[p * 3]) - (pos[q * 3] - pos[p * 3]) * (pos[r * 3 + 2] - pos[p * 3 + 2]) > 1e-3;
+    const first = up(a, c, b) && up(b, c, d), second = up(a, c, d) && up(a, d, b);
+    if (first && (!second || hash(i + 31, j + 47) < 0.5)) idx.push(a, c, b, b, c, d); else idx.push(a, c, d, a, d, b);
   }
-  world.paint(pos, col, row, terrain.materials[0].color);
+  // The far land is low-poly outright: every triangle has corners of its own, one normal and one colour.
+  // Next to the campus ground it keeps the vertex's own colour and shading, so the two still meet without a line.
+  const count = idx.length, flat = new Float32Array(count * 3), hue = new Float32Array(count * 3), steep = new Float32Array(count), face = new Float32Array(idx.length / 3 * 6);
+  const grade = n => {
+    const l = n % row ? n - 1 : n, r = (n + 1) % row ? n + 1 : n, u = n >= row ? n - row : n, v = n + row < pos.length / 3 ? n + row : n;
+    return Math.hypot((pos[r * 3 + 1] - pos[l * 3 + 1]) / (pos[r * 3] - pos[l * 3] || 1), (pos[v * 3 + 1] - pos[u * 3 + 1]) / (pos[v * 3 + 2] - pos[u * 3 + 2] || 1));
+  };
+  for (let t = 0; t < count; t += 3) {
+    const [a, b, c] = [idx[t] * 3, idx[t + 1] * 3, idx[t + 2] * 3];
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, len = Math.hypot(nx, ny, nz) || 1;
+    face.set([(pos[a] + pos[b] + pos[c]) / 3, (pos[a + 1] + pos[b + 1] + pos[c + 1]) / 3, (pos[a + 2] + pos[b + 2] + pos[c + 2]) / 3, Math.hypot(nx, nz) / Math.max(ny, len * 0.05), (nx * SUN[0] + ny * SUN[1] + nz * SUN[2]) / len, hash(idx[t] % 8191, idx[t + 1] % 8191)], t * 2);
+    for (let k = 0; k < 3; k++) {
+      const n = idx[t + k];
+      flat.set(pos.subarray(n * 3, n * 3 + 3), (t + k) * 3);
+      hue.set(col.subarray(n * 3, n * 3 + 3), (t + k) * 3);
+      steep[t + k] = grade(n);
+    }
+  }
+  const away = (x, z) => smooth((Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)) - 1) / 13);
+  world.paint(flat, hue, 0, terrain.materials[0].color, (i, F) => {
+    const f = Math.floor(i / 3) * 6;
+    F.k = away(flat[i * 3], flat[i * 3 + 2]);
+    F.vslope = steep[i];
+    F.x = face[f]; F.y = face[f + 1]; F.z = face[f + 2]; F.slope = face[f + 3]; F.lit = face[f + 4]; F.tone = face[f + 5];
+  });
   const geo = new T.BufferGeometry();
-  geo.setAttribute('position', new T.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new T.BufferAttribute(col, 3));
-  geo.setAttribute('uv', new T.BufferAttribute(new Float32Array(pos.length / 3 * 2).map((_, i) => pos[Math.floor(i / 2) * 3 + (i % 2) * 2] * 0.45), 2));
-  geo.setIndex(idx);
+  geo.setAttribute('position', new T.BufferAttribute(flat, 3));
+  geo.setAttribute('color', new T.BufferAttribute(hue, 3));
+  geo.setAttribute('uv', new T.BufferAttribute(new Float32Array(count * 2).map((_, i) => flat[Math.floor(i / 2) * 3 + (i % 2) * 2] * 0.45), 2));
   geo.computeVertexNormals();
   terrain.seam.shade(geo.attributes.position, geo.attributes.normal);
   const land = new T.Mesh(geo, terrain.materials[0]);
@@ -453,7 +574,8 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
 
   // One water surface for the sea and the river, so the river runs into the sea without a seam.
   const stream = terrain.terrain.parent?.getObjectByName('river-only');
-  const sea = new T.Mesh(new T.PlaneGeometry(reach * 2.4, reach * 2.4).rotateX(-Math.PI / 2), stream?.material ?? new T.MeshStandardMaterial({color: 0x4fb7d6, roughness: 0.04, metalness: 0.25, transparent: true, opacity: 0.9}));
+  // Clear enough to show the bed: pale sand in the shallows along every shore, dark blue in the deep.
+  const sea = new T.Mesh(new T.PlaneGeometry(reach * 2.4, reach * 2.4).rotateX(-Math.PI / 2), new T.MeshStandardMaterial({color: 0x2f9be0, roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.74}));
   sea.position.y = SEA_LEVEL;
   sea.name = 'world-sea';
   group.add(sea);
@@ -482,9 +604,22 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
       if (!g || hash(i + 13, j + 29) > g.density) continue;
       const y = ground(px, pz);
       if (y < 1.2 || y > 60 || Math.abs(ground(px + 2, pz) - y) > 2.6 || Math.abs(ground(px, pz + 2) - y) > 2.6) continue;
-      spots[g.kind].push({x: px, y, z: pz, s: 0.8 + hash(i + 3, j + 71) * 0.7 + (lo ? 0.5 : 0), r: hash(i + 7, j + 5), color: g.colors[Math.floor(hash(i + 41, j + 2) * g.colors.length)]});
+      // Here and there a tree in blossom among the green ones.
+      const pink = hash(i + 77, j + 19) < g.blossom;
+      spots[pink ? 'round' : g.kind].push({x: px, y, z: pz, s: 0.8 + hash(i + 3, j + 71) * 0.7 + (lo ? 0.5 : 0), r: hash(i + 7, j + 5), color: pink ? BLOSSOM[Math.floor(hash(i + 41, j + 2) * BLOSSOM.length)] : g.colors[Math.floor(hash(i + 41, j + 2) * g.colors.length)]});
     }
   };
+  // Boulders: along the sea shore, the lagoon and the river, out in the shallows, and loose on the mountains.
+  const rocks = [];
+  for (let x = -300; x <= 330; x += 4.5) for (let z = -300; z <= 300; z += 4.5) {
+    const i = Math.round(x / 4.5), j = Math.round(z / 4.5), px = x + (hash(i + 9, j + 61) - 0.5) * 4.5, pz = z + (hash(i + 83, j + 4) - 0.5) * 4.5;
+    if (rectGap(px, pz, world.campus) < 16 || world.onPad(px, pz, 3) || world.onRoad(px, pz, 3.5)) continue;
+    const y = ground(px, pz), river = Math.abs(pz - terrain.riverZ(px)), chance = hash(i + 15, j + 37);
+    const shore = y > -1.3 && y < 1.1 && (river < 9 ? chance < 0.2 : world.isSea(px, pz) && chance < 0.34), g = !shore && y > 4 && y < 70 ? world.growth(px, pz) : null;
+    if (!shore && !(g?.rocky && chance < 0.035)) continue;
+    const big = hash(i + 51, j + 8);
+    rocks.push({x: px, y: Math.max(y, shore ? -0.5 : y), z: pz, s: shore ? 0.7 + big * big * 2.2 : 1 + big * 2.4, r: hash(i + 2, j + 67), tone: hash(i + 19, j + 73)});
+  }
   // Outside the two ring-road corridors and off every road of the campus ground.
   plant(0, 300, 6.5, (x, z) => Math.abs(x) < 70 && z > -70 && z < 56);
   plant(300, 640, 17, () => false);
@@ -505,6 +640,48 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     mesh.receiveShadow = true;
     group.add(mesh);
   }
+
+  if (rocks.length) {
+    // A boulder is a few flat faces, wider than it is high, each one turned and squashed its own way.
+    const mesh = new T.InstancedMesh(tint(new T.DodecahedronGeometry(1, 0).scale(1, 0.72, 0.85).translate(0, 0.3, 0), 0xffffff), leaf, rocks.length);
+    rocks.forEach((s, i) => {
+      dummy.position.set(s.x, s.y - 0.15, s.z);
+      dummy.rotation.set((s.tone - 0.5) * 0.5, s.r * Math.PI * 2, (s.r - 0.5) * 0.5);
+      dummy.scale.set(s.s * (0.8 + s.tone * 0.5), s.s * (0.7 + s.r * 0.5), s.s);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, c.setHex(STONE[Math.floor(s.tone * STONE.length)]));
+    });
+    mesh.name = 'world-rocks';
+    // Boulders stand in the shallows, where client-districts.js clears the trees away.
+    mesh.userData.shoreline = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+  }
+
+  // A few low-poly clouds over the far mountains, the canyon rim, the open sea and the southern woods, each more
+  // than 110 m from the campus and every district.
+  const puffs = [];
+  for (const [n, [cx, cz]] of [[-250, -250], [-150, -310], [215, -280], [330, -215], [415, 60], [330, 240], [130, 310], [20, 345], [-295, 255], [-305, 30]].entries()) {
+    const size = 8 + hash(n + 29, 13) * 7, cy = 55 + hash(n + 41, 7) * 20;
+    for (let k = 0; k < 5; k++) {
+      const r = size * (k ? 0.45 + hash(n + 5, k + 53) * 0.35 : 1);
+      puffs.push(new T.IcosahedronGeometry(r, 0).scale(1.25, 0.62, 1).rotateY(hash(n + 61, k + 3) * 6).translate(cx + (k ? (hash(n + 7, k + 31) - 0.5) * size * 2.6 : 0), cy + (k ? -size * 0.16 : 0), cz + (k ? (hash(n + 13, k + 71) - 0.5) * size * 1.3 : 0)));
+    }
+  }
+  const clouds = new T.Mesh(mergeGeometries(puffs), new T.MeshStandardMaterial({color: 0xffffff, roughness: 1, flatShading: true, fog: false, transparent: true}));
+  clouds.name = 'world-clouds';
+  // Seen from low down a cloud would hang in front of the land behind it, so the clouds fade out as the camera drops below about 30 degrees.
+  const look = new T.Vector3();
+  // Drawn after the water, and with no depth once faded out, so that a faded cloud leaves no hole in what lies behind it.
+  clouds.renderOrder = 2;
+  clouds.onBeforeRender = (renderer, scene, cam) => {
+    const k = smooth((-cam.getWorldDirection(look).y - 0.42) / 0.1);
+    clouds.material.opacity = k;
+    clouds.material.depthWrite = k > 0.02;
+  };
+  group.add(clouds);
 
   // Scenery only: nothing here can be picked, so the Studio never selects or bulldozes the far land.
   group.traverse(o => { o.raycast = () => {}; });
