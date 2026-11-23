@@ -514,13 +514,14 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     const k = (j * row + i) * 3, shade = 1 + 0.04 * Math.sin(x * 0.08) * Math.cos(z * 0.06) + 0.035 * (Math.sin(x * 0.025 + z * 0.02) * 0.5 + Math.cos(x * 0.04 - z * 0.05) * 0.5) + 0.045 * (Math.sin(x * 0.047 + 1.3) * Math.sin(z * 0.053 - 0.7) + 0.6 * Math.sin((x + z) * 0.021 + 2.1));
     // Away from the campus ground the grid lines are broken up, so the far land is triangles of every shape.
     const loose = 0.62 * smooth((Math.hypot(Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)) - 1) / 13);
+    let px = x, pz = z;
     if (loose > 0 && i > 0 && j > 0 && i < row - 1 && j < zs.length - 1) {
-      x += (hash(i + 5, j + 9) - 0.5) * loose * Math.min(xs[i + 1] - x, x - xs[i - 1]);
-      z += (hash(i + 23, j + 2) - 0.5) * loose * Math.min(zs[j + 1] - z, z - zs[j - 1]);
+      px += (hash(i + 5, j + 9) - 0.5) * loose * Math.min(xs[i + 1] - x, x - xs[i - 1]);
+      pz += (hash(i + 23, j + 2) - 0.5) * loose * Math.min(zs[j + 1] - z, z - zs[j - 1]);
     }
-    pos[k] = x;
-    pos[k + 1] = terrain.designHeight(x, z) - (within(x, z, 1) ? 2 : 0);
-    pos[k + 2] = z;
+    pos[k] = px;
+    pos[k + 1] = terrain.designHeight(px, pz) - (within(px, pz, 1) ? 2 : 0);
+    pos[k + 2] = pz;
     const tone = f => T.MathUtils.clamp(1 + (shade - 1) * f, 0.86, 1.12);
     col[k] = tone(0.85);
     col[k + 1] = tone(1.05);
