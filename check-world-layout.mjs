@@ -135,6 +135,7 @@ for (const road of roads) {
     }
   }
 }
+notes.push(`districts: ${frames.filter(f => f.frame.road.curved).length} of ${frames.length} on a curved road of their own, lot 1 nearest the gate, lots clear of each other and of the road, every road long enough for all its lots`);
 notes.push(`roads: ${roads.length} access roads dry and outside the districts, ${roads.reduce((n, r) => n + (r.bridges || []).length, 0)} bridges (${bridgeLength.toFixed(0)} m)`);
 
 for (const n of notes) console.log('ok   ' + n);

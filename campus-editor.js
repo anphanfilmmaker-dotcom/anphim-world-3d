@@ -95,14 +95,14 @@ export function createCampusEditor({
   const nx = GRID.nx;
   const nz = GRID.nz;
   // States saved before the ground grew used a narrower lattice from the same corner: same (i, j), new row length.
-  // The land around the campus was re-laid when the ground grew, so of a state with no grid of its own only the brush
-  // work on the ground that stayed (GRID.legacyKept) still fits; the rest would put the old land's heights and colours on the new land.
-  const keptLand = (x, z) => !GRID.legacyKept || GRID.legacyKept.some(r => x >= r[0] && z >= r[1] && x <= r[2] && z <= r[3]);
-  const gridIndex = (i, savedGrid) => {
+  // The land has been re-laid since (GRID.land counts the times), so of a state saved on an earlier land only the brush
+  // work on the ground that stayed (GRID.kept) still fits; the rest would put the old land's heights and colours on the new land.
+  // A state with no land revision of its own was saved on land 1 when it has a grid, on land 0 when it has none.
+  const gridIndex = (i, savedGrid, savedLand = savedGrid ? 1 : 0) => {
     const [onx, onz] = savedGrid || GRID.legacy;
-    if (onx === nx && onz === nz) return i;
     const col = i % (onx + 1), row = Math.floor(i / (onx + 1)), x = GRID.x0 + col * GRID.stepX, z = GRID.z0 + row * GRID.stepZ;
-    if (!savedGrid && !keptLand(x, z)) return -1;
+    const kept = GRID.land == null || savedLand === GRID.land || (GRID.kept?.[savedLand] || []).some(r => x >= r[0] && z >= r[1] && x <= r[2] && z <= r[3]);
+    if (!kept) return -1;
     return col <= nx && row <= nz && row <= onz ? row * (nx + 1) + col : -1;
   };
   const baseCount = terrain.baseCount || ((nx + 1) * (nz + 1));
@@ -3709,6 +3709,7 @@ export function createCampusEditor({
       layoutRevision: LAYOUT_REVISION,
       timestamp: Date.now(),
       grid: [nx, nz],
+      land: GRID.land,
       heightDiffs,
       colorDiffs,
       roadsData,
@@ -3831,7 +3832,7 @@ export function createCampusEditor({
     let needPosSync = false;
     if (savedState.heightDiffs) {
       for (const [saved, y] of savedState.heightDiffs) {
-        const i = gridIndex(saved, savedState.grid);
+        const i = gridIndex(saved, savedState.grid, savedState.land);
         if (i >= 0 && i < baseCount) {
           basePosArray[i * 3 + 1] = y;
           modifiedHeightIndices.add(i);
@@ -3844,7 +3845,7 @@ export function createCampusEditor({
     let needColSync = false;
     if (baseColorArray && savedState.colorDiffs) {
       for (const [saved, r, g, b] of savedState.colorDiffs) {
-        const i = gridIndex(saved, savedState.grid);
+        const i = gridIndex(saved, savedState.grid, savedState.land);
         if (i >= 0 && i < baseCount) {
           baseColorArray[i * 3] = r;
           baseColorArray[i * 3 + 1] = g;
