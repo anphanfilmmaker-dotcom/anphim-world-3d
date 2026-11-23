@@ -58,8 +58,19 @@ const INTERIOR_TYPES = {
   'bld:facility:documents': 'documents',
   'bld:facility:schedule': 'schedule',
   'bld:facility:ai': 'ai',
-  'bld:facility:marketing': 'marketing'
+  'bld:facility:marketing': 'marketing',
+  'bld:facility:drive': 'drive',
+  'bld:facility:hermes': 'hermes',
+  'bld:facility:supabase': 'database',
+  'bld:facility:oracle': 'oracle',
+  'bld:facility:google': 'google',
+  'bld:facility:telegram': 'telegram',
+  'bld:facility:reserve': 'reserve'
 };
+
+// The four infrastructure buildings share one panel; the key is the system's id in the data.
+const SYSTEM_TYPES = {database: 'supabase', oracle: 'oracle', google: 'google', telegram: 'telegram'};
+const NOT_OK = /chua|khong|loi|that bai|fail|error/;
 
 // The six papers the Giấy tờ page tracks per project, in table order.
 const PAPERS = [
@@ -411,6 +422,68 @@ export class DataConnector {
     return this.cache?.marketing?.posts || null;
   }
 
+  /** The campus hands over system-graph.json (which building relies on which system) once it has read it. */
+  setSystemGraph(graph) {
+    this.systemGraph = graph || null;
+  }
+
+  /** Buildings linked to a system building in system-graph.json: [{id, label}], the system itself left out. */
+  getSystemLinks(buildingId) {
+    const infra = new Set(this.getSystems().map(x => x.buildingId));
+    const links = new Map();
+    for (const e of this.systemGraph?.edges || []) {
+      // Between two systems the edge runs from the one that hosts to the one that is hosted; any other building on an edge uses the system
+      const other = e.source === buildingId ? e.target : e.target === buildingId && !infra.has(e.source) ? e.source : null;
+      if (other && !links.has(other)) links.set(other, {id: other, label: e.label || ''});
+    }
+    return [...links.values()];
+  }
+
+  /** State of one system from the data: {key: 'online' | 'slow' | 'down' | null, label, tone, detail, lastCheck}; key null = no data. */
+  getSystemState(id) {
+    const sys = this.getSystems().find(x => x.id === id);
+    const st = sys && SYSTEM_STATUS[sys.status];
+    return {key: st ? sys.status : null, label: st ? st.label : 'Chưa kết nối', tone: st ? st.tone : 'idle', name: sys?.name || null,
+      detail: sys?.detail || null, lastCheck: sys?.lastCheck || null, adminUrl: sys?.adminUrl || null};
+  }
+
+  /**
+   * Hermes: the robot runs on the Oracle server, so it is running when that server is; `hermes.status` in the
+   * data wins when it is there. inputs = expenses the mail scan could not complete, posts = what Hermes wrote.
+   */
+  getHermes() {
+    const h = this.cache?.dailyBriefing?.hermes || null;
+    const host = this.getSystemState('oracle');
+    const own = h && SYSTEM_STATUS[h.status];
+    const state = own ? {key: h.status, label: own.label, tone: own.tone} : {key: h ? host.key : null, label: h ? host.label : 'Chưa kết nối', tone: h ? host.tone : 'idle'};
+    const expenses = this.getAllExpenses();
+    const inputs = this.getMissions().open.filter(m => m.source === 'hermes-mail-scan').map(m => {
+      const expense = expenses.find(e => e.id === m.expenseId) || null;
+      return {id: m.id, mission: m, expense, project: this.getProject(expense?.projectId || m.projectId)};
+    });
+    const posts = (this.getMarketingPosts() || []).filter(p => plain(p.author) === 'hermes');
+    return {
+      state, running: state.key === 'online' || state.key === 'slow', statusText: h?.systemStatus || null, mailScan: h?.mailScanStatus || null,
+      inputs, posts: this.getMarketingPosts() ? posts : null, pendingPosts: this.getMarketingPosts() ? posts.filter(p => p.status === 'pending') : null,
+      backup: h?.backupStatus || null, backupOk: h?.backupStatus ? !NOT_OK.test(plain(h.backupStatus)) : null, dbLatency: h?.dbLatency || null, host
+    };
+  }
+
+  /** Kho Drive: every project by client, with whether it has a Drive folder (project.driveUrl). */
+  getDriveBoard() {
+    const projects = this.getProjects().map(p => ({
+      ...p, hasDrive: !!p.driveUrl, mode: PROJECT_MODE[plain(p.status)] || null, finished: PROJECT_MODE[plain(p.status)] === 'done', files: p.documents || []
+    }));
+    const groups = new Map();
+    for (const p of projects) (groups.get(p.client || 'Khác') || groups.set(p.client || 'Khác', []).get(p.client || 'Khác')).push(p);
+    return {
+      projects, total: projects.length, withDrive: projects.filter(p => p.hasDrive).length, missing: projects.filter(p => !p.hasDrive).length,
+      storage: this.cache?.drive?.storageUsed ?? null,
+      groups: [...groups].map(([client, list]) => ({client, projects: list})).sort((a, b) => b.projects.length - a.projects.length),
+      statuses: [...new Set(projects.map(p => p.status).filter(Boolean))]
+    };
+  }
+
   /**
    * Everything one building's interior shows, used by both the side panels and the 3D room so the
    * two can never disagree. `building` is the topology entry. Returns null for a building with no
@@ -461,6 +534,50 @@ export class DataConnector {
       view.counts = this.getMarketing();
       view.posts = this.getMarketingPosts();
       view.connected = view.connected && !!view.counts;
+    } else if (type === 'drive') {
+      view.facility = true;
+      view.subtitle = 'Thư mục Drive từng dự án · theo tab Giấy tờ';
+      view.drive = this.getDriveBoard();
+    } else if (type === 'hermes') {
+      view.facility = true;
+      view.subtitle = 'Robot quét mail và soạn bài · theo tab Tổng quan';
+      view.hermes = this.getHermes();
+      view.bankId = 'bld:facility:bank';
+      view.marketingId = 'bld:facility:marketing';
+      view.hostId = 'bld:facility:oracle';
+    } else if (SYSTEM_TYPES[type]) {
+      const key = SYSTEM_TYPES[type];
+      view.facility = true;
+      view.system = this.getSystemState(key);
+      view.subtitle = view.system.name ? 'Hạ tầng · ' + view.system.name : 'Hạ tầng';
+      view.serves = this.getSystemLinks(building.id);
+      view.working = view.agents.some(a => a.active);
+      if (type === 'database') {
+        const h = this.getHermes(), st = this.getDataStatus();
+        view.source = st.source;
+        view.updatedAt = st.updatedAt;
+        view.latency = h.dbLatency;
+        view.backup = h.backup;
+        view.backupOk = h.backupOk;
+      } else if (type === 'oracle') {
+        view.services = [
+          {id: 'hermes', name: 'Hermes', buildingId: 'bld:facility:hermes', state: this.getHermes().state},
+          {id: 'telegram', name: 'Telegram Bot', buildingId: 'bld:facility:telegram', state: this.getSystemState('telegram')}
+        ];
+      } else if (type === 'google') {
+        // The data has one status for Drive and Gmail together
+        view.services = [{id: 'drive', name: 'Drive', buildingId: 'bld:facility:drive', state: view.system}, {id: 'gmail', name: 'Gmail', state: view.system}];
+      } else {
+        view.lastMessage = this.cache?.telegram?.lastMessage ?? null;
+        view.lastCommand = this.cache?.telegram?.lastCommand ?? null;
+      }
+    } else if (type === 'reserve') {
+      // No data source for savings yet: the panels say so and the vault stays shut
+      view.facility = true;
+      view.connected = false;
+      view.subtitle = 'Quỹ dự trữ và tiền tiết kiệm';
+      view.bankId = 'bld:facility:bank';
+      view.financePage = this.getWorkspacePage('finance');
     } else if (type === 'project') {
       const p = this.getProject(building.projectId || building.id);
       view.project = p;

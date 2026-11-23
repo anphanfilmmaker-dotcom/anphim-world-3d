@@ -86,7 +86,13 @@ export class CutawayAnimator {
 
   /** Storeys of the open building that can be looked at. */
   get floors() {
-    return this.room?.plan ? 1 : this.room?.section.floors.length || 1;
+    return this.storeys.length || 1;
+  }
+
+  /** The storeys that have a floor to stand on, as indexes into section.floors (a roof terrace or a bare frame is skipped). */
+  get storeys() {
+    const {room} = this;
+    return !room || room.plan ? [] : room.section.floors.map((_, i) => i).filter(i => planOf(room.section, i));
   }
 
   inspect(buildingId, targetPos, bInfo = {}) {
@@ -150,13 +156,13 @@ export class CutawayAnimator {
   }
 
   /** Shows another storey of the open building. */
-  setFloor(floor) {
-    const {room} = this;
-    if (!room || room.plan || floor === room.floor || !planOf(room.section, floor)) return;
+  setFloor(n) {
+    const {room} = this, floor = this.storeys[n];
+    if (!room || floor === undefined || floor === room.floor) return;
     room.floor = floor;
     this.buildInterior(room.view);
     this.frame(this.camera.position.clone().sub(this.controls.target), FLOOR_MS);
-    this.onFloors?.(this.floors, floor);
+    this.onFloors?.(this.floors, n);
     window.requestRender?.();
   }
 
@@ -172,14 +178,16 @@ export class CutawayAnimator {
       this.currentInterior.position.set(...room.pos);
     } else {
       const {section, floor} = room, plan = planOf(section, floor);
-      const fit = fitRoom(plan.rect, section.gate, floor && fitRoom(planOf(section, 0).rect, section.gate).scale);
+      // The seven facility buildings are furnished life size (facility-interiors.js)
+      const fit = fitRoom(plan.rect, section.gate, view.facility ? 1 : floor && fitRoom(planOf(section, 0).rect, section.gate).scale);
       const level = section.floors[floor].y;
       const house = this.currentInterior = new T.Group();
       house.position.set(section.pos.x, 0, section.pos.z);
       house.rotation.y = section.rot;
       const ground = buildFloor(plan.geometry, view.type);
       ground.position.y = level + 0.03;
-      const things = buildInterior(view, {hx: fit.hx, hz: fit.hz, doorX: fit.doorX, floor});
+      const things = buildInterior(view, {hx: fit.hx, hz: fit.hz, doorX: fit.doorX, floor: this.storeys.indexOf(floor), floors: this.floors,
+        storey: plan, turn: fit.turn, height: section.floors[floor].top - section.floors[floor].y, gate: section.gate, top: planOf(section, this.storeys.at(-1)).areas});
       things.position.set(plan.rect.cx, level + 0.04 - FLOOR_Y * fit.scale, plan.rect.cz);
       things.rotation.y = fit.turn;
       things.scale.setScalar(fit.scale);

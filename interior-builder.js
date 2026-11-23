@@ -1,4 +1,5 @@
 import * as T from 'three';
+import {facilityRooms} from './facility-interiors.js';
 
 /**
  * interior-builder.js: the room shown when a campus building is inspected, in the style of The Sims.
@@ -18,7 +19,9 @@ const WORK_HX = 5.2, WORK_HZ = 4.2;   // half sizes the furniture layouts are dr
 const PRIORITY = {high: 0xef5350, medium: 0xffb020, low: 0x4fa3ff};
 const STYLE = {
   hq: [0xf3ead9, 0xd9b98f], bank: [0xe7edf2, 0xcfd8df], documents: [0xe9f0e4, 0xd6bb94], project: [0xeceff1, 0xd3d8dc],
-  schedule: [0xf5eeda, 0xdcc19a], ai: [0xe8e9f6, 0xcdd3e0], marketing: [0xf7e6e4, 0xe0c3a0]
+  schedule: [0xf5eeda, 0xdcc19a], ai: [0xe8e9f6, 0xcdd3e0], marketing: [0xf7e6e4, 0xe0c3a0],
+  drive: [0xe9f0e4, 0xcdb894], hermes: [0xf1ece2, 0xc9d3d6], database: [0xe3e9ee, 0xb9c4cc], oracle: [0xe6e3df, 0xc2bdb6],
+  google: [0xe6eef2, 0xbfcbd2], telegram: [0xe4ecef, 0xc4ccc6], reserve: [0x8d949c, 0x6f767e]
 };
 
 const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
@@ -655,7 +658,9 @@ export function buildInterior(view, plan = roomPlan()) {
     plant(L + 0.7, F - 0.7); plant(R - 0.7, F - 0.7);
   }
 
-  if (plan.floor > 0) upstairs(); else if (rooms[view.type]) rooms[view.type](); else empty();
+  // The seven facility buildings draw every storey themselves (facility-interiors.js)
+  const facility = facilityRooms({T, view, plan, g, M, mat, glow, box, cyl, group, anim, desk, agentAt, sheet, plant, FLOOR_Y})[view.type];
+  if (facility) facility(); else if (plan.floor > 0) upstairs(); else if (rooms[view.type]) rooms[view.type](); else empty();
   // A deep building leaves room in front of the work area: a waiting corner by the door
   if (rooms[view.type] && !plan.floor && F > 6.2) {
     const lounge = group(R - 2.2, F - 1.6, 0);
