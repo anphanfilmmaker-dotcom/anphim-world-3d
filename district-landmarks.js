@@ -280,6 +280,7 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
       const s = site(mark), {b, gy} = s, wide = mark.width || 34, half = wide / 2;
       const holder = new T.Group();
       holder.add(ribbon([s.world(-half, -2.5), s.world(0, -2.5), s.world(half, -2.5)], 10, sand, 0.07, 8));
+      if (mark.path) holder.add(ribbon(mark.path, 2, M.plaza, 0.07));
       for (let x = -half + 3, i = 0; x <= half - 3; x += 5.5, i++) for (const z of [-4.2, -0.4]) {
         if (Math.abs(x - 2.5) < 2.6 && z < -2) continue;
         umbrella(b, stripes[(i + (z < -2 ? 0 : 2)) % 4], x, gy(x, z) - 0.1, z);

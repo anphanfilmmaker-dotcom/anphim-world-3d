@@ -148,13 +148,14 @@ for (const {slot, frame} of frames) {
     const reach = REACH[mark.kind] || 0, spots = [...(mark.at ? [mark.at] : []), ...(mark.path || []), ...(mark.cable ? [mark.cable] : [])];
     check(spots.length > 0, `${slot.label}: landmark ${mark.kind} has no place`);
     for (const [x, z] of spots) {
-      const r = mark.at && x === mark.at[0] && z === mark.at[1] ? reach : 1.5, name = `${slot.label} ${mark.kind} at (${x}, ${z})`;
+      // A footpath to a landmark is 2 m wide and starts at the district's road or on its walking loop, 1.5 m behind the lots.
+      const footpath = !!mark.at && !!mark.path?.some(p => p[0] === x && p[1] === z);
+      const r = footpath ? 1 : mark.at && x === mark.at[0] && z === mark.at[1] ? reach : 1.5, name = `${slot.label} ${mark.kind} at (${x}, ${z})`;
       check(!wet(x, z), `${name} is in water`);
       const lot = lotGap(x, z), own = frame.road.gapTo(...frame.toLocal(x, z));
       nearestLot = Math.min(nearestLot, lot - r);
-      check(lot > r + 1, `${name} is ${lot.toFixed(1)} m from a lot`);
-      // A path to a landmark starts at the district's road; everything else keeps off it.
-      if (!(mark.at && mark.path?.some(p => p[0] === x && p[1] === z))) check(own > r + tpl.roadWidth / 2 + tpl.sidewalkWidth, `${name} is ${own.toFixed(1)} m from the district's road`);
+      check(lot > r + (footpath ? 0.2 : 1), `${name} is ${lot.toFixed(1)} m from a lot`);
+      if (!footpath) check(own > r + tpl.roadWidth / 2 + tpl.sidewalkWidth, `${name} is ${own.toFixed(1)} m from the district's road`);
       check(roadGap(x, z) > r + 4, `${name} is ${roadGap(x, z).toFixed(1)} m from an access road`);
       for (const f of frames) if (f.slot !== slot) check(f.frame.gap(x, z) > r, `${name} stands on ${f.slot.label}`);
       if (ringBox) check(x < ringBox[0] - r || x > ringBox[2] + r || z < ringBox[1] - r || z > ringBox[3] + r, `${name} is on the campus`);
