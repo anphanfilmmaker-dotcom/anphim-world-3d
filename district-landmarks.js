@@ -11,6 +11,18 @@ import {SEA_LEVEL} from './world-landscape.js';
 /** How far around `at` a landmark keeps the wild trees away. */
 export const LANDMARK_REACH = {'summit-lodge': 13, 'hill-sign': 5, lookout: 7, 'lagoon-club': 15, beach: 20, 'flower-hill': 17, 'rock-arch': 11};
 
+/** The ground a landmark keeps free of trees: [x, z, radius] round it and, every 2 m, along its path. */
+export function landmarkClearings(mark) {
+  const reach = LANDMARK_REACH[mark.kind] || 0, out = mark.at ? [[mark.at[0], mark.at[1], reach]] : [], path = mark.path || [];
+  // A landmark with a place of its own is reached by a footpath; one without is as long as its path.
+  const r = mark.at ? 2.5 : reach;
+  for (let i = 0; i < path.length - 1; i++) {
+    const [ax, az] = path[i], [bx, bz] = path[i + 1], n = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 2));
+    for (let k = i ? 1 : 0; k <= n; k++) out.push([ax + (bx - ax) * k / n, az + (bz - az) * k / n, r]);
+  }
+  return out;
+}
+
 const seeded = text => {
   let s = 2166136261;
   for (const ch of String(text)) s = Math.imul(s ^ ch.charCodeAt(0), 16777619);

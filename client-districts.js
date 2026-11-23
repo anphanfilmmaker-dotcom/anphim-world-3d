@@ -13,7 +13,7 @@
 import * as T from 'three';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {districtPlan, slotFrame, slotLots, openLotCount, spineEnd} from './district-layout.js';
-import {createLandmarks, LANDMARK_REACH} from './district-landmarks.js';
+import {createLandmarks, landmarkClearings} from './district-landmarks.js';
 
 /** Landscape of the land, keyed by `landscape` on the topology slot. */
 const LAMP_HEAD = new T.BoxGeometry(0.34, 0.12, 0.5);
@@ -505,8 +505,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     for (let u = roadEnd + 9; u < depth - 5; u += 6.5) for (const v of [-13.5, -4.5, 4.5, 13.5]) if (rand() < 0.55) spot(u, v);
     if (!road.joins) spot(roadEnd, 0, 0.9);
     for (const s of [-1, 1]) spot(6.2, s * 10, 0.85);
-    // No tree of the district stands in front of its landmark.
-    const marked = (slot.landmarks || []).flatMap(m => (m.at ? [m.at] : m.path || []).map(p => [...frame.toLocal(p[0], p[1]), (LANDMARK_REACH[m.kind] || 0) + 2]));
+    // No tree of the district stands on its landmark, or in front of the letters on its hill.
+    const marked = (slot.landmarks || []).flatMap(m => landmarkClearings(m).map(([x, z, r]) => [...frame.toLocal(x, z), r + (m.kind === 'hill-sign' ? 6 : 2)]));
     plantTrees(group, land.tree, land.canopy, spots.filter(t => marked.every(([u, v, r]) => Math.hypot(t.u - u, t.v - v) > r)));
 
     DRESS[slot.landscape]?.(b, {rand, depth, half, roadEnd, accent});
@@ -929,9 +929,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     });
     // Round each landmark too, and along the path that leads to it.
     for (const d of districts.values()) for (const mark of d.client && d.slot.landmarks || []) {
-      const pts = mark.at ? [mark.at] : mark.path || [], reach = LANDMARK_REACH[mark.kind] || 0;
-      if (pts.length) zones.push((x, z) => pts.some(p => Math.hypot(x - p[0], z - p[1]) <= reach));
-      if (mark.at && mark.path) lines.push([mark.path, 2.5]);
+      const rings = landmarkClearings(mark);
+      zones.push((x, z) => rings.some(([px, pz, r]) => Math.hypot(x - px, z - pz) <= r));
     }
     const taken = (x, z) => zones.some(inside => inside(x, z)) || onRoad(x, z) || (terrain.world?.isSea(x, z) && terrain.height(x, z) < 0.6);
     const m = new T.Matrix4(), w = new T.Matrix4(), p = new T.Vector3(), gone = new T.Matrix4().makeScale(0, 0, 0);
