@@ -941,6 +941,11 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       }
       return false;
     });
+    // In front of and behind the sign of each empty slot, so that it reads from both sides.
+    for (const d of districts.values()) if (!d.client) {
+      const f = slotFrame(d.slot, tpl);
+      zones.push((x, z) => { const [u, v] = f.toLocal(x, z); return u >= -4 && u <= 26 && Math.abs(v) <= 7; });
+    }
     // Round each landmark too, and along the path that leads to it.
     for (const d of districts.values()) for (const mark of d.client && d.slot.landmarks || []) {
       const rings = landmarkClearings(mark);

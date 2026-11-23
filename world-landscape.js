@@ -657,18 +657,21 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     group.add(mesh);
   }
 
-  // A few low-poly clouds over the far mountains, the canyon rim, the open sea and the southern woods: never over
-  // the campus or a district.
+  // A few low-poly clouds over the far mountains, the canyon rim, the open sea and the southern woods, each more
+  // than 110 m from the campus and every district.
   const puffs = [];
-  for (const [n, [cx, cz]] of [[-235, -235], [-150, -300], [215, -270], [318, -205], [345, 40], [300, 215], [120, 290], [-90, 300], [-240, 225], [-255, 20]].entries()) {
-    const size = 8 + hash(n + 29, 13) * 7, cy = 62 + hash(n + 41, 7) * 26;
+  for (const [n, [cx, cz]] of [[-250, -250], [-150, -310], [215, -280], [330, -215], [415, 60], [330, 240], [130, 310], [20, 345], [-295, 255], [-305, 30]].entries()) {
+    const size = 8 + hash(n + 29, 13) * 7, cy = 55 + hash(n + 41, 7) * 20;
     for (let k = 0; k < 5; k++) {
       const r = size * (k ? 0.45 + hash(n + 5, k + 53) * 0.35 : 1);
       puffs.push(new T.IcosahedronGeometry(r, 0).scale(1.25, 0.62, 1).rotateY(hash(n + 61, k + 3) * 6).translate(cx + (k ? (hash(n + 7, k + 31) - 0.5) * size * 2.6 : 0), cy + (k ? -size * 0.16 : 0), cz + (k ? (hash(n + 13, k + 71) - 0.5) * size * 1.3 : 0)));
     }
   }
-  const clouds = new T.Mesh(mergeGeometries(puffs), new T.MeshStandardMaterial({color: 0xffffff, roughness: 1, flatShading: true, fog: false}));
+  const clouds = new T.Mesh(mergeGeometries(puffs), new T.MeshStandardMaterial({color: 0xffffff, roughness: 1, flatShading: true, fog: false, transparent: true}));
   clouds.name = 'world-clouds';
+  // Seen from low down a cloud would hang in front of the land behind it, so the clouds fade out as the camera drops below about 30 degrees.
+  const look = new T.Vector3();
+  clouds.onBeforeRender = (renderer, scene, cam) => { clouds.material.opacity = smooth((-cam.getWorldDirection(look).y - 0.42) / 0.1); };
   group.add(clouds);
 
   // Scenery only: nothing here can be picked, so the Studio never selects or bulldozes the far land.
