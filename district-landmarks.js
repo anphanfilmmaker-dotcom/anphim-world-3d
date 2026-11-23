@@ -495,6 +495,8 @@ export function createLandmarks({batch, mat, M, signTexture, plantTrees, ground,
       } else put(white, new T.BoxGeometry(0.5, 0.1, 2), 0, 0.5, 0);
     });
     b.build(group);
+    // All the boats share one mesh per material: Studio's bulldozer looks through them, or one click would take a part of every boat.
+    group.traverse(o => { if (o.isMesh) o.userData.studioPassThrough = true; });
     return group;
   }
 
