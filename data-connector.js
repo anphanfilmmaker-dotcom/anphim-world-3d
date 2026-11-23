@@ -7,6 +7,15 @@
  * snapshot for the production API only changes load() / _transformRawDb().
  */
 
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = import.meta.env?.VITE_SUPABASE_URL || 'https://oislnuutvszpziuzepuk.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pc2xudXV0dnN6cHppdXplcHVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0MjA3NjksImV4cCI6MjExMDk5Njc2OX0.MhjQ5q9hheoIO2XvgWKN162lpVvgMJRIc0ulwsnLZCg';
+
+export const supabase = (SUPABASE_URL && SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 const projectNumber = id => {
   const m = String(id).match(/(\d+)\s*$/);
   return m ? parseInt(m[1], 10) : null;
