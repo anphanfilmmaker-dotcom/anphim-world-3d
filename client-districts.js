@@ -694,10 +694,12 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       mesh.castShadow = mesh.receiveShadow = true;
       span.add(mesh);
     };
-    part(M.curb, len + 3, 0.6, wide, 0, -0.28, 0);
+    // The deck ends where the bridge does and sits just under the road: past its ends the road slopes down to the ground,
+    // and a longer or higher slab would stand up through it.
+    part(M.curb, len, 0.6, wide, 0, -0.34, 0);
     for (const s of [-1, 1]) {
-      part(M.plaza, len + 3, 0.22, 0.3, 0, 1.0, s * (wide / 2 - 0.15));
-      for (let x = -len / 2 - 1.2; x <= len / 2 + 1.21; x += (len + 2.4) / Math.round((len + 2.4) / 2.4)) part(M.curb, 0.24, 0.9, 0.24, x, 0.47, s * (wide / 2 - 0.15));
+      part(M.plaza, len + 0.5, 0.22, 0.3, 0, 1.0, s * (wide / 2 - 0.15));
+      for (let i = 0, n = Math.round(len / 2.4); i <= n; i++) part(M.curb, 0.24, 0.9, 0.24, (i / n - 0.5) * len, 0.47, s * (wide / 2 - 0.15));
     }
     const piers = Math.max(1, Math.round(len / 9) - 1);
     for (let i = 1; i <= piers; i++) {
@@ -706,12 +708,22 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     }
     access.add(span);
   }
-  // A roundabout: a ring of road around a planted island.
+  const segGap = (x, z, [ax, az], [bx, bz]) => {
+    const dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  };
+  // A roundabout: a ring of road around a planted island, its sidewalk left open where a road comes in.
   for (const r of plan.roundabouts || []) {
     const [cx, cz] = r.center, circle = (radius, n = 40) => Array.from({length: n + 1}, (_, i) => [cx + radius * Math.cos(i / n * Math.PI * 2), cz + radius * Math.sin(i / n * Math.PI * 2)]);
     const mid = (r.radius + r.islandRadius) / 2;
     access.add(drapedRibbon(circle(mid), r.radius - r.islandRadius + 0.6, M.asphalt, 0.075));
-    access.add(drapedRibbon(circle(r.radius + tpl.sidewalkWidth / 2), tpl.sidewalkWidth, M.walk, 0.06));
+    const onRoad = ([x, z]) => (plan.accessRoads || []).some(road => road.points.some((p, i) => i && segGap(x, z, road.points[i - 1], p) < road.width / 2 + 0.3));
+    let arc = [];
+    for (const p of [...circle(r.radius + tpl.sidewalkWidth / 2, 144), null]) {
+      if (p && !onRoad(p)) { arc.push(p); continue; }
+      if (arc.length > 1) access.add(drapedRibbon(arc, tpl.sidewalkWidth, M.walk, 0.06));
+      arc = [];
+    }
     access.add(drapedRibbon(circle(r.islandRadius / 2, 20), r.islandRadius, M.curb, 0.2));
     const green = new T.Mesh(new T.CylinderGeometry(r.islandRadius - 0.35, r.islandRadius - 0.35, 0.3, 28), mat(0x6fa659));
     green.position.set(cx, roadHeight(cx, cz) + 0.2, cz);
@@ -733,10 +745,6 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - r;
     };
   })();
-  const segGap = (x, z, [ax, az], [bx, bz]) => {
-    const dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
-    return Math.hypot(x - ax - t * dx, z - az - t * dz);
-  };
   function dressBranches() {
     release(branchDress);
     branchDress.clear();
