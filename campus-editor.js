@@ -778,8 +778,10 @@ export function createCampusEditor({
   let sculptStrength = 0.4;
   let sculptMode = 'raise';
   let flattenTargetY = null;
-  const activeSculptStroke = new Map(); // k -> prevY
-  const activePaintStroke = new Map();  // k -> [prevR, prevG, prevB]
+  // Chỉ khác null trong lúc đang kéo cọ; applySculpt/applyPaint gọi từ API hay Redo không ghi vào đây.
+  let activeSculptStroke = null; // k -> prevY
+  let activePaintStroke = null;  // k -> [prevR, prevG, prevB]
+  let activeSculptSnaps = null;  // object -> prevY của tòa nhà/vật thể bị kéo theo mặt đất
 
   const brushRingGeo = new T.RingGeometry(sculptRadius - 0.25, sculptRadius + 0.15, 48);
   brushRingGeo.rotateX(-Math.PI / 2);
@@ -800,6 +802,7 @@ export function createCampusEditor({
       for (const [, fp] of buildingFootprints) {
         const p = fp.group.position;
         if (xc === null || Math.hypot(p.x - xc, p.z - zc) <= radius + 12) {
+          if (activeSculptSnaps && !activeSculptSnaps.has(fp.group)) activeSculptSnaps.set(fp.group, p.y);
           p.y = terrain.height(p.x, p.z);
           if (fp.group.userData?.footprint) {
             fp.group.userData.footprint.position.y = p.y + 0.04;
@@ -809,10 +812,19 @@ export function createCampusEditor({
       for (const obj of customPlacedObjects) {
         const p = obj.position;
         if (xc === null || Math.hypot(p.x - xc, p.z - zc) <= radius + 6) {
+          if (activeSculptSnaps && !activeSculptSnaps.has(obj)) activeSculptSnaps.set(obj, p.y);
           p.y = terrain.height(p.x, p.z);
         }
       }
     }
+  }
+
+  function setSnappedHeights(heights) {
+    for (const [obj, y] of heights) {
+      obj.position.y = y;
+      if (obj.userData?.footprint) obj.userData.footprint.position.y = y + 0.04;
+    }
+    if (selectedObject) onTransformChange();
   }
 
   function applySculpt(hitPoint, mode = sculptMode, radius = sculptRadius, strength = sculptStrength, targetY = null) {
@@ -841,7 +853,7 @@ export function createCampusEditor({
           const k = j * (nx + 1) + i;
           const currentY = basePosArray[k * 3 + 1];
           previousHeights.push([k, currentY]);
-          if (!activeSculptStroke.has(k)) activeSculptStroke.set(k, currentY);
+          if (activeSculptStroke && !activeSculptStroke.has(k)) activeSculptStroke.set(k, currentY);
 
           const ratio = dist / radius;
           const falloff = Math.pow(1 - ratio * ratio, 2);
@@ -946,7 +958,7 @@ export function createCampusEditor({
           const g = baseColorArray[k * 3 + 1];
           const b = baseColorArray[k * 3 + 2];
           prevColors.push([k, r, g, b]);
-          if (!activePaintStroke.has(k)) activePaintStroke.set(k, [r, g, b]);
+          if (activePaintStroke && !activePaintStroke.has(k)) activePaintStroke.set(k, [r, g, b]);
 
           const ratio = dist / radius;
           const falloff = Math.min(1.0, Math.pow(1 - ratio, 1.5) * intensity * 0.85);
@@ -4281,7 +4293,7 @@ export function createCampusEditor({
         type: 'agent_paint',
         undo: () => {
           if (baseColorArray && res.prevColors) {
-            for (const [k, [r, g, b]] of res.prevColors) {
+            for (const [k, r, g, b] of res.prevColors) {
               baseColorArray[k * 3] = r;
               baseColorArray[k * 3 + 1] = g;
               baseColorArray[k * 3 + 2] = b;
@@ -4302,7 +4314,9 @@ export function createCampusEditor({
 
     sculptTerrain: async ({ mode = 'raise', center = [0, 0], radius = 6.0, strength = 0.4, targetHeight = null }) => {
       const hitPoint = new T.Vector3(center[0], terrain.height(center[0], center[1]), center[1]);
+      const prevSnaps = activeSculptSnaps = new Map();
       const res = applySculpt(hitPoint, mode, radius, strength, targetHeight);
+      activeSculptSnaps = null;
       rebuildTerrainGrid();
 
       pushUndo({
@@ -4311,8 +4325,8 @@ export function createCampusEditor({
           if (res.previousHeights) {
             for (const [k, y] of res.previousHeights) basePosArray[k * 3 + 1] = y;
             terrain.syncLiveBuffers(true, false);
+            setSnappedHeights(prevSnaps);
             rebuildTerrainGrid();
-            if (selectedObject) onTransformChange();
             saveStudioState();
           }
         },
@@ -6120,13 +6134,18 @@ export function createCampusEditor({
       return;
     }
 
-    if (activeSculptStroke && activeSculptStroke.size > 0) {
-      const prevMap = new Map(activeSculptStroke);
+    const sculptStroke = activeSculptStroke;
+    const prevSnaps = activeSculptSnaps || new Map();
+    activeSculptStroke = null;
+    activeSculptSnaps = null;
+    if (sculptStroke && sculptStroke.size > 0) {
+      const prevMap = sculptStroke;
       const nextMap = new Map();
       for (const [idx] of prevMap) {
         nextMap.set(idx, basePosArray[idx * 3 + 1]);
       }
-      activeSculptStroke = null;
+      const nextSnaps = new Map();
+      for (const [obj] of prevSnaps) nextSnaps.set(obj, obj.position.y);
       rebuildTerrainGrid();
       refreshAllRoadsOnTerrainChange();
       pushUndo({
@@ -6134,6 +6153,7 @@ export function createCampusEditor({
         undo: () => {
           for (const [idx, y] of prevMap) basePosArray[idx * 3 + 1] = y;
           terrain.syncLiveBuffers(true, false);
+          setSnappedHeights(prevSnaps);
           rebuildTerrainGrid();
           refreshAllRoadsOnTerrainChange();
           saveStudioState();
@@ -6141,6 +6161,7 @@ export function createCampusEditor({
         redo: () => {
           for (const [idx, y] of nextMap) basePosArray[idx * 3 + 1] = y;
           terrain.syncLiveBuffers(true, false);
+          setSnappedHeights(nextSnaps);
           rebuildTerrainGrid();
           refreshAllRoadsOnTerrainChange();
           saveStudioState();
@@ -6149,13 +6170,14 @@ export function createCampusEditor({
       saveStudioState();
     }
 
-    if (activePaintStroke && activePaintStroke.size > 0) {
-      const prevMap = new Map(activePaintStroke);
+    const paintStroke = activePaintStroke;
+    activePaintStroke = null;
+    if (paintStroke && paintStroke.size > 0) {
+      const prevMap = paintStroke;
       const nextMap = new Map();
       for (const [idx] of prevMap) {
         nextMap.set(idx, [baseColorArray[idx * 3], baseColorArray[idx * 3 + 1], baseColorArray[idx * 3 + 2]]);
       }
-      activePaintStroke = null;
       pushUndo({
         type: 'terrain_paint_stroke',
         undo: () => {
@@ -6902,6 +6924,7 @@ export function createCampusEditor({
         const useSculpt = isShiftDown || terrainSubMode === 'sculpt';
         if (useSculpt) {
           activeSculptStroke = new Map();
+          activeSculptSnaps = new Map();
           applySculpt(hp);
         } else {
           activePaintStroke = new Map();
