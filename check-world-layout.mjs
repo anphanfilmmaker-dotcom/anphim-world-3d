@@ -105,6 +105,16 @@ for (const f of frames) {
   // The district's own road, gate to turnaround, stays on dry level ground too.
   const end = spineEnd(slot, tpl, slot.lots) + (road.joins ? 0 : tpl.turnaroundRadius);
   check(end <= road.len + tpl.turnaroundRadius + 1e-6 && lots[lots.length - 1].s + lotW / 2 <= road.len + 1e-6, `${slot.label}: the road is too short for its ${slot.lots} lots`);
+  // The gate stands square across the road: the road leaves it straight.
+  check([0, 1, 2].every(s => { const [, v, , tv] = road.at(s); return Math.abs(v) < 1e-3 && Math.abs(tv) < 1e-3; }), `${slot.label}: the road is not straight through its gate`);
+  // A loop comes back onto its own centreline, past the gate plaza, so the two roadways meet over their full width.
+  if (road.joins) {
+    const [eu, ev] = road.at(road.len);
+    let gap = Infinity, at = 0;
+    for (let s = 0; s < road.len / 2; s += 0.25) { const [u, v] = road.at(s), d = Math.hypot(u - eu, v - ev); if (d < gap) [gap, at] = [d, s]; }
+    check(gap < 0.5, `${slot.label}: the loop ends ${gap.toFixed(1)} m off the road it joins`);
+    check(at >= tpl.gatePlaza[1], `${slot.label}: the loop joins its road on the gate plaza`);
+  }
   for (let s = 0; s <= end; s += 2) for (const o of [-tpl.roadWidth / 2, 0, tpl.roadWidth / 2]) {
     const [x, z] = frame.toWorld(...road.map(s, o)), y = terrain.height(x, z);
     check(!wet(x, z), `${slot.label} internal road is in water at (${x.toFixed(0)}, ${z.toFixed(0)})`);

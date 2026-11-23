@@ -412,8 +412,8 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     }
     for (let u = 1.5; u < roadEnd - tpl.turnaroundRadius - 1; u += 3.2) if (!spokes.some(c => Math.abs(u + 0.8 - c) < 2.2)) flatB.box(M.line, 1.6, 0.01, 0.16, u + 0.8, 0.125, 0);
     for (const s of [-1, 1]) {
-      // Where the road comes back on itself, the kerbs stop short so they do not run across the junction.
-      const end = roadEnd - (road.joins ? tpl.roadWidth : 3);
+      // Where the road comes back onto itself, the kerb on the inside of the loop stops short of the junction.
+      const end = roadEnd - (road.joins && !sides.includes(s) ? tpl.roadWidth : 3);
       if (sides.includes(s)) b.strip(M.walk, tpl.gatePlaza[1], end, s * (rw + sw / 2), sw, 0, 0.2);
       b.strip(M.curb, road.joins && !sides.includes(s) ? tpl.gatePlaza[1] + tpl.roadWidth : 0, end, s * (rw + 0.09), 0.18, 0, 0.22);
     }
