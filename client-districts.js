@@ -160,6 +160,9 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
     return new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({map: tex, toneMapped: false}));
   }
 
+  /** Height a road runs at: the ground, or the deck of a bridge where one carries it over water. */
+  const roadHeight = (x, z) => Math.max(terrain.height(x, z), terrain.world?.deck?.(x, z) ?? -Infinity);
+
   /** A ribbon laid on the natural ground along world points, for roads outside the level pads. */
   function drapedRibbon(points, width, material, lift = 0.07) {
     const v = points.map(p => new T.Vector3(p[0], 0, p[1]));
@@ -169,7 +172,7 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       const p = curve.getPointAt(i / n), t = curve.getTangentAt(i / n), nx = -t.z, nz = t.x;
       for (let j = 0; j <= across; j++) {
         const o = (j / across - 0.5) * width, x = p.x + nx * o, z = p.z + nz * o;
-        pos.push(x, terrain.height(x, z) + lift, z);
+        pos.push(x, roadHeight(x, z) + lift, z);
       }
     }
     for (let i = 0; i < n; i++) for (let j = 0; j < across; j++) {
@@ -678,6 +681,55 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
   access.name = 'client-district-access';
   root.add(access);
   for (const road of plan.accessRoads || []) access.add(drapedRibbon(road.points, road.width, M.asphalt));
+  // Bridges: a deck under the road and its sidewalks, parapets, and piers down to the bed of the water.
+  for (const road of plan.accessRoads || []) for (const [from, to] of road.bridges || []) {
+    const a = road.points[from], b = road.points[to], len = Math.hypot(b[0] - a[0], b[1] - a[1]), wide = road.width + 2 * tpl.sidewalkWidth + 0.8;
+    const span = new T.Group();
+    span.name = 'bridge:' + road.id;
+    span.position.set((a[0] + b[0]) / 2, (a[2] + b[2]) / 2, (a[1] + b[1]) / 2);
+    span.rotation.set(0, Math.atan2(-(b[1] - a[1]), b[0] - a[0]), Math.atan2(b[2] - a[2], len), 'YZX');
+    const part = (m, w, h, d, x, y, z) => {
+      const mesh = new T.Mesh(new T.BoxGeometry(w, h, d), m);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = mesh.receiveShadow = true;
+      span.add(mesh);
+    };
+    // The deck ends where the bridge does and sits just under the road: past its ends the road slopes down to the ground,
+    // and a longer or higher slab would stand up through it.
+    part(M.curb, len, 0.6, wide, 0, -0.34, 0);
+    for (const s of [-1, 1]) {
+      part(M.plaza, len + 0.5, 0.22, 0.3, 0, 1.0, s * (wide / 2 - 0.15));
+      for (let i = 0, n = Math.round(len / 2.4); i <= n; i++) part(M.curb, 0.24, 0.9, 0.24, (i / n - 0.5) * len, 0.47, s * (wide / 2 - 0.15));
+    }
+    const piers = Math.max(1, Math.round(len / 9) - 1);
+    for (let i = 1; i <= piers; i++) {
+      const t = i / (piers + 1), x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t, top = a[2] + (b[2] - a[2]) * t - 0.55, foot = Math.min(terrain.height(x, z), 0) - 0.6;
+      part(M.curb, 1.1, top - foot, wide - 1.6, (t - 0.5) * len, (top + foot) / 2 - span.position.y, 0);
+    }
+    access.add(span);
+  }
+  const segGap = (x, z, [ax, az], [bx, bz]) => {
+    const dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+    return Math.hypot(x - ax - t * dx, z - az - t * dz);
+  };
+  // A roundabout: a ring of road around a planted island, its sidewalk left open where a road comes in.
+  for (const r of plan.roundabouts || []) {
+    const [cx, cz] = r.center, circle = (radius, n = 40) => Array.from({length: n + 1}, (_, i) => [cx + radius * Math.cos(i / n * Math.PI * 2), cz + radius * Math.sin(i / n * Math.PI * 2)]);
+    const mid = (r.radius + r.islandRadius) / 2;
+    access.add(drapedRibbon(circle(mid), r.radius - r.islandRadius + 0.6, M.asphalt, 0.075));
+    const onRoad = ([x, z]) => (plan.accessRoads || []).some(road => road.points.some((p, i) => i && segGap(x, z, road.points[i - 1], p) < road.width / 2 + 0.3));
+    let arc = [];
+    for (const p of [...circle(r.radius + tpl.sidewalkWidth / 2, 144), null]) {
+      if (p && !onRoad(p)) { arc.push(p); continue; }
+      if (arc.length > 1) access.add(drapedRibbon(arc, tpl.sidewalkWidth, M.walk, 0.06));
+      arc = [];
+    }
+    access.add(drapedRibbon(circle(r.islandRadius / 2, 20), r.islandRadius, M.curb, 0.2));
+    const green = new T.Mesh(new T.CylinderGeometry(r.islandRadius - 0.35, r.islandRadius - 0.35, 0.3, 28), mat(0x6fa659));
+    green.position.set(cx, roadHeight(cx, cz) + 0.2, cz);
+    green.receiveShadow = true;
+    access.add(green);
+  }
   // Sidewalks and a dashed centre line along the branch roads, left open where the ring or a gate road crosses.
   const branchDress = new T.Group();
   access.add(branchDress);
@@ -693,16 +745,16 @@ export function createClientDistricts({scene, terrain, L, dataConnector, buildin
       return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - r;
     };
   })();
-  const segGap = (x, z, [ax, az], [bx, bz]) => {
-    const dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
-    return Math.hypot(x - ax - t * dx, z - az - t * dz);
-  };
   function dressBranches() {
     release(branchDress);
     branchDress.clear();
     const gates = [...districts.values()].filter(d => d.road).map(d => [d.slot.ringXZ, d.slot.gateXZ]);
-    const free = ([x, z], r) => ringGap(x, z) >= ringHalf + r && gates.every(([a, b]) => segGap(x, z, a, b) >= tpl.roadWidth / 2 + r);
+    const clearOf = (other, x, z, r) => other.points.every((p, i) => !i || segGap(x, z, other.points[i - 1], p) >= other.width / 2 + r);
+    const base = ([x, z], r) => ringGap(x, z) >= ringHalf + r && gates.every(([a, b]) => segGap(x, z, a, b) >= tpl.roadWidth / 2 + r)
+      && (plan.roundabouts || []).every(c => Math.hypot(x - c.center[0], z - c.center[1]) >= c.radius + r);
     for (const road of plan.accessRoads || []) {
+      // Sidewalks and centre lines also stop where another branch road joins or leaves this one.
+      const others = (plan.accessRoads || []).filter(o => o !== road), free = (p, r) => base(p, r) && others.every(o => clearOf(o, p[0], p[1], r));
       const v = road.points.map(p => new T.Vector3(p[0], 0, p[1]));
       const curve = v.length > 2 ? new T.CatmullRomCurve3(v, false, 'catmullrom', 0.15) : new T.LineCurve3(v[0], v[1]);
       const len = curve.getLength();

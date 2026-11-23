@@ -116,10 +116,15 @@ const FAR = [
   ['snow-mountain', -3000, -3000, -210, -190],
   ['pine-forest', -140, -3000, 140, -260],
   ['red-canyon', 210, -3000, 3000, -190],
-  ['sea', 172, -40, 3000, 3000],
+  ['sea', 104, -90, 3000, 3000],
   ['highland', -3000, 270, 150, 3000],
+  ['meadow', -40, 178, 92, 270],
   ['highland', -3000, -130, -270, 3000]
 ];
+// The one island in the sea: open water stops at this rectangle, and the districts inside it are its land.
+const ISLAND = [122, -66, 290, 98];
+// The strait that keeps the island off the mainland, along its west and north shores: [x, z] points and half its width.
+const STRAIT = {half: 8, points: [[112, 122], [106, 90], [104, 56], [106, 24], [104, -8], [107, -42], [120, -68], [150, -78], [200, -79], [250, -80], [300, -74]]};
 const CAMPUS = [-66, -66, 66, 52];
 const STRATA = [0xb5482a, 0xc9603a, 0xd98050, 0xa63f26];
 const FLOWERS = [0xf3a6c4, 0xffe08a, 0xc9b8f5];
@@ -137,12 +142,38 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     return {land, named: !!LAND[slot.landscape], core: [cx - hx, cz - hz, cx + hx, cz + hz], rect: [cx - hx - out, cz - hz - out, cx + hx + out, cz + hz + out], pad: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, u: (x, z) => (x - gx) * cos - (z - gz) * sin};
   });
   const anchors = [{land: 'plain', rect: CAMPUS}, ...slots, ...FAR.map(([land, ...rect]) => ({land, rect}))];
+  // How far a point is from open sea: inside the island's rectangle the sea is as far as the nearest side.
+  const seaGap = (x, z) => Math.max(rectGap(x, z, anchors[seaAnchor].rect), Math.min(x - ISLAND[0], ISLAND[2] - x, z - ISLAND[1], ISLAND[3] - z));
+  // Water on the land. A lagoon is a basin below the water line, with a shore that is not an ellipse.
+  // A stream is the same cut along a line of points, narrowing from its mouth (the first point) to its source.
+  const waters = (plan?.waters || []).map(w => w.points
+    ? {points: w.points, half: w.width / 2, taper: w.taper ?? 1, box: [Math.min(...w.points.map(p => p[0])) - w.width * 3.5, Math.min(...w.points.map(p => p[1])) - w.width * 3.5, Math.max(...w.points.map(p => p[0])) + w.width * 3.5, Math.max(...w.points.map(p => p[1])) + w.width * 3.5]}
+    : {x: w.center[0], z: w.center[1], rx: w.radii[0], rz: w.radii[1]});
+  const basin = (x, z, w) => {
+    if (!w.points) return Math.hypot((x - w.x) / w.rx, (z - w.z) / w.rz) + 0.5 * (fbm(x / 17 + 11, z / 17 + 23, 2) - 0.5);
+    if (x < w.box[0] || z < w.box[1] || x > w.box[2] || z > w.box[3]) return 9;
+    let q = 9;
+    for (let i = 0, n = w.points.length - 1; i < n; i++) {
+      const [ax, az] = w.points[i], [bx, bz] = w.points[i + 1], dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
+      q = Math.min(q, Math.hypot(x - ax - t * dx, z - az - t * dz) / (w.half * (1 + (w.taper - 1) * (i + t) / n)));
+    }
+    return q + 0.3 * (fbm(x / 9 + 5, z / 9 + 17, 2) - 0.5);
+  };
   // Roads that climb: points given as [x, z, y] set the grade the ground is cut to.
-  const grades = [], lanes = [];
+  const grades = [], lanes = [], decks = [];
   for (const road of plan?.accessRoads || []) for (let i = 0; i < road.points.length - 1; i++) {
     const a = road.points[i], b = road.points[i + 1];
     lanes.push({a, b, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.6});
-    if (a[2] != null && b[2] != null) grades.push({a, b, first: road.points[i - 1]?.[2] == null, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.6});
+    // A bridge carries its stretch of road: the ground under it is left as it is, and the deck gives the road its height.
+    const spans = n => (road.bridges || []).some(([from, to]) => n >= from && n < to);
+    if (spans(i)) decks.push({a, b, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.4});
+    else if (a[2] != null && b[2] != null) grades.push({a, b, first: road.points[i - 1]?.[2] == null, half: road.width / 2 + (tpl?.sidewalkWidth || 2) + 0.6, spanA: spans(i - 1), spanB: spans(i + 1)});
+  }
+  // A roundabout is level ground, wide enough for its ring of road.
+  for (const r of plan?.roundabouts || []) {
+    const c = [...r.center, r.y];
+    lanes.push({a: c, b: c, half: r.radius + 2});
+    grades.push({a: c, b: c, first: false, half: r.radius + 1.5});
   }
 
   const beds = [], near = new Float64Array(slots.length), weights = new Float64Array(anchors.length), seaAnchor = anchors.findIndex(a => a.land === 'sea');
@@ -152,7 +183,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     const wx = x + 140 * (fbm(x / 130 + 3.1, z / 130, 2) - 0.5), wz = z + 140 * (fbm(x / 130, z / 130 + 7.7, 2) - 0.5);
     let total = 0, best = 0;
     for (let k = 0; k < anchors.length; k++) {
-      const d = rectGap(wx, wz, anchors[k].rect) + 9, w = 1 / (d * d * d * d);
+      const d = (k === seaAnchor ? seaGap(wx, wz) : rectGap(wx, wz, anchors[k].rect)) + 9, w = 1 / (d * d * d * d);
       weights[k] = w;
       total += w;
       if (w > weights[best]) best = k;
@@ -205,6 +236,20 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.pad[3] + 10) / 20), smooth((x - s.pad[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
         y += open * clear * land.rim * Math.exp(-(((d - 14 - e * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
       }
+      {
+        let d = Infinity;
+        for (let i = 0; i < STRAIT.points.length - 1; i++) {
+          const [ax, az] = STRAIT.points[i], [bx, bz] = STRAIT.points[i + 1], dx = bx - ax, dz = bz - az, t = T.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
+          d = Math.min(d, Math.hypot(x - ax - t * dx, z - az - t * dz));
+        }
+        if (d < 40) y += (Math.min(y, -3) - y) * (1 - smooth((d - STRAIT.half - 5 * (fbm(x / 23 + 31, z / 23 + 3, 2) - 0.5)) / 9));
+      }
+      for (const w of waters) {
+        const q = basin(x, z, w);
+        // A stream runs in a shallow valley of its own, so it never cuts a trench through a hill.
+        if (w.points && q < 6) y += (Math.min(y, 1.3) - y) * (1 - smooth((q - 1.4) / 4.6)) * 0.85;
+        if (q < 1.45) y += (Math.min(y, -1.3) - y) * (1 - smooth((q - 0.72) / 0.5)) + (0.9 - y) * (1 - smooth(Math.abs(q - 1.22) / 0.45)) * 0.8;
+      }
       // Beside the campus the ground stays as the campus has it; the landscapes take over within a few metres.
       y = y0 + (y - y0) * smooth(open * 8);
     }
@@ -212,10 +257,13 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     let cut = 0, nearest = Infinity;
     beds.length = 0;
     for (const g of grades) {
-      const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = T.MathUtils.clamp(((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+      const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], raw = ((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), t = T.MathUtils.clamp(raw, 0, 1);
       const d = Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz);
       if (d > g.half + 7) continue;
-      cut = Math.max(cut, (1 - smooth((d - g.half) / 7)) * (g.first ? smooth(t * 1.6) : 1));
+      // Where the road goes on over a bridge the bank ends with the road, so the water passes under the span.
+      const past = g.spanA && raw < 0 ? -raw : g.spanB && raw > 1 ? raw - 1 : 0, bank = past ? 1 - smooth(past * Math.hypot(dx, dz) / 2.5) : 1;
+      if (!bank) continue;
+      cut = Math.max(cut, (1 - smooth((d - g.half) / 7)) * (g.first ? smooth(t * 1.6) : 1) * bank);
       nearest = Math.min(nearest, d);
       beds.push(d, g.a[2] + (g.b[2] - g.a[2]) * t);
     }
@@ -234,7 +282,16 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     return y + (level / total - y) * cut;
   }
 
-  const isSea = (x, z) => rectGap(x, z, FAR[3].slice(1)) < 60 || x > 172 && z > -70;
+  const isSea = (x, z) => seaGap(x, z) < 40 || waters.some(w => basin(x, z, w) < 1.3);
+  /** Height of the bridge deck over a point, or null where no bridge passes. */
+  function deck(x, z) {
+    for (const g of decks) {
+      const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = ((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1);
+      if (t < 0 || t > 1 || Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz) > g.half) continue;
+      return g.a[2] + (g.b[2] - g.a[2]) * t;
+    }
+    return null;
+  }
 
   /**
    * Colour the ground: `pos` and `col` are vertex arrays laid out in rows of `row` vertices,
@@ -300,8 +357,9 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         cover = Math.max(cover, ring);
       }
       // The shore: sand at the water's edge, sea bed below it. The river keeps its own banks.
-      if (y < 1.5 && weights[seaAnchor] > 0.02) {
-        const shore = (1 - smooth((y - 0.5) / 1.0)) * smooth(weights[seaAnchor] / 0.2);
+      const still = waters.reduce((m, w) => Math.max(m, 1 - smooth((basin(x, z, w) - 1.3) / 0.35)), 0);
+      if (y < 1.5 && (weights[seaAnchor] > 0.02 || still > 0)) {
+        const shore = (1 - smooth((y - 0.5) / 1.0)) * Math.max(smooth(weights[seaAnchor] / 0.2), still);
         if (!cover) c.copy(b);
         c.lerp(s1.copy(sand).lerp(seabed, smooth((-0.2 - y) / 1.6)), shore);
         cover = Math.max(cover, shore);
@@ -326,7 +384,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = T.MathUtils.clamp(((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), 0, 1);
     return Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz) < g.half + margin;
   });
-  return {shape, paint, growth, isSea, onPad, onRoad, campus: CAMPUS};
+  return {shape, paint, growth, isSea, deck, onPad, onRoad, campus: CAMPUS};
 }
 
 /** The land past the campus ground, the sea, the river's upper course and the forests. */
@@ -410,8 +468,8 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
     }
   };
   // Outside the two ring-road corridors and off every road of the campus ground.
-  plant(0, 250, 6.5, (x, z) => Math.abs(x) < 70 && z > -70 && z < 56);
-  plant(250, 640, 17, () => false);
+  plant(0, 300, 6.5, (x, z) => Math.abs(x) < 70 && z > -70 && z < 56);
+  plant(300, 640, 17, () => false);
   const dummy = new T.Object3D(), c = new T.Color(), leaf = new T.MeshStandardMaterial({roughness: 0.9, vertexColors: true, flatShading: true});
   for (const [kind, list] of Object.entries(spots)) {
     if (!list.length) continue;
