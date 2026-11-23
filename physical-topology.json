@@ -552,7 +552,7 @@
           "lots": 20,
           "openLots": 14,
           "landscape": "grassland",
-          "clientId": "vistax", "road": {"points": [[0,0], [8,0], [16,0], [34,-2], [52,-8], [70,-13], [88,-13], [106,-7], [122,-1], [136,1]]}},
+          "clientId": "vistax", "road": {"points": [[0,0], [8,0], [16,0], [34,-2], [52,-8], [70,-13], [88,-13], [106,-7], [122,-1], [136,1]]}, "landmarks": [{"kind": "beach", "at": [266, -54.7], "turn": 159, "width": 34, "path": [[267.3, -31.2], [266.2, -40], [265, -46], [263.8, -49.1]]}]},
         {
           "id": "district:W2",
           "label": "W2",
@@ -565,7 +565,7 @@
           "groundY": 2.0,
           "lots": 14,
           "landscape": "flower-hills",
-          "clientId": "9kolor", "road": {"points": [[0,0], [8,0], [16,0], [34,2], [52,7], [70,14], [86,19], [100,20]]}},
+          "clientId": "9kolor", "road": {"points": [[0,0], [8,0], [16,0], [34,2], [52,7], [70,14], [86,19], [100,20]]}, "landmarks": [{"kind": "flower-hill", "at": [264, 64], "radius": 14, "height": 5, "path": [[241, 63], [250, 64]]}]},
         {
           "id": "district:W3",
           "label": "W3",
@@ -578,7 +578,7 @@
           "groundY": 7,
           "lots": 14,
           "landscape": "snow-mountain",
-          "clientId": "k87k", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [47,-10], [60,-19], [73,-27], [87,-31], [96,-31]]}},
+          "clientId": "k87k", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [47,-10], [60,-19], [73,-27], [87,-31], [96,-31]]}, "landmarks": [{"kind": "summit-lodge", "at": [-108, -88], "cable": [-136, -100]}]},
         {
           "id": "district:N1",
           "label": "N1",
@@ -591,7 +591,7 @@
           "groundY": 7,
           "lots": 14,
           "landscape": "film-set",
-          "clientId": "film-studio", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [50,8], [68,9], [84,5], [98,-2]]}},
+          "clientId": "film-studio", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [50,8], [68,9], [84,5], [98,-2]]}, "landmarks": [{"kind": "hill-sign", "path": [[-2, 60], [25, 65.5], [52, 60]], "faces": [0, -1]}, {"kind": "lookout", "at": [83, 95]}]},
         {
           "id": "district:N2",
           "label": "N2",
@@ -608,7 +608,7 @@
             -56
           ],
           "landscape": "pine-forest",
-          "clientId": "clevergroup", "road": {"points": [[0,0], [4,0], [8,0], [12.5,1], [18,4.5], [25,8.5], [34,9], [58,9], [68,8], [75,3.5], [77,-1], [74,-6], [67,-8.8], [58,-9], [34,-9], [26,-8.5], [19,-5.5], [15.5,-2], [12.8,1.15]], "joins":  true, "lotSide":  1}},
+          "clientId": "clevergroup", "road": {"points": [[0,0], [4,0], [8,0], [12.5,1], [18,4.5], [25,8.5], [34,9], [58,9], [68,8], [75,3.5], [77,-1], [74,-6], [67,-8.8], [58,-9], [34,-9], [26,-8.5], [19,-5.5], [15.5,-2], [12.8,1.15]], "joins":  true, "lotSide":  1}, "landmarks": [{"kind": "park"}]},
         {
           "id": "district:E3",
           "label": "E3",
@@ -621,7 +621,7 @@
           "groundY": 6,
           "lots": 14,
           "landscape": "red-canyon",
-          "clientId": "f35story", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [48,-8], [64,-8], [80,-2], [96,3], [104,5]]}},
+          "clientId": "f35story", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [48,-8], [64,-8], [80,-2], [96,3], [104,5]]}, "landmarks": [{"kind": "rock-arch", "at": [200, -104], "turn": 0}]},
         {
           "id": "district:E2",
           "label": "E2",
@@ -656,7 +656,7 @@
             -24
           ],
           "landscape": "tropical-beach",
-          "clientId": "inverse", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [48,5], [62,2], [76,-5], [86,-15], [91,-27], [92,-38]]}},
+          "clientId": "inverse", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [48,5], [62,2], [76,-5], [86,-15], [91,-27], [92,-38]]}, "landmarks": [{"kind": "lagoon-club", "at": [-106, 2], "turn": 0}]},
         {
           "id": "district:S1",
           "label": "S1",
@@ -1104,6 +1104,7 @@
           "y": 2.6
         }
       ],
+      "boats": [[170, 125, 20, "sail"], [215, 140, -30, "sail"], [262, 120, 160, "yacht"], [200, -76, 5, "sail"], [236, -80, 12, "fishing"], [325, -20, 80, "sail"], [335, 40, 100, "fishing"], [310, 96, 60, "sail"], [118, 112, 40, "fishing"]],
       "waters": [
         {
           "id": "water:inverse-lagoon",
