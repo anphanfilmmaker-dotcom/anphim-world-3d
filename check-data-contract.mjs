@@ -83,6 +83,8 @@ const DAMAGE = [
   ['id dự án không có số', d => { d.projects[0].id = 'atera-central'; }],
   ['mission trỏ tới dự án không có', d => { d.missions[0].projectId = 'proj_9999'; }],
   ['updatedAt không phải ngày giờ', d => { d.updatedAt = 'hôm qua'; }],
+  ['updatedAt là ngày không có thật', d => { d.updatedAt = '2026-02-31T10:00:00'; }],
+  ['giờ không có thật trong thông báo', d => { d.notifications[0].time = '21/11/2026 25:99'; }],
   ['kpi thiếu số tiền mặt', d => { delete d.kpi.cashAvailable; }],
   ['link javascript: trong driveUrl', d => { d.projects[0].driveUrl = 'javascript:alert(1)'; }],
   ['buildingPages trỏ tới trang không có', d => { d.workspace.buildingPages['bld:facility:hq'] = 'khong-co'; }],

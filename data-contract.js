@@ -100,7 +100,10 @@ export const NOTES = {
 const META_KEYS = {sample: 'bool'};
 
 const DAY = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-const DAYTIME = /^(\d{1,2})\/(\d{1,2})\/(\d{4})( \d{1,2}:\d{2})?$/;
+const DAYTIME = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: ([01]?\d|2[0-3]):[0-5]\d)?$/;
+// Date() rolls 31/02 into March instead of rejecting it, so the day is checked against its month here.
+const ISO = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
+const validIso = s => { const m = String(s).match(ISO); return !!m && validDay(`${m[3]}/${m[2]}/${m[1]}`) && !isNaN(new Date(s)); };
 const validDay = s => { const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); return !!m && +m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= new Date(+m[3], +m[2], 0).getDate(); };
 const SCALAR = {
   str: v => typeof v === 'string',
@@ -109,7 +112,7 @@ const SCALAR = {
   bool: v => typeof v === 'boolean',
   day: v => typeof v === 'string' && DAY.test(v) && validDay(v),
   daytime: v => typeof v === 'string' && DAYTIME.test(v) && validDay(v),
-  iso: v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v) && !isNaN(new Date(v)),
+  iso: v => typeof v === 'string' && validIso(v),
   // '' is a link not set yet; anything else must be http(s) or a path inside the site (never javascript:).
   url: v => typeof v === 'string' && (v === '' || /^(https?:\/\/[^\s]+|\.{0,2}\/[^\s]*)$/.test(v))
 };
