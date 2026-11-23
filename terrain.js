@@ -36,7 +36,12 @@ export function createTerrain(scene,P,L){
  const origHeights=new Float32Array(baseCount);
  const baseColorArray=new Float32Array(baseCount*3);
  // Near its border the ground takes its height and shading from the lattice it shares with the far land.
- const seam=createSeam(designHeight,GROUND),shade=()=>{geo.computeVertexNormals();seam.shade(geo.attributes.position,geo.attributes.normal);};
+ // Away from the campus and the districts the land is shaded as low-poly facets (createFacets): each vertex takes
+ // the normal of the facet it lies in. `facetOf` is that facet, `facetShare` how far the vertex follows it.
+ let facets=null;const facetOf=new Int32Array(baseCount),facetShare=new Float32Array(baseCount);
+ const seam=createSeam(designHeight,GROUND),shade=()=>{geo.computeVertexNormals();const nrm=geo.attributes.normal;
+  if(facets){facets.update();const a=nrm.array,f=facets.normal;for(let i=0;i<baseCount;i++){const w=facetShare[i];if(!w)continue;const t=facetOf[i]*3,x=a[i*3]+(f[t]-a[i*3])*w,y=a[i*3+1]+(f[t+1]-a[i*3+1])*w,z=a[i*3+2]+(f[t+2]-a[i*3+2])*w,l=Math.hypot(x,y,z)||1;a[i*3]=x/l;a[i*3+1]=y/l;a[i*3+2]=z/l;}}
+  seam.shade(geo.attributes.position,nrm);};
  const AO_REACH=3.2,AO_STRENGTH=.5;
  for(let i=0;i<baseCount;i++){
   const x=pos.getX(i),z=pos.getZ(i),y=seam.height(x,z);
@@ -73,7 +78,9 @@ export function createTerrain(scene,P,L){
     '#e09468',  // 3: Vùng sinh hoạt chung màu gạch cam ấm sáng
     '#918c7c', '#d1c6ae'   // 4: Chân đế móng
   ].map(color => new T.MeshStandardMaterial({ color, roughness: 0.94, vertexColors: true }));
- world.paint(basePosArray,baseColorArray,nx+1,materials[0].color);
+ facets=createFacets(height,GROUND);
+ for(let i=0;i<baseCount;i++){const x=basePosArray[i*3],z=basePosArray[i*3+2],w=world.faceted(x,z);facetShare[i]=w;if(w)facetOf[i]=facets.find(x,z);}
+ world.paint(basePosArray,baseColorArray,nx+1,materials[0].color,(i,F)=>{const w=facetShare[i];F.k=w;if(!w)return;const t=facetOf[i],ny=facets.normal[t*3+1];F.x=facets.centre[t*3];F.y=facets.centre[t*3+1];F.z=facets.centre[t*3+2];F.slope=Math.sqrt(Math.max(0,1-ny*ny))/Math.max(ny,.05);F.lit=facets.lit[t];F.tone=facets.tone[t];});
  // The ground colours as designed, for the Studio to go back to when it clears its paint.
  const designColorArray=new Float32Array(baseColorArray);
  applyCampusPaving(P,materials[3],materials[2]);
@@ -117,5 +124,5 @@ export function createTerrain(scene,P,L){
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
-import {createWorldLandform,createSeam} from './world-landscape.js';
+import {createWorldLandform,createSeam,createFacets} from './world-landscape.js';
 import {landKept} from './land-kept.js';
