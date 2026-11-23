@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "serve": "npx serve .",
-    "check:layout": "node check-world-layout.mjs"
+    "check:layout": "node check-world-layout.mjs",
+    "check:data": "node check-data-contract.mjs"
   },
   "keywords": [
     "threejs",

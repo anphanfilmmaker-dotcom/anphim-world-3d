@@ -1,5 +1,6 @@
 {
   "updatedAt": "2026-11-21T16:00:00.000000",
+  "sample": true,
   "kpi": {
     "cashAvailable": 348520000.0,
     "cashAvailableFormatted": "348.520.000 đ",
@@ -81,6 +82,7 @@
       "paymentd3": 0.0,
       "duedate": "11/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_1",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -132,6 +134,7 @@
       "paymentd3": 0.0,
       "duedate": "12/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_2",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -183,6 +186,7 @@
       "paymentd3": 0.0,
       "duedate": "13/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_3",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -234,6 +238,7 @@
       "paymentd3": 0.0,
       "duedate": "14/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_4",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -285,6 +290,7 @@
       "paymentd3": 0.0,
       "duedate": "15/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_5",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -336,6 +342,7 @@
       "paymentd3": 0.0,
       "duedate": "16/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_6",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -387,6 +394,7 @@
       "paymentd3": 0.0,
       "duedate": "17/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_7",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -438,6 +446,7 @@
       "paymentd3": 0.0,
       "duedate": "18/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_8",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -489,6 +498,7 @@
       "paymentd3": 0.0,
       "duedate": "19/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_9",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -540,6 +550,7 @@
       "paymentd3": 0.0,
       "duedate": "20/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_10",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -591,6 +602,7 @@
       "paymentd3": 0.0,
       "duedate": "21/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_11",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -642,6 +654,7 @@
       "paymentd3": 0.0,
       "duedate": "22/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_12",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -693,6 +706,7 @@
       "paymentd3": 0.0,
       "duedate": "23/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_13",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -744,6 +758,7 @@
       "paymentd3": 0.0,
       "duedate": "24/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_14",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -795,6 +810,7 @@
       "paymentd3": 0.0,
       "duedate": "25/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_15",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -846,6 +862,7 @@
       "paymentd3": 0.0,
       "duedate": "26/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_16",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -897,6 +914,7 @@
       "paymentd3": 0.0,
       "duedate": "27/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_17",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -948,6 +966,7 @@
       "paymentd3": 0.0,
       "duedate": "10/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_18",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -999,6 +1018,7 @@
       "paymentd3": 0.0,
       "duedate": "11/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_19",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1050,6 +1070,7 @@
       "paymentd3": 0.0,
       "duedate": "12/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_20",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1101,6 +1122,7 @@
       "paymentd3": 0.0,
       "duedate": "13/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_21",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1152,6 +1174,7 @@
       "paymentd3": 0.0,
       "duedate": "14/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_22",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1203,6 +1226,7 @@
       "paymentd3": 0.0,
       "duedate": "15/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_23",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1254,6 +1278,7 @@
       "paymentd3": 0.0,
       "duedate": "16/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_24",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1305,6 +1330,7 @@
       "paymentd3": 0.0,
       "duedate": "17/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_25",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1356,6 +1382,7 @@
       "paymentd3": 0.0,
       "duedate": "18/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_26",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1407,6 +1434,7 @@
       "paymentd3": 0.0,
       "duedate": "19/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_27",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1458,6 +1486,7 @@
       "paymentd3": 0.0,
       "duedate": "20/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_28",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -1509,6 +1538,7 @@
       "paymentd3": 0.0,
       "duedate": "21/12/2026",
       "nextaction": "Review milestone deliverables",
+      "driveUrl": "https://example.com/anphim-drive-mau/proj_29",
       "milestones": [
         {
           "date": "01/11/2026",
@@ -2023,7 +2053,7 @@
     ]
   },
   "workspace": {
-    "baseUrl": "",
+    "baseUrl": "https://example.com/anphim-workspace-mau",
     "pages": {
       "overview": {
         "label": "Tổng quan",

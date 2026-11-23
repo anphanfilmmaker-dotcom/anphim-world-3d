@@ -5,7 +5,9 @@
  *
  * Every panel and every 3D state reads through this class. Swapping the
  * snapshot for the production API only changes load() / _transformRawDb().
+ * What the data must look like: data-contract.js (listed in DATA_CONTRACT.md).
  */
+import {validateCampusData} from './data-contract.js';
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -80,6 +82,7 @@ const PAPERS = [
   {key: 'handover', short: 'BBTL', label: 'BBTL'}
 ];
 
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 /** "dd/mm/yyyy" -> local-midnight timestamp (NaN when unreadable). */
 const dateKey = text => {
   const m = String(text || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -93,36 +96,43 @@ export class DataConnector {
     this.ttl = 30000; // 30s cache TTL
     this.source = 'offline'; // 'snapshot' | 'api' | 'offline'
     this.listeners = new Set();
+    this.staleAfter = 24 * 3600 * 1000; // data exported longer ago than this is flagged as old
+    this.problem = null; // why the last load brought nothing in: {state: 'failed' | 'invalid', detail, errors, since}
   }
 
-  async load() {
-    if (this.cache && (Date.now() - this.lastFetched < this.ttl)) {
+  /** Loads the data, at most once per ttl unless force is set. A load that fails keeps the last good data and says so in getDataStatus(). */
+  async load(force = false) {
+    if (!force && this.cache && !this.problem && (Date.now() - this.lastFetched < this.ttl)) {
       return this.cache;
     }
-
-    try {
-      // 1. First try static live snapshot generated directly from Supabase
-      const res = await fetch('./live_campus_data.json?t=' + Date.now());
-      if (res.ok) {
-        const data = await res.json();
-        console.log('[DataConnector] Loaded live Supabase snapshot successfully.');
-        return this._store(data, 'snapshot');
+    const failures = [];
+    // 1. the snapshot exported from Supabase, 2. the API when a server runs one
+    const sources = [
+      ['snapshot', './live_campus_data.json?t=' + Date.now(), raw => raw],
+      ['api', '/api/db', raw => this._transformRawDb(raw)]
+    ];
+    for (const [source, url, shape] of sources) {
+      let data;
+      try {
+        const res = await fetch(url, {cache: 'no-store'});
+        if (!res.ok) { failures.push(`${source}: HTTP ${res.status}`); continue; }
+        data = shape(await res.json());
+      } catch (err) {
+        failures.push(`${source}: ${err?.name === 'SyntaxError' ? 'không phải JSON' : err?.message || err}`);
+        continue;
       }
-    } catch (err) {
-      console.warn('[DataConnector] Failed to fetch live snapshot, falling back:', err);
-    }
-
-    // 2. Fallback to express API if running
-    try {
-      const res = await fetch('/api/db');
-      if (res.ok) {
-        const raw = await res.json();
-        return this._store(this._transformRawDb(raw), 'api');
+      const check = validateCampusData(data);
+      if (!check.ok) {
+        // Wrong-shaped data never reaches the panels: the last good data stays, flagged.
+        this._setProblem({state: 'invalid', detail: `${source}: ${check.errors.length} lỗi cấu trúc`, errors: check.errors});
+        return this.cache || this._getDefaults();
       }
-    } catch (err) {
-      console.warn('[DataConnector] API fallback unavailable:', err);
+      const note = check.warnings.join('\n');
+      if (note && note !== this._warned) console.debug(`[DataConnector] ${check.warnings.length} ghi chú về dữ liệu (không chặn):\n` + note);
+      this._warned = note;
+      return this._store(data, source);
     }
-
+    this._setProblem({state: 'failed', detail: failures.join(' · '), errors: []});
     return this.cache || this._getDefaults();
   }
 
@@ -132,9 +142,22 @@ export class DataConnector {
     return () => this.listeners.delete(fn);
   }
 
-  /** Where the numbers on screen come from, for the "DB" light. */
-  getDataStatus() {
-    return {source: this.cache ? this.source : 'offline', updatedAt: this.cache?.updatedAt || null};
+  /**
+   * Where the numbers on screen come from and whether they can be trusted, for the HUD.
+   * state: 'ok' | 'stale' (exported more than staleAfter ago) | 'failed' (last load failed, showing the
+   * last good data) | 'invalid' (last load broke the data contract, showing the last good data) |
+   * 'offline' (nothing loaded yet). hasData is false while the panels have nothing real to show.
+   */
+  getDataStatus(now = Date.now()) {
+    const updatedAt = this.cache?.updatedAt || null;
+    const base = {
+      source: this.cache ? this.source : 'offline', updatedAt, hasData: !!this.cache, sample: this.cache?.sample === true,
+      fetchedAt: this.lastFetched, detail: this.problem?.detail || '', errors: this.problem?.errors || []
+    };
+    if (this.problem) return {...base, state: this.problem.state === 'failed' && !this.cache ? 'offline' : this.problem.state, since: this.problem.since};
+    if (!this.cache) return {...base, state: 'offline'};
+    const age = now - new Date(updatedAt).getTime();
+    return {...base, state: !base.sample && !(age <= this.staleAfter) ? 'stale' : 'ok'};
   }
 
   getKPI() {
@@ -154,18 +177,10 @@ export class DataConnector {
   }
 
   getDailyBriefing() {
+    // No briefing yet: dashes, never invented sentences.
     return this.cache?.dailyBriefing || {
-      tramanh: {
-        activeProjectsSummary: "Đang có 8 dự án đang chạy tiến độ.",
-        pendingActionsSummary: "1 việc cần Sếp ra quyết định.",
-        highlights: []
-      },
-      hermes: {
-        systemStatus: "Hoạt động bình thường (24/7)",
-        mailScanStatus: "0 email lạ chưa phân loại",
-        dbLatency: "42ms (Supabase PostgreSQL)",
-        backupStatus: "Đã sao lưu tự động"
-      }
+      tramanh: {activeProjectsSummary: '—', pendingActionsSummary: '—', highlights: []},
+      hermes: {systemStatus: '—', mailScanStatus: '—', dbLatency: '—', backupStatus: '—'}
     };
   }
 
@@ -185,7 +200,7 @@ export class DataConnector {
    * project is listed too, after the declared ones, so a new client needs no code change.
    */
   getClients() {
-    const out = (this.cache?.clients || []).map(c => ({aliases: [], kind: 'client', ...c}));
+    const out = (this.cache?.clients || []).map(c => ({...c, aliases: c.aliases || [], kind: c.kind || 'client'}));
     const known = c => out.some(x => [x.id, x.name, ...x.aliases].some(n => plain(n) === plain(c)));
     for (const p of this.getProjects()) {
       if (p.client && !known(p.client)) {
@@ -292,11 +307,18 @@ export class DataConnector {
     return typeof amount === 'number' && isFinite(amount) ? Math.round(amount).toLocaleString('vi-VN') + ' đ' : null;
   }
 
-  /** The day the data describes, as a Date at local midnight: the snapshot's updatedAt, else now. */
+  /**
+   * Today as a Date at local midnight. Real data is read against the real date, so an old export shows
+   * as old instead of moving "today" back; the sample data (sample: true) is a frozen day and keeps its own.
+   */
   getToday() {
-    const d = this.cache?.updatedAt ? new Date(this.cache.updatedAt) : new Date();
-    const day = isNaN(d) ? new Date() : d;
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    return this.cache?.sample === true ? this._exportDay() : midnight(new Date());
+  }
+
+  /** The day the data was exported (updatedAt) at local midnight; today when it has none. */
+  _exportDay() {
+    const d = new Date(this.cache?.updatedAt ?? NaN);
+    return midnight(isNaN(d) ? new Date() : d);
   }
 
   /**
@@ -380,11 +402,11 @@ export class DataConnector {
     };
   }
 
-  /** Every calendar event: the month schedule when the data has one, else today's list. */
+  /** Every calendar event: the month schedule when the data has one, else the list of the day the data was exported. */
   getScheduleEvents() {
-    const today = this.getToday();
-    const fallback = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    const raw = this.cache?.schedule || this.getScheduleToday().map(e => ({...e, date: fallback(today)}));
+    const d = this._exportDay();
+    const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    const raw = this.cache?.schedule || this.getScheduleToday().map(e => ({...e, date}));
     return raw.map(e => ({...e, project: this.getProject(e.projectId)}));
   }
 
@@ -529,7 +551,7 @@ export class DataConnector {
       facts: [],
       next: missions[0]?.title || null,
       missionCount: missions.length,
-      connected: true,
+      connected: !!this.cache,
       page: this.getBuildingPage(building)
     };
     const needsYou = missions.length
@@ -652,18 +674,35 @@ export class DataConnector {
     return out;
   }
 
-  /** Maps the production API response onto the snapshot schema. The API is expected to return it as is. */
+  /**
+   * Maps the production API response onto the data contract (data-contract.js, DATA_CONTRACT.md).
+   * This is the one place that knows the database's own table and column names; load() checks what it
+   * returns, so a mapping that misses a field is reported instead of drawn.
+   */
   _transformRawDb(raw) {
     return raw;
   }
 
   _store(data, source) {
-    const changed = source !== this.source || JSON.stringify(data) !== JSON.stringify(this.cache);
+    const changed = !!this.problem || source !== this.source || JSON.stringify(data) !== JSON.stringify(this.cache);
+    if (this.problem) console.info('[DataConnector] Đã nạp lại được dữ liệu.');
+    this.problem = null;
     this.cache = data;
     this.source = source;
     this.lastFetched = Date.now();
     if (changed) this.listeners.forEach(fn => fn());
     return this.cache;
+  }
+
+  /** Records a load that brought nothing in; logs once per new problem, not once per retry. */
+  _setProblem(problem) {
+    const same = this.problem && this.problem.state === problem.state && this.problem.detail === problem.detail;
+    if (same) return;
+    this.problem = {...problem, since: Date.now()};
+    const kept = this.cache ? ' Đang giữ dữ liệu nạp lần trước.' : '';
+    if (problem.state === 'invalid') console.error(`[DataConnector] Dữ liệu sai cấu trúc, không dùng (${problem.detail}).${kept}\n` + problem.errors.slice(0, 20).join('\n'));
+    else console.error(`[DataConnector] Không nạp được dữ liệu (${problem.detail}).${kept}`);
+    this.listeners.forEach(fn => fn());
   }
 
   // No data yet: show dashes, never invented numbers.

@@ -46,11 +46,55 @@ const PRIORITY = {
   low: {label: 'THẤP', tone: 'info'}
 };
 
-const DATA_STATUS = {
-  api: {label: 'DB: Real-time', tone: 'ok', title: 'Đang đọc trực tiếp từ database'},
-  snapshot: {label: 'DB: Snapshot', tone: 'warn', title: 'Đang đọc bản chụp dữ liệu live_campus_data.json'},
-  offline: {label: 'DB: Mất kết nối', tone: 'alert', title: 'Chưa nạp được dữ liệu'}
+const DATA_SOURCE = {
+  api: {label: 'DB: Real-time', title: 'Đang đọc trực tiếp từ database'},
+  snapshot: {label: 'DB: Snapshot', title: 'Đang đọc bản chụp dữ liệu live_campus_data.json'},
+  offline: {label: 'DB: Chưa có dữ liệu', title: 'Chưa nạp được dữ liệu'}
 };
+
+/** "3 ngày", "5 giờ", "12 phút": how long ago, for the data-state chip. */
+const ago = ms => {
+  const min = Math.max(0, Math.round(ms / 60000));
+  if (min < 60) return `${Math.max(1, min)} phút`;
+  if (min < 48 * 60) return `${Math.round(min / 60)} giờ`;
+  return `${Math.round(min / 1440)} ngày`;
+};
+
+/**
+ * What the HUD says about the data, from dataConnector.getDataStatus(). chip is the warning shown in the
+ * top bar (null while the data is fresh, so a normal day shows nothing extra); row is the line in Settings.
+ */
+function dataState(status, now = Date.now()) {
+  const src = DATA_SOURCE[status.source] || DATA_SOURCE.offline;
+  const two = n => String(n).padStart(2, '0');
+  const at = t => { const d = new Date(t); return t ? `${two(d.getHours())}:${two(d.getMinutes())} ${two(d.getDate())}/${two(d.getMonth() + 1)}` : ''; };
+  const exported = status.updatedAt ? new Date(status.updatedAt).toLocaleString('vi-VN') : '';
+  const kept = status.hasData ? `Đang giữ số liệu nạp lúc ${at(status.fetchedAt)}.` : 'Chưa có số liệu nào để hiện.';
+  const retry = 'Tự thử lại khoảng mỗi 30 giây; bấm để thử ngay.';
+  switch (status.state) {
+    case 'stale': {
+      const age = ago(now - new Date(status.updatedAt).getTime());
+      return {tone: 'warn', label: 'DB: Dữ liệu cũ', when: exported,
+        chip: {text: `Dữ liệu cũ · ${age}`, title: `Bản dữ liệu xuất lúc ${exported}, cách đây ${age}. Số liệu trên màn hình có thể không còn đúng. ${retry}`}};
+    }
+    case 'failed':
+      return {tone: 'alert', label: 'DB: Mất kết nối', when: `số liệu ${at(status.fetchedAt)}`,
+        chip: {text: `Mất kết nối · số liệu lúc ${at(status.fetchedAt)}`, title: `Không nạp lại được dữ liệu (${status.detail}). ${kept} ${retry}`}};
+    case 'invalid':
+      return {tone: 'alert', label: 'DB: Sai cấu trúc', when: status.hasData ? `số liệu ${at(status.fetchedAt)}` : '',
+        chip: {text: status.hasData ? `Dữ liệu mới sai cấu trúc · giữ số liệu lúc ${at(status.fetchedAt)}` : 'Dữ liệu sai cấu trúc · không hiện',
+          title: `Dữ liệu vừa nạp không đúng contract nên không được dùng (${status.detail}):\n${status.errors.slice(0, 6).join('\n')}${status.errors.length > 6 ? `\n… và ${status.errors.length - 6} lỗi nữa (xem Console, hoặc chạy npm run check:data)` : ''}\n${kept} ${retry}`}};
+    case 'offline':
+      return {tone: 'alert', label: 'DB: Mất kết nối', when: '',
+        chip: {text: 'Chưa nạp được dữ liệu', title: `Không nạp được dữ liệu${status.detail ? ` (${status.detail})` : ''}. Các bảng đang trống vì chưa có số liệu, không phải vì không có việc. ${retry}`}};
+    default:
+      return status.sample
+        ? {tone: 'info', label: 'DB: Dữ liệu mẫu', when: exported, title: 'Đang đọc dữ liệu mẫu (sample: true trong live_campus_data.json), chưa phải database thật', chip: null}
+        : {tone: status.source === 'api' ? 'ok' : 'warn', label: src.label, when: exported, title: src.title, chip: null};
+  }
+}
+
+const NO_DATA = 'Chưa nạp được dữ liệu nên chưa có gì để hiện.';
 
 const ICONS = {
   coin: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c-.6-1-1.7-1.5-3-1.5-1.7 0-3 .9-3 2.2 0 3 6 1.4 6 4.3 0 1.3-1.3 2.2-3 2.2-1.4 0-2.5-.5-3.1-1.5"/>',
@@ -77,6 +121,7 @@ const ICONS = {
   moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.6 6.6 0 0 0 10.5 10.5z"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  alert: '<path d="M12 3.5 2.5 20h19zM12 10v4.5M12 17.4v.2"/>',
   robot: '<rect x="4.5" y="8" width="15" height="11" rx="3.5"/><path d="M12 8V4.5M9 13v1.5M15 13v1.5M2 12.5v3M22 12.5v3"/><circle cx="12" cy="3.5" r="1"/>'
 };
 
@@ -102,6 +147,10 @@ button:disabled{cursor:not-allowed;opacity:.5}
 .cf-brand b{display:block;font-size:15px;font-weight:900;letter-spacing:.06em;line-height:1.1}
 .cf-brand span{display:block;font-size:9px;letter-spacing:.42em;color:var(--cf-mute)}
 .cf-gap{flex:1}
+.cf-data{display:flex;align-items:center;gap:7px;height:34px;padding:0 13px 0 10px;border-radius:99px;min-width:0;font-size:12px;font-weight:800;white-space:nowrap;color:var(--cf-warn);border-color:rgba(255,196,64,.5)}
+.cf-data[data-tone=alert]{color:var(--cf-alert);border-color:rgba(255,106,90,.6)}
+.cf-data>span{overflow:hidden;text-overflow:ellipsis}
+.cf-data[aria-busy=true]{opacity:.6}
 .cf-res{display:flex;align-items:center;gap:8px;height:42px;padding:0 15px 0 6px;border-radius:99px;flex:none;transition:transform .15s ease,border-color .15s ease}
 .cf-res:hover{transform:translateY(-1px);border-color:rgba(247,148,29,.6)}
 .cf-res-ico{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#1b2428;background:var(--cf-res-c,var(--cf-accent));box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);flex:none}
@@ -284,7 +333,8 @@ export class CockpitFrame {
     this.initDOM();
     this.render();
     this.data.subscribe(() => this.render());
-    setInterval(() => this.data.load(), this.data.ttl + 1000);
+    // A load that changes nothing notifies nobody, but data can turn old just by time passing.
+    setInterval(() => this.data.load().then(() => { this.renderDataState(); this.renderControls(); }), this.data.ttl + 1000);
   }
 
   initDOM() {
@@ -301,6 +351,7 @@ export class CockpitFrame {
     root.innerHTML = `
       <div class="cf-top" role="banner" aria-label="Thanh tài nguyên">
         <div class="cf-chip cf-brand"><div class="cf-brand-mark">AP</div><div><b>AN PHIM</b><span>WORLD</span></div></div>
+        <div data-slot="datastate" style="display:contents"></div>
         <span class="cf-gap"></span>
         <div data-slot="resources" style="display:contents"></div>
       </div>
@@ -455,6 +506,7 @@ export class CockpitFrame {
   // ---- rendering ----------------------------------------------------------------
 
   render() {
+    this.renderDataState();
     this.renderResources();
     this.renderDock();
     this.renderDayNight();
@@ -465,6 +517,14 @@ export class CockpitFrame {
     this.renderRail();
     this.renderJump();
     this.renderResults();
+  }
+
+  /** Top bar warning, only while the numbers on screen are old, kept from an earlier load, or missing. A click retries. */
+  renderDataState() {
+    const {tone, chip} = dataState(this.data.getDataStatus());
+    this.slot.datastate.innerHTML = chip
+      ? `<button class="cf-chip cf-data" data-act="reload" data-tone="${tone}" role="status" title="${esc(chip.title)}">${icon('alert', 15)}<span>${esc(chip.text)}</span></button>`
+      : '';
   }
 
   renderResources() {
@@ -506,15 +566,13 @@ export class CockpitFrame {
   }
 
   renderControls() {
-    const status = this.data.getDataStatus();
-    const s = DATA_STATUS[status.source] || DATA_STATUS.offline;
-    const when = status.updatedAt ? new Date(status.updatedAt).toLocaleString('vi-VN') : '';
+    const s = dataState(this.data.getDataStatus());
     const tools = document.body.classList.contains('cf-tools');
     this.slot.controls.innerHTML = `
       <button class="cf-row-btn" data-act="money" aria-pressed="${this.hideMoney}">${icon(this.hideMoney ? 'eyeOff' : 'eye')}${this.hideMoney ? 'Hiện số tiền' : 'Ẩn số tiền'}</button>
       <button class="cf-row-btn" data-act="tools" aria-pressed="${tools}" title="Góc máy, lưới, sửa cảnh">${icon('tools')}Công cụ dựng campus<em>${tools ? 'Đang bật' : ''}</em></button>
       ${this.dayNight ? `<button class="cf-row-btn" data-act="night-auto" aria-pressed="${this.dayNight.auto}" title="Ban đêm từ 18:00 đến 06:00 theo giờ máy">${icon('clock')}Ngày đêm theo giờ thật<em>${this.dayNight.auto ? 'Đang bật' : ''}</em></button>` : ''}
-      <div class="cf-row-btn" data-tone="${s.tone}" title="${esc(s.title)}"><i class="cf-dot"></i>${esc(s.label)}<em>${esc(when)}</em></div>`;
+      <div class="cf-row-btn" data-tone="${s.tone}" title="${esc(s.title || s.chip.title)}"><i class="cf-dot"></i>${esc(s.label)}<em>${esc(s.when)}</em></div>`;
   }
 
   /** Link to a Workspace dashboard page; greyed out until workspace.baseUrl is set in the data. */
@@ -526,6 +584,7 @@ export class CockpitFrame {
   renderMissions() {
     const {open, done} = this.data.getMissions();
     const notes = this.data.getNotifications();
+    const loaded = this.data.getDataStatus().hasData;
     const mission = m => {
       const pr = PRIORITY[m.priority] || PRIORITY.low;
       const b = this.target(m);
@@ -546,9 +605,9 @@ export class CockpitFrame {
       return b ? `<button class="cf-note" data-enter="${esc(b.id)}" title="→ Đến tòa ${esc(this.label(b))}">${inner}</button>` : `<div class="cf-note">${inner}</div>`;
     };
     this.slot.missions.innerHTML = `
-      <div class="cf-h"><span>Mission hôm nay</span><small>${open.length} việc</small><button data-act="missions" aria-label="Đóng Mission">${icon('close', 13)}</button></div>
+      <div class="cf-h"><span>Mission hôm nay</span><small>${loaded ? open.length + ' việc' : '—'}</small><button data-act="missions" aria-label="Đóng Mission">${icon('close', 13)}</button></div>
       <div class="cf-body cf-scroll">
-        ${open.map(mission).join('') || '<div class="cf-empty">Không còn việc nào chờ anh.</div>'}
+        ${open.map(mission).join('') || `<div class="cf-empty">${loaded ? 'Không còn việc nào chờ anh.' : NO_DATA}</div>`}
         ${done.length ? `<div class="cf-sub">Đã hoàn thành (${done.length})</div>${done.map(m => `<div class="cf-done">${this.text(m.title)}${m.project ? ' (' + esc(m.project.name) + ')' : ''}</div>`).join('')}` : ''}
         ${notes.length ? `<div class="cf-sub">Thông báo</div>${notes.map(note).join('')}` : ''}
       </div>`;
@@ -602,7 +661,7 @@ export class CockpitFrame {
           <p>${esc(a.task || a.role)}</p>
           ${a.loadPct != null ? `<div class="cf-bar" data-tone="ok"><i style="width:${Math.max(0, Math.min(100, Number(a.loadPct)))}%"></i></div>` : ''}
         </div>`;
-      }).join('') || '<div class="cf-empty">Chưa có dữ liệu agent.</div>'}</div>`;
+      }).join('') || `<div class="cf-empty">${this.data.getDataStatus().hasData ? 'Chưa có dữ liệu agent.' : NO_DATA}</div>`}</div>`;
   }
 
   /** Bottom-left: where the camera is, with the menu of districts and infrastructure. Bottom-right: main buildings as tiles. */
@@ -693,6 +752,10 @@ export class CockpitFrame {
       this.missionsOpen = !this.missionsOpen;
       localStorage.setItem(MISSIONS_KEY, this.missionsOpen ? '1' : '0');
       this.renderDock();
+    } else if (act === 'reload') {
+      const chip = e.target.closest('[data-act]');
+      chip.setAttribute('aria-busy', 'true');
+      this.data.load(true).finally(() => this.renderDataState());
     } else if (act === 'money') {
       this.hideMoney = !this.hideMoney;
       localStorage.setItem(HIDE_MONEY_KEY, this.hideMoney ? '1' : '0');
