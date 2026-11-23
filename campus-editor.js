@@ -95,10 +95,14 @@ export function createCampusEditor({
   const nx = GRID.nx;
   const nz = GRID.nz;
   // States saved before the ground grew used a narrower lattice from the same corner: same (i, j), new row length.
+  // The land around the campus was re-laid when the ground grew, so of a state with no grid of its own only the brush
+  // work on the ground that stayed (GRID.legacyKept) still fits; the rest would put the old land's heights and colours on the new land.
+  const CAMPUS_LAND = GRID.legacyKept;
   const gridIndex = (i, savedGrid) => {
     const [onx, onz] = savedGrid || GRID.legacy;
     if (onx === nx && onz === nz) return i;
-    const col = i % (onx + 1), row = Math.floor(i / (onx + 1));
+    const col = i % (onx + 1), row = Math.floor(i / (onx + 1)), x = GRID.x0 + col * GRID.stepX, z = GRID.z0 + row * GRID.stepZ;
+    if (!savedGrid && CAMPUS_LAND && (x < CAMPUS_LAND[0] || z < CAMPUS_LAND[1] || x > CAMPUS_LAND[2] || z > CAMPUS_LAND[3])) return -1;
     return col <= nx && row <= nz && row <= onz ? row * (nx + 1) + col : -1;
   };
   const baseCount = terrain.baseCount || ((nx + 1) * (nz + 1));
