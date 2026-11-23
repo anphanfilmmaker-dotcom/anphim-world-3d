@@ -98,11 +98,12 @@ export function createCampusEditor({
   // The land has been re-laid since (GRID.land counts the times), so of a state saved on an earlier land only the brush
   // work on the ground that stayed (GRID.kept) still fits; the rest would put the old land's heights and colours on the new land.
   // A state with no land revision of its own was saved on land 1 when it has a grid, on land 0 when it has none.
+  const landOf = state => state.land ?? (state.grid ? 1 : 0);
+  const landKept = (x, z, savedLand) => GRID.land == null || savedLand === GRID.land || !!GRID.kept?.(savedLand, x, z);
   const gridIndex = (i, savedGrid, savedLand = savedGrid ? 1 : 0) => {
     const [onx, onz] = savedGrid || GRID.legacy;
     const col = i % (onx + 1), row = Math.floor(i / (onx + 1)), x = GRID.x0 + col * GRID.stepX, z = GRID.z0 + row * GRID.stepZ;
-    const kept = GRID.land == null || savedLand === GRID.land || (GRID.kept?.[savedLand] || []).some(r => x >= r[0] && z >= r[1] && x <= r[2] && z <= r[3]);
-    if (!kept) return -1;
+    if (!landKept(x, z, savedLand)) return -1;
     return col <= nx && row <= nz && row <= onz ? row * (nx + 1) + col : -1;
   };
   const baseCount = terrain.baseCount || ((nx + 1) * (nz + 1));
