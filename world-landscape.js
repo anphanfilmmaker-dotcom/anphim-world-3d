@@ -674,7 +674,13 @@ export function createWorldBackdrop({scene, terrain, camera, controls, reach = 2
   clouds.name = 'world-clouds';
   // Seen from low down a cloud would hang in front of the land behind it, so the clouds fade out as the camera drops below about 30 degrees.
   const look = new T.Vector3();
-  clouds.onBeforeRender = (renderer, scene, cam) => { clouds.material.opacity = smooth((-cam.getWorldDirection(look).y - 0.42) / 0.1); };
+  // Drawn after the water, and with no depth once faded out, so that a faded cloud leaves no hole in what lies behind it.
+  clouds.renderOrder = 2;
+  clouds.onBeforeRender = (renderer, scene, cam) => {
+    const k = smooth((-cam.getWorldDirection(look).y - 0.42) / 0.1);
+    clouds.material.opacity = k;
+    clouds.material.depthWrite = k > 0.02;
+  };
   group.add(clouds);
 
   // Scenery only: nothing here can be picked, so the Studio never selects or bulldozes the far land.
