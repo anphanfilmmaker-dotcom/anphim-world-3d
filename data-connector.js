@@ -190,7 +190,7 @@ export class DataConnector {
    * project is listed too, after the declared ones, so a new client needs no code change.
    */
   getClients() {
-    const out = (this.cache?.clients || []).map(c => ({aliases: [], kind: 'client', ...c}));
+    const out = (this.cache?.clients || []).map(c => ({...c, aliases: c.aliases || [], kind: c.kind || 'client'}));
     const known = c => out.some(x => [x.id, x.name, ...x.aliases].some(n => plain(n) === plain(c)));
     for (const p of this.getProjects()) {
       if (p.client && !known(p.client)) {
