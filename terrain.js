@@ -9,15 +9,16 @@ export function createTerrain(scene,P,L){
  const districtPads=districtGroundPads(L);
  // The detailed ground keeps the lattice it always had (cells of 380/506 by 340/453 m from the north-west corner) and
  // grows east and south in whole cells, so a vertex saved by the Studio is still the same point of land.
- // `grid.legacyKept` lists the ground this re-layout left as it was, in height (within 1 cm) and in colour: the campus,
- // Winterland, F35Story and the south-east corner. The rest of the land is new.
+ // `grid.land` counts the re-layouts of the land: 0 before the ground grew, 1 with the districts moved, 2 with each
+ // district's land along its curved road. `grid.kept(r,x,z)` tells whether the ground at (x,z) is still as it was at
+ // revision r (land-kept.js); the rest of the land is new since then.
  const CELL=[380/506,340/453],nx=632,nz=557,GROUND=[-190,-170,-190+nx*CELL[0],-170+nz*CELL[1]],[GX0,GZ0,GX1,GZ1]=GROUND,GW=GX1-GX0,GD=GZ1-GZ0,world=createWorldLandform(L,{riverZ,fine:GROUND});
  const stairDefs=[{id:'HQ arrival stair',axis:'z',cross:0,start:10,end:15,high:6.8,low:5.2,count:10,width:5.0},{id:'Internal 4 to 3',axis:'x',cross:-20,start:29.5,end:32,high:5.2,low:4.5,count:5,width:1.8},{id:'Internal 3 to 2',axis:'z',cross:36,start:-23,end:-20,high:4.5,low:3.8,count:5,width:1.8},{id:'Internal 2 to 1',axis:'x',cross:-18,start:42,end:45,high:3.8,low:3.1,count:5,width:1.8}];
  const zones=[{id:'forecourt',x:0,z:6,hx:10.5,hz:4,y:6.8},{id:'commons',x:0,z:-21,hx:10,hz:4,y:5.2},{id:'admin',x:-26,z:-21,hx:12.5,hz:11.5,y:4},{id:'finance',x:-28.5,z:14,hx:11.5,hz:13.5,y:4},{id:'it',x:33.5,z:11.5,hx:13.5,hz:11.5,y:3.8},...pads];
  function designHeight(x,z){let y=.5+5.5*Math.exp(-((x*x)/4225+(z*z)/3364))+.3*Math.sin(x*.05)*Math.cos(z*.04);y+=5*Math.exp(-((x+100)**2/2200+(z+85)**2/900))+7*Math.exp(-((x-112)**2/2300+(z+95)**2/1600));
  for(const p of zones){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));y=T.MathUtils.lerp(y,p.y,1-smooth(d/9));}
  // District pads: the nearest one sets the level, so two pads close together do not pull each other's ground.
- {let m=0,lv=0,sh=0;for(const p of districtPads){const d=Math.hypot(Math.max(0,Math.abs(x-p.x)-p.hx),Math.max(0,Math.abs(z-p.z)-p.hz));if(d<10){const k=1-smooth(d/10),w=k/(d*d+1e-4);m=Math.max(m,k);lv+=w*p.y;sh+=w;}}if(sh)y=T.MathUtils.lerp(y,lv/sh,m);}
+ {let m=0,lv=0,sh=0;for(const p of districtPads){const d=p.gap(x,z);if(d<10){const k=1-smooth(d/10),w=k/(d*d+1e-4);m=Math.max(m,k);lv+=w*p.y;sh+=w;}}if(sh)y=T.MathUtils.lerp(y,lv/sh,m);}
  // Landscapes around the client districts and on to the far mountains and the sea.
  y=world.shape(x,z,y);
  // Four continuous working terraces, stitched to existing fixed building platforms.
@@ -112,8 +113,9 @@ export function createTerrain(scene,P,L){
  geo.setAttribute("uv", new T.Float32BufferAttribute(uvs, 2));
  geo.clearGroups();let start=0;index.forEach((arr,i)=>{geo.addGroup(start,arr.length,i);start+=arr.length;});const data=new Uint32Array(start);let offset=0;for(const arr of index){data.set(arr,offset);offset+=arr.length;}geo.setIndex(new T.BufferAttribute(data,1));shade();surfaces.splice(0,surfaces.length,...index.map((a,i)=>({material:i,triangles:a.length/3})));}
  const wg=new T.PlaneGeometry(GW,1,320,1);wg.rotateX(-Math.PI/2);const wp=wg.attributes.position;for(let i=0;i<wp.count;i++){let x=wp.getX(i)+(GX0+GX1)/2,s=wp.getZ(i)>0?1:-1;wp.setXYZ(i,x,.18,riverZ(x)+s*riverR(x));}wg.computeVertexNormals();const water=new T.Mesh(wg,new T.MeshStandardMaterial({color:P.colors.water,roughness:0.04,metalness:0.25,transparent:true,opacity:0.90}));water.name='river-only';scene.add(water);
- return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],legacyKept:[[-45.5,-66,51.5,46],[-183,-167,-89,-106.5],[83,-156,169.5,-112],[125.5,106.5,190,142]]},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
+ return {world,seam,grid:{x0:GX0,z0:GZ0,nx,nz,stepX,stepZ,legacy:[506,453],land:2,kept:(rev,x,z)=>landKept(rev,Math.round((x-GX0)/stepX),Math.round((z-GZ0)/stepZ))},designColorArray,designHeight,height,surfaceHeight,stairs,stairDefs,pads,zones,terrain,courts,rebuild,surfaces,riverZ,riverR,waterNormalY:1,riverWidth:[4.6,8.2],materials,baseCount,basePosArray,origHeights,baseColorArray,syncLiveBuffers};
 }
 export function ribbon(){throw Error('Art C surfaces must be part of continuous ground');}
 import {districtGroundPads} from './district-layout.js';
 import {createWorldLandform,createSeam} from './world-landscape.js';
+import {landKept} from './land-kept.js';

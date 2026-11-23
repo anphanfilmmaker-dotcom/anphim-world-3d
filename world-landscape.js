@@ -139,7 +139,8 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     const cos = Math.round(Math.cos(f.rotY)), sin = Math.round(Math.sin(f.rotY)), [gx, gz] = slot.gateXZ;
     // A closed valley takes the mountains around it into its own landscape.
     const land = LAND[slot.landscape] ? slot.landscape : 'meadow', out = LAND[land].closed ? 24 : 0;
-    return {land, named: !!LAND[slot.landscape], core: [cx - hx, cz - hz, cx + hx, cz + hz], rect: [cx - hx - out, cz - hz - out, cx + hx + out, cz + hz + out], pad: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, u: (x, z) => (x - gx) * cos - (z - gz) * sin};
+    // `core` is how far a point lies outside the district's land (the strip along its road), `pad` the same for its level ground.
+    return {land, named: !!LAND[slot.landscape], core: f.gap, gap: (x, z) => Math.max(0, f.gap(x, z) - out), pad: (x, z) => Math.max(0, f.gap(x, z) - 4), box: [cx - hx - 4, cz - hz - 4, cx + hx + 4, cz + hz + 4], y: f.y, u: (x, z) => (x - gx) * cos - (z - gz) * sin};
   });
   const anchors = [{land: 'plain', rect: CAMPUS}, ...slots, ...FAR.map(([land, ...rect]) => ({land, rect}))];
   // How far a point is from open sea: inside the island's rectangle the sea is as far as the nearest side.
@@ -183,7 +184,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     const wx = x + 140 * (fbm(x / 130 + 3.1, z / 130, 2) - 0.5), wz = z + 140 * (fbm(x / 130, z / 130 + 7.7, 2) - 0.5);
     let total = 0, best = 0;
     for (let k = 0; k < anchors.length; k++) {
-      const d = (k === seaAnchor ? seaGap(wx, wz) : rectGap(wx, wz, anchors[k].rect)) + 9, w = 1 / (d * d * d * d);
+      const a = anchors[k], d = (k === seaAnchor ? seaGap(wx, wz) : a.gap ? a.gap(wx, wz) : rectGap(wx, wz, a.rect)) + 9, w = 1 / (d * d * d * d);
       weights[k] = w;
       total += w;
       if (w > weights[best]) best = k;
@@ -212,7 +213,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       const e = edge(x, z);
       let wild = 1, level = 0, share = 0;
       for (let i = 0; i < slots.length; i++) {
-        const d = rectGap(x, z, slots[i].pad);
+        const d = slots[i].pad(x, z);
         near[i] = d < 34 ? smooth((d - 1 - e) / 22) : 1;
         if (d >= 34) continue;
         // The nearer a district, the more its level counts: on its own ground it is the only one, whatever lies next door.
@@ -226,14 +227,14 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       for (let i = 0; i < slots.length; i++) {
         const s = slots[i], land = LAND[s.land];
         if (!land.rim) continue;
-        const d = rectGap(x, z, s.pad);
+        const d = s.pad(x, z);
         if (d <= 0 || d >= 62) continue;
         // The ridge stops short of any other district's ground.
         let clear = 1;
         for (let j = 0; j < slots.length; j++) if (j !== i) clear *= near[j];
         if (clear <= 0) continue;
         // A closed valley is walled highest at the back; the sides towards the campus stay low enough to look in over.
-        const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.pad[3] + 10) / 20), smooth((x - s.pad[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
+        const side = land.closed ? (1 - 0.5 * Math.max(smooth((z - s.box[3] + 10) / 20), smooth((x - s.box[2] + 10) / 20))) * (0.8 + 0.4 * fbm(x / 16, z / 16, 2)) : smooth((s.u(x, z) - 4) / 16) * (0.55 + 0.9 * fbm(x / 16, z / 16, 2));
         y += open * clear * land.rim * Math.exp(-(((d - 14 - e * 0.5 - 14 * fbm(x / 48 + 2, z / 48 + 4, 2)) / 7) ** 2)) * side;
       }
       {
@@ -269,7 +270,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
     }
     // A district's own ground is level right up to its gate: the road bed stops at the edge of the plot.
     if (cut) for (const s of slots) {
-      const d = rectGap(x, z, s.core);
+      const d = s.core(x, z);
       if (d < 4) cut *= smooth(d / 4);
     }
     if (!cut) return y;
@@ -315,7 +316,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
         const w = weights[k];
         if (w < 0.01) continue;
         const a = anchors[k], name = a.land, set = colour[name];
-        const inside = a.pad && a.named ? 1 - smooth(rectGap(x, z, a.core) / 9) : 0;
+        const inside = a.pad && a.named ? 1 - smooth(a.core(x, z) / 9) : 0;
         if (!set.wild && !(set.pad && inside)) continue;
         t.copy(set.wild || set.pad);
         if (name === 'snow-mountain') t.lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8);
@@ -351,7 +352,7 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
       // The ridge around a closed valley belongs to the valley: snow and rock down to its foot.
       for (const s of slots) {
         if (!LAND[s.land].closed) continue;
-        const ring = 1 - smooth((rectGap(x, z, s.pad) - 16) / 14);
+        const ring = 1 - smooth((s.pad(x, z) - 16) / 14);
         if (ring <= 0) continue;
         c.lerp(t.copy(colour[s.land].wild).lerp(rock, smooth((slope - 0.9) / 0.9) * 0.8), ring);
         cover = Math.max(cover, ring);
@@ -375,11 +376,11 @@ export function createWorldLandform(L, {riverZ = () => 1e9, fine = null} = {}) {
   /** What grows at a point: {kind, density, colors} of the strongest landscape there, or null. */
   function growth(x, z) {
     // The ridge around a closed valley grows what the valley grows.
-    const ring = slots.find(s => LAND[s.land].closed && rectGap(x, z, s.pad) < 26);
+    const ring = slots.find(s => LAND[s.land].closed && s.pad(x, z) < 26);
     const land = LAND[ring ? ring.land : anchors[blend(x, z)].land];
     return land.trees ? {kind: land.trees[0], density: land.trees[1], colors: land.trees[2]} : null;
   }
-  const onPad = (x, z, margin = 0) => slots.some(s => rectGap(x, z, s.pad) <= margin);
+  const onPad = (x, z, margin = 0) => slots.some(s => s.pad(x, z) <= margin);
   const onRoad = (x, z, margin = 0) => lanes.some(g => {
     const dx = g.b[0] - g.a[0], dz = g.b[1] - g.a[1], t = T.MathUtils.clamp(((x - g.a[0]) * dx + (z - g.a[1]) * dz) / (dx * dx + dz * dz || 1), 0, 1);
     return Math.hypot(x - g.a[0] - t * dx, z - g.a[1] - t * dz) < g.half + margin;

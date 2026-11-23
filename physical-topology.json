@@ -552,8 +552,7 @@
           "lots": 20,
           "openLots": 14,
           "landscape": "grassland",
-          "clientId": "vistax"
-        },
+          "clientId": "vistax", "road": {"points": [[0,0], [8,0], [16,0], [34,-2], [52,-8], [70,-13], [88,-13], [106,-7], [122,-1], [136,1]]}},
         {
           "id": "district:W2",
           "label": "W2",
@@ -566,8 +565,7 @@
           "groundY": 2.0,
           "lots": 14,
           "landscape": "flower-hills",
-          "clientId": "9kolor"
-        },
+          "clientId": "9kolor", "road": {"points": [[0,0], [8,0], [16,0], [34,2], [52,7], [70,14], [86,19], [100,20]]}},
         {
           "id": "district:W3",
           "label": "W3",
@@ -580,8 +578,7 @@
           "groundY": 7,
           "lots": 14,
           "landscape": "snow-mountain",
-          "clientId": "k87k"
-        },
+          "clientId": "k87k", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [47,-10], [60,-19], [73,-27], [87,-31], [96,-31]]}},
         {
           "id": "district:N1",
           "label": "N1",
@@ -594,8 +591,7 @@
           "groundY": 7,
           "lots": 14,
           "landscape": "film-set",
-          "clientId": "film-studio"
-        },
+          "clientId": "film-studio", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [50,8], [68,9], [84,5], [98,-2]]}},
         {
           "id": "district:N2",
           "label": "N2",
@@ -612,8 +608,7 @@
             -56
           ],
           "landscape": "pine-forest",
-          "clientId": "clevergroup"
-        },
+          "clientId": "clevergroup", "road": {"points": [[0,0], [4,0], [8,0], [12.5,1], [18,4.5], [25,8.5], [34,9], [58,9], [68,8], [75,3.5], [77,-1], [74,-6], [67,-8.8], [58,-9], [34,-9], [26,-8.5], [19,-5.5], [15.5,-2], [12.8,1.15]], "joins":  true, "lotSide":  1}},
         {
           "id": "district:E3",
           "label": "E3",
@@ -626,21 +621,20 @@
           "groundY": 6,
           "lots": 14,
           "landscape": "red-canyon",
-          "clientId": "f35story"
-        },
+          "clientId": "f35story", "road": {"points": [[0,0], [8,0], [16,0], [32,-3], [48,-8], [64,-8], [80,-2], [96,3], [104,5]]}},
         {
           "id": "district:E2",
           "label": "E2",
           "side": "N",
           "gateXZ": [
-            30,
+            33,
             -64
           ],
           "depth": 90,
           "groundY": 1.5,
           "lots": 14,
           "ringXZ": [
-            30,
+            33,
             -56
           ],
           "landscape": null,
@@ -662,8 +656,7 @@
             -24
           ],
           "landscape": "tropical-beach",
-          "clientId": "inverse"
-        },
+          "clientId": "inverse", "road": {"points": [[0,0], [8,0], [16,0], [32,3], [48,5], [62,2], [76,-5], [86,-15], [91,-27], [92,-38]]}},
         {
           "id": "district:S1",
           "label": "S1",
